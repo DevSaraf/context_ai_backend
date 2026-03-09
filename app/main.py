@@ -8,6 +8,15 @@ from .database import SessionLocal
 from . import models, schemas, auth
 from .dependencies import get_current_user
 import secrets
+from app.database import Base, engine
+from app.models import KnowledgeItem
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.embedding import create_embedding
+from sqlalchemy import text
+
+Base.metadata.create_all(bind=engine)
 
 def get_db():
     db = SessionLocal()
@@ -93,3 +102,40 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         "message": "User created",
         "api_key": api_key
     }
+
+@app.post("/knowledge/upload")
+def upload_knowledge(data: dict, db: Session = Depends(get_db)):
+
+    embedding = create_embedding(data["content"])
+
+    item = KnowledgeItem(
+        company_id=data["company_id"],
+        title=data["title"],
+        content=data["content"],
+        source=data["source"],
+        embedding=embedding
+    )
+
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+
+    return {"message": "Knowledge stored"}
+
+@app.post("/search")
+def search_knowledge(data: dict, db: Session = Depends(get_db)):
+
+    query_embedding = create_embedding(data["prompt"])
+
+    results = db.execute(
+        text("""
+        SELECT id, title, content, source,
+        1 - (embedding <=> CAST(:embedding AS vector)) AS similarity
+        FROM knowledge_items
+        ORDER BY embedding <=> CAST(:embedding AS vector)
+        LIMIT 5
+        """),
+        {"embedding": query_embedding}
+    ).mappings().all()
+
+    return {"results": results}
