@@ -9,7 +9,7 @@ from . import models, schemas, auth
 from .dependencies import get_current_user
 import secrets
 from app.database import Base, engine
-from app.models import KnowledgeItem
+from app.models import KnowledgeChunk
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -103,16 +103,35 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         "api_key": api_key
     }
 
+# @app.post("/knowledge/upload")
+# def upload_knowledge(data: dict, db: Session = Depends(get_db)):
+
+#     embedding = create_embedding(data["content"])
+
+#     item = KnowledgeChunk(
+#         company_id=data["company_id"],
+#         title=data["title"],
+#         content=data["content"],
+#         source=data["source"],
+#         embedding=embedding
+#     )
+
+#     db.add(item)
+#     db.commit()
+#     db.refresh(item)
+
+#     return {"message": "Knowledge stored"}
+
 @app.post("/knowledge/upload")
 def upload_knowledge(data: dict, db: Session = Depends(get_db)):
 
     embedding = create_embedding(data["content"])
 
-    item = KnowledgeItem(
+    item = KnowledgeChunk(
         company_id=data["company_id"],
-        title=data["title"],
-        content=data["content"],
-        source=data["source"],
+        source_type="document",
+        source_id=1,
+        text=data["content"],
         embedding=embedding
     )
 
@@ -129,11 +148,11 @@ def search_knowledge(data: dict, db: Session = Depends(get_db)):
 
     results = db.execute(
         text("""
-        SELECT id, title, content, source,
-        1 - (embedding <=> CAST(:embedding AS vector)) AS similarity
-        FROM knowledge_items
-        ORDER BY embedding <=> CAST(:embedding AS vector)
-        LIMIT 5
+        SELECT id, text, source_type, source_id,
+1 - (embedding <=> CAST(:embedding AS vector)) AS similarity
+FROM knowledge_chunks
+ORDER BY embedding <=> CAST(:embedding AS vector)
+LIMIT 5
         """),
         {"embedding": query_embedding}
     ).mappings().all()
