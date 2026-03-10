@@ -15,6 +15,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.embedding import create_embedding
 from sqlalchemy import text
+from app.chunking import chunk_text
+from app.context_builder import build_context
 
 Base.metadata.create_all(bind=engine)
 
@@ -63,22 +65,6 @@ def get_user_data(user_id: int = Depends(get_current_user)):
         "user_id": user_id
     }
 
-# @app.post("/register")
-# def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
-
-#     hashed_password = auth.hash_password(user.password)
-
-#     new_user = models.User(
-#     email=user.email,
-#     password=hashed_password,
-#     company_id=user.company_id
-# )
-
-#     db.add(new_user)
-#     db.commit()
-#     db.refresh(new_user)
-
-#     return {"message": "User created"}
 
 @app.post("/register")
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -103,43 +89,28 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         "api_key": api_key
     }
 
-# @app.post("/knowledge/upload")
-# def upload_knowledge(data: dict, db: Session = Depends(get_db)):
-
-#     embedding = create_embedding(data["content"])
-
-#     item = KnowledgeChunk(
-#         company_id=data["company_id"],
-#         title=data["title"],
-#         content=data["content"],
-#         source=data["source"],
-#         embedding=embedding
-#     )
-
-#     db.add(item)
-#     db.commit()
-#     db.refresh(item)
-
-#     return {"message": "Knowledge stored"}
-
 @app.post("/knowledge/upload")
 def upload_knowledge(data: dict, db: Session = Depends(get_db)):
 
-    embedding = create_embedding(data["content"])
+    chunks = chunk_text(data["content"])
 
-    item = KnowledgeChunk(
-        company_id=data["company_id"],
-        source_type="document",
-        source_id=1,
-        text=data["content"],
-        embedding=embedding
-    )
+    for chunk in chunks:
 
-    db.add(item)
+        embedding = create_embedding(chunk)
+
+        item = KnowledgeChunk(
+            company_id=data["company_id"],
+            source_type="document",
+            source_id=1,
+            text=chunk,
+            embedding=embedding
+        )
+
+        db.add(item)
+
     db.commit()
-    db.refresh(item)
 
-    return {"message": "Knowledge stored"}
+    return {"message": "Knowledge stored with chunking"}
 
 @app.post("/search")
 def search_knowledge(data: dict, db: Session = Depends(get_db)):
@@ -158,3 +129,26 @@ LIMIT 5
     ).mappings().all()
 
     return {"results": results}
+
+@app.post("/context")
+def get_context(data: dict, db: Session = Depends(get_db)):
+
+    query_embedding = create_embedding(data["prompt"])
+
+    results = db.execute(
+        text("""
+        SELECT text, source_type, source_id,
+        1 - (embedding <=> CAST(:embedding AS vector)) AS similarity
+        FROM knowledge_chunks
+        ORDER BY embedding <=> CAST(:embedding AS vector)
+        LIMIT 5
+        """),
+        {"embedding": query_embedding}
+    ).mappings().all()
+
+    context = build_context(results)
+
+    return {
+        "context": context,
+        "sources": results
+    }
