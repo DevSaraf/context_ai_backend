@@ -48,7 +48,9 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
 
     return {
         "access_token": token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "email": db_user.email,
+        "company_id": db_user.company_id
     }
 
 @app.get("/me")
@@ -83,18 +85,29 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     }
 
 @app.post("/knowledge/upload")
-def upload_knowledge(data: dict, db: Session = Depends(get_db)):
+def upload_knowledge(data: dict, db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
 
-    chunks = chunk_text(data["content"])
+    # Get user's company_id
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return {"error": "User not found"}
+
+    company_id = user.company_id
+    content = data.get("content")
+
+    if not content:
+        return {"error": "No content provided"}
+
+    chunks = chunk_text(content)
 
     for chunk in chunks:
 
         embedding = create_embedding(chunk)
 
         item = KnowledgeChunk(
-            company_id=data["company_id"],
-            source_type="document",
-            source_id=1,
+            company_id=company_id,
+            source_type=data.get("source_type", "document"),
+            source_id=data.get("source_id", 1),
             text=chunk,
             embedding=embedding
         )
@@ -103,11 +116,17 @@ def upload_knowledge(data: dict, db: Session = Depends(get_db)):
 
     db.commit()
 
-    return {"message": "Knowledge stored with chunking"}
+    return {"message": "Knowledge stored with chunking", "chunks": len(chunks)}
 
 @app.post("/search")
-def search(data: dict, db: Session = Depends(get_db)):
+def search(data: dict, db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
 
+    # Get user's company_id
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return {"results": []}
+
+    company_id = user.company_id
     query = data.get("query") or data.get("prompt")
 
     if not query:
@@ -121,10 +140,11 @@ def search(data: dict, db: Session = Depends(get_db)):
                 SELECT text, source_type, source_id,
                 1 - (embedding <=> CAST(:embedding AS vector)) AS similarity
                 FROM knowledge_chunks
+                WHERE company_id = :company_id
                 ORDER BY embedding <=> CAST(:embedding AS vector)
                 LIMIT 5
             """),
-            {"embedding": query_embedding}
+            {"embedding": query_embedding, "company_id": company_id}
         ).mappings().all()
 
         return {"results": [dict(r) for r in results]}
@@ -134,11 +154,18 @@ def search(data: dict, db: Session = Depends(get_db)):
         return {"results": []}
 
 @app.post("/context")
-def get_context(data: dict, db: Session = Depends(get_db)):
+def get_context(data: dict, db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
 
     prompt = data.get("prompt")
     if not prompt:
         return {"context": "", "sources": []}
+
+    # Get user's company_id for multi-tenant filtering
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return {"context": "", "sources": []}
+
+    company_id = user.company_id
 
     try:
         query_embedding = create_embedding(prompt)
@@ -148,10 +175,11 @@ def get_context(data: dict, db: Session = Depends(get_db)):
                 SELECT text, source_type, source_id,
                 1 - (embedding <=> CAST(:embedding AS vector)) AS similarity
                 FROM knowledge_chunks
+                WHERE company_id = :company_id
                 ORDER BY embedding <=> CAST(:embedding AS vector)
                 LIMIT 5
             """),
-            {"embedding": query_embedding}
+            {"embedding": query_embedding, "company_id": company_id}
         ).mappings().all()
 
         context = build_context(results)
