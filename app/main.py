@@ -1,36 +1,29 @@
-from fastapi import FastAPI
-from .database import engine
-from . import models
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from .jwt_handler import create_access_token
-from .database import SessionLocal
-from . import models, schemas, auth
-from .dependencies import get_current_user
-import secrets
-from app.database import Base, engine
-from app.models import KnowledgeChunk
-from fastapi import Depends
-from sqlalchemy.orm import Session
-from app.database import get_db
-from app.embedding import create_embedding
 from sqlalchemy import text
+import secrets
+
+from app.database import Base, engine, get_db
+from app.models import KnowledgeChunk
+from app import models, schemas, auth
+from app.dependencies import get_current_user
+from app.jwt_handler import create_access_token
+from app.embedding import create_embedding
 from app.chunking import chunk_text
 from app.context_builder import build_context
 
-Base.metadata.create_all(bind=engine)
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 app = FastAPI()
 
-models.Base.metadata.create_all(bind=engine)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins (chrome extensions, localhost, etc.)
+    allow_credentials=False,  # Must be False when using allow_origins=["*"]
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+Base.metadata.create_all(bind=engine)
 
 
 @app.get("/")
@@ -113,42 +106,61 @@ def upload_knowledge(data: dict, db: Session = Depends(get_db)):
     return {"message": "Knowledge stored with chunking"}
 
 @app.post("/search")
-def search_knowledge(data: dict, db: Session = Depends(get_db)):
+def search(data: dict, db: Session = Depends(get_db)):
 
-    query_embedding = create_embedding(data["prompt"])
+    query = data.get("query") or data.get("prompt")
 
-    results = db.execute(
-        text("""
-        SELECT id, text, source_type, source_id,
-1 - (embedding <=> CAST(:embedding AS vector)) AS similarity
-FROM knowledge_chunks
-ORDER BY embedding <=> CAST(:embedding AS vector)
-LIMIT 5
-        """),
-        {"embedding": query_embedding}
-    ).mappings().all()
+    if not query:
+        return {"results": []}
 
-    return {"results": results}
+    try:
+        query_embedding = create_embedding(query)
+
+        results = db.execute(
+            text("""
+                SELECT text, source_type, source_id,
+                1 - (embedding <=> CAST(:embedding AS vector)) AS similarity
+                FROM knowledge_chunks
+                ORDER BY embedding <=> CAST(:embedding AS vector)
+                LIMIT 5
+            """),
+            {"embedding": query_embedding}
+        ).mappings().all()
+
+        return {"results": [dict(r) for r in results]}
+
+    except Exception as e:
+        print("Search error:", e)
+        return {"results": []}
 
 @app.post("/context")
 def get_context(data: dict, db: Session = Depends(get_db)):
 
-    query_embedding = create_embedding(data["prompt"])
+    prompt = data.get("prompt")
+    if not prompt:
+        return {"context": "", "sources": []}
 
-    results = db.execute(
-        text("""
-        SELECT text, source_type, source_id,
-        1 - (embedding <=> CAST(:embedding AS vector)) AS similarity
-        FROM knowledge_chunks
-        ORDER BY embedding <=> CAST(:embedding AS vector)
-        LIMIT 5
-        """),
-        {"embedding": query_embedding}
-    ).mappings().all()
+    try:
+        query_embedding = create_embedding(prompt)
 
-    context = build_context(results)
+        results = db.execute(
+            text("""
+                SELECT text, source_type, source_id,
+                1 - (embedding <=> CAST(:embedding AS vector)) AS similarity
+                FROM knowledge_chunks
+                ORDER BY embedding <=> CAST(:embedding AS vector)
+                LIMIT 5
+            """),
+            {"embedding": query_embedding}
+        ).mappings().all()
 
-    return {
-        "context": context,
-        "sources": results
-    }
+        context = build_context(results)
+
+        return {
+            "context": context,
+            "sources": [dict(r) for r in results]
+        }
+
+    except Exception as e:
+        print("Context error:", e)
+        return {"context": "", "sources": []}

@@ -1,5 +1,3 @@
-from sqlalchemy import Column, Integer, String
-from .database import Base
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy.sql import func
 from pgvector.sqlalchemy import Vector
