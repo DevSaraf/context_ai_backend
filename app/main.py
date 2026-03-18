@@ -31,6 +31,43 @@ def root():
     return {"message": "Context AI backend running"}
 
 
+# TEMPORARY: Test endpoint without auth (for development only)
+@app.post("/test/upload")
+def test_upload_knowledge(data: dict, db: Session = Depends(get_db)):
+    """Upload knowledge without auth - FOR TESTING ONLY"""
+
+    email = data.get("email")
+    content = data.get("content")
+
+    if not email:
+        return {"error": "Email required"}
+    if not content:
+        return {"error": "Content required"}
+
+    # Find user by email
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        return {"error": f"User with email {email} not found"}
+
+    company_id = user.company_id
+    chunks = chunk_text(content)
+
+    for chunk in chunks:
+        embedding = create_embedding(chunk)
+        item = KnowledgeChunk(
+            company_id=company_id,
+            source_type=data.get("source_type", "document"),
+            source_id=data.get("source_id", 1),
+            text=chunk,
+            embedding=embedding
+        )
+        db.add(item)
+
+    db.commit()
+
+    return {"message": "Knowledge uploaded", "chunks": len(chunks), "company_id": company_id}
+
+
 @app.post("/login")
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
 
