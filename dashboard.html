@@ -625,12 +625,16 @@
                         <div class="stat-label">Knowledge Chunks</div>
                     </div>
                     <div class="stat">
-                        <div class="stat-value" id="stat-sources">-</div>
-                        <div class="stat-label">Sources</div>
+                        <div class="stat-value" id="stat-searches">-</div>
+                        <div class="stat-label">Total Searches</div>
                     </div>
                     <div class="stat">
-                        <div class="stat-value" id="stat-company">-</div>
-                        <div class="stat-label">Company ID</div>
+                        <div class="stat-value" id="stat-helpful">-</div>
+                        <div class="stat-label">Helpful Rate</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="stat-usage">-</div>
+                        <div class="stat-label">Usage Rate</div>
                     </div>
                 </div>
 
@@ -808,8 +812,36 @@
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('dashboard').classList.remove('hidden');
             document.getElementById('user-email').textContent = userEmail;
-            document.getElementById('stat-company').textContent = companyId;
             loadKnowledge();
+            loadAnalytics();
+        }
+
+        // Load Analytics
+        async function loadAnalytics() {
+            try {
+                const res = await fetch(`${API_URL}/analytics`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (res.status === 401) {
+                    logout();
+                    return;
+                }
+
+                const data = await res.json();
+
+                document.getElementById('stat-chunks').textContent = data.total_chunks || 0;
+                document.getElementById('stat-searches').textContent = data.total_searches || 0;
+                document.getElementById('stat-helpful').textContent = 
+                    data.helpful_rate ? `${(data.helpful_rate * 100).toFixed(0)}%` : '-';
+                document.getElementById('stat-usage').textContent = 
+                    data.usage_rate ? `${(data.usage_rate * 100).toFixed(0)}%` : '-';
+
+            } catch (error) {
+                console.error('Failed to load analytics:', error);
+            }
         }
 
         // Tabs
@@ -958,10 +990,6 @@
                 const data = await res.json();
                 const results = data.results || [];
 
-                document.getElementById('stat-chunks').textContent = results.length;
-                const sources = new Set(results.map(r => r.source_type));
-                document.getElementById('stat-sources').textContent = sources.size;
-
                 if (results.length === 0) {
                     list.innerHTML = `
                         <div class="empty-state">
@@ -989,6 +1017,9 @@
                                     <div class="knowledge-label">${item.source_type || 'Document'}</div>
                                     <div class="knowledge-id">#${item.source_id || ''}</div>
                                 </div>
+                            </div>
+                            <div class="knowledge-confidence" style="font-size:11px;color:#888;">
+                                ${item.confidence ? `${(item.confidence * 100).toFixed(0)}% conf` : ''}
                             </div>
                         </div>
                         <p class="knowledge-text">${escapeHtml(item.text || '')}</p>
