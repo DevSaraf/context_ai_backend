@@ -1,18 +1,25 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Query
+from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func as sql_func
 from datetime import datetime, timedelta
 import secrets
+import os
 
 from app.database import Base, engine, get_db
-from app.models import KnowledgeChunk, SearchLog, Feedback
+from app.models import KnowledgeChunk, SearchLog, Feedback, ZendeskIntegration, ZendeskTicket
 from app import models, schemas, auth
 from app.dependencies import get_current_user
 from app.jwt_handler import create_access_token
 from app.embedding import create_embedding
 from app.chunking import chunk_text
 from app.context_builder import build_context
+from app.integrations.zendesk import (
+    ZendeskClient, get_oauth_url, exchange_code_for_token,
+    calculate_resolution_score, format_ticket_for_embedding
+)
 
 app = FastAPI()
 
@@ -23,6 +30,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve static HTML files
+@app.get("/dashboard.html")
+async def serve_dashboard():
+    return FileResponse(os.path.join(os.path.dirname(os.path.dirname(__file__)), "dashboard.html"))
+
+@app.get("/upload_test.html")
+async def serve_upload_test():
+    return FileResponse(os.path.join(os.path.dirname(os.path.dirname(__file__)), "upload_test.html"))
 
 Base.metadata.create_all(bind=engine)
 
@@ -211,7 +227,7 @@ def search(data: dict, db: Session = Depends(get_db), user_id: int = Depends(get
     try:
         query_embedding = create_embedding(query)
 
-        # Simple query that works with existing schema
+        # Query includes resolution_score for CSAT-based boosting
         results = db.execute(
             text("""
                 SELECT 
@@ -220,6 +236,7 @@ def search(data: dict, db: Session = Depends(get_db), user_id: int = Depends(get
                     source_type, 
                     source_id,
                     1 - (embedding <=> CAST(:embedding AS vector)) AS similarity,
+                    resolution_score,
                     created_at
                 FROM knowledge_chunks
                 WHERE company_id = :company_id
@@ -229,12 +246,16 @@ def search(data: dict, db: Session = Depends(get_db), user_id: int = Depends(get
             {"embedding": query_embedding, "company_id": company_id}
         ).mappings().all()
 
-        # Add confidence based on similarity
+        # Add confidence based on similarity + resolution score (for Zendesk tickets)
         enhanced_results = []
         for r in results:
             r_dict = dict(r)
             similarity = r_dict.get('similarity', 0)
-            r_dict['confidence'] = round(similarity * 0.8 + 0.2, 3)
+            resolution_score = r_dict.get('resolution_score') or 0.5  # Default 0.5 for non-Zendesk
+            
+            # Base confidence from similarity (70%) + resolution quality boost (30%)
+            confidence = (similarity * 0.7) + (resolution_score * 0.3)
+            r_dict['confidence'] = round(min(confidence + 0.1, 1.0), 3)  # Cap at 1.0
             enhanced_results.append(r_dict)
 
         return {"results": enhanced_results}
@@ -261,7 +282,7 @@ def get_context(data: dict, db: Session = Depends(get_db), user_id: int = Depend
     try:
         query_embedding = create_embedding(prompt)
 
-        # Simple query that works with existing schema
+        # Query includes resolution_score for CSAT-based boosting
         results = db.execute(
             text("""
                 SELECT 
@@ -270,6 +291,7 @@ def get_context(data: dict, db: Session = Depends(get_db), user_id: int = Depend
                     source_type, 
                     source_id,
                     1 - (embedding <=> CAST(:embedding AS vector)) AS similarity,
+                    resolution_score,
                     created_at
                 FROM knowledge_chunks
                 WHERE company_id = :company_id
@@ -279,13 +301,16 @@ def get_context(data: dict, db: Session = Depends(get_db), user_id: int = Depend
             {"embedding": query_embedding, "company_id": company_id}
         ).mappings().all()
 
-        # Add confidence based on similarity
+        # Add confidence based on similarity + resolution score (for Zendesk tickets)
         enhanced_results = []
         for r in results:
             r_dict = dict(r)
             similarity = r_dict.get('similarity', 0)
-            # Simple confidence = similarity (will improve when feedback columns exist)
-            r_dict['confidence'] = round(similarity * 0.8 + 0.2, 3)  # Scale to 0.2-1.0
+            resolution_score = r_dict.get('resolution_score') or 0.5
+            
+            # Base confidence from similarity (70%) + resolution quality boost (30%)
+            confidence = (similarity * 0.7) + (resolution_score * 0.3)
+            r_dict['confidence'] = round(min(confidence + 0.1, 1.0), 3)
             enhanced_results.append(r_dict)
 
         # Sort by confidence and take top 5
@@ -424,16 +449,14 @@ def get_analytics(db: Session = Depends(get_db), user_id: int = Depends(get_curr
     
     usage_rate = used_count / max(1, total_searches)
 
-    # Top sources by helpful feedback
+    # Top sources by chunk count
     top_sources = db.execute(
         text("""
-            SELECT source_type, COUNT(*) as count,
-                   SUM(helpful_count) as helpful,
-                   SUM(not_helpful_count) as not_helpful
+            SELECT source_type, COUNT(*) as count
             FROM knowledge_chunks
             WHERE company_id = :company_id
             GROUP BY source_type
-            ORDER BY helpful DESC
+            ORDER BY count DESC
             LIMIT 5
         """),
         {"company_id": company_id}
@@ -464,4 +487,269 @@ def get_analytics(db: Session = Depends(get_db), user_id: int = Depends(get_curr
         "total_chunks": total_chunks,
         "top_sources": [dict(s) for s in top_sources],
         "searches_by_day": [{"date": str(s["date"]), "count": s["count"]} for s in searches_by_day]
+    }
+
+
+# ============== ZENDESK INTEGRATION ENDPOINTS ==============
+
+@app.post("/integrations/zendesk/connect")
+def zendesk_connect(request: schemas.ZendeskConnectRequest, db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+    """Start Zendesk OAuth flow - returns URL to redirect user to"""
+    
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return {"error": "User not found"}
+    
+    # Generate state token (includes company_id for callback)
+    state = f"{user.company_id}:{secrets.token_urlsafe(16)}"
+    
+    oauth_url = get_oauth_url(request.subdomain, state)
+    
+    # Store subdomain temporarily (will be confirmed on callback)
+    existing = db.query(ZendeskIntegration).filter(ZendeskIntegration.company_id == user.company_id).first()
+    if existing:
+        existing.subdomain = request.subdomain
+    else:
+        integration = ZendeskIntegration(
+            company_id=user.company_id,
+            subdomain=request.subdomain,
+            access_token=""  # Will be set on callback
+        )
+        db.add(integration)
+    db.commit()
+    
+    return {"oauth_url": oauth_url, "state": state}
+
+
+@app.get("/integrations/zendesk/callback")
+async def zendesk_callback(code: str = Query(...), state: str = Query(...), db: Session = Depends(get_db)):
+    """Handle Zendesk OAuth callback"""
+    
+    # Parse state to get company_id
+    try:
+        company_id = state.split(":")[0]
+    except:
+        return {"error": "Invalid state parameter"}
+    
+    # Get integration record
+    integration = db.query(ZendeskIntegration).filter(ZendeskIntegration.company_id == company_id).first()
+    if not integration:
+        return {"error": "Integration not found"}
+    
+    try:
+        # Exchange code for token
+        token_data = await exchange_code_for_token(integration.subdomain, code)
+        
+        integration.access_token = token_data.get("access_token")
+        integration.refresh_token = token_data.get("refresh_token")
+        
+        # Calculate expiry if provided
+        expires_in = token_data.get("expires_in")
+        if expires_in:
+            integration.token_expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+        
+        db.commit()
+        
+        # Redirect to dashboard with success message
+        return RedirectResponse(url="http://localhost:8000/dashboard.html?zendesk=connected")
+        
+    except Exception as e:
+        print(f"Zendesk OAuth error: {e}")
+        return RedirectResponse(url="http://localhost:8000/dashboard.html?zendesk=error")
+
+
+@app.get("/integrations/zendesk/status")
+def zendesk_status(db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+    """Check Zendesk connection status"""
+    
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return {"connected": False}
+    
+    integration = db.query(ZendeskIntegration).filter(ZendeskIntegration.company_id == user.company_id).first()
+    
+    if not integration or not integration.access_token:
+        return {"connected": False}
+    
+    return {
+        "connected": True,
+        "subdomain": integration.subdomain,
+        "last_sync_at": integration.last_sync_at,
+        "tickets_imported": integration.tickets_imported or 0
+    }
+
+
+@app.post("/integrations/zendesk/sync")
+async def zendesk_sync(db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+    """Sync tickets from Zendesk"""
+    
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return {"success": False, "message": "User not found"}
+    
+    integration = db.query(ZendeskIntegration).filter(ZendeskIntegration.company_id == user.company_id).first()
+    
+    if not integration or not integration.access_token:
+        return {"success": False, "message": "Zendesk not connected"}
+    
+    try:
+        client = ZendeskClient(integration.subdomain, integration.access_token)
+        
+        # Verify connection
+        if not await client.verify_connection():
+            return {"success": False, "message": "Zendesk connection invalid. Please reconnect."}
+        
+        # Fetch CSAT ratings first (to map to tickets)
+        csat_map = {}
+        try:
+            ratings_data = await client.get_satisfaction_ratings()
+            for rating in ratings_data.get("satisfaction_ratings", []):
+                ticket_id = rating.get("ticket_id")
+                score = rating.get("score")
+                if ticket_id and score:
+                    # Zendesk scores: good=5, bad=1 (simplify to numeric)
+                    csat_map[ticket_id] = 5 if score == "good" else 1
+        except Exception as e:
+            print(f"Could not fetch CSAT ratings: {e}")
+        
+        tickets_imported = 0
+        chunks_created = 0
+        
+        # Fetch tickets (up to 500)
+        for page in range(1, 6):  # 5 pages x 100 = 500 tickets max
+            try:
+                tickets_data = await client.get_tickets(page=page)
+                tickets = tickets_data.get("tickets", [])
+                
+                if not tickets:
+                    break
+                
+                for ticket in tickets:
+                    ticket_id = ticket.get("id")
+                    
+                    # Skip if already imported
+                    existing = db.query(ZendeskTicket).filter(
+                        ZendeskTicket.company_id == user.company_id,
+                        ZendeskTicket.zendesk_ticket_id == ticket_id
+                    ).first()
+                    
+                    if existing:
+                        continue
+                    
+                    # Only import solved/closed tickets (they have resolutions)
+                    if ticket.get("status") not in ["solved", "closed"]:
+                        continue
+                    
+                    # Fetch comments for this ticket
+                    try:
+                        comments_data = await client.get_ticket_comments(ticket_id)
+                        comments = comments_data.get("comments", [])
+                    except:
+                        comments = []
+                    
+                    # Format ticket text for embedding
+                    ticket_text = format_ticket_for_embedding(ticket, comments)
+                    
+                    if len(ticket_text) < 50:  # Skip very short tickets
+                        continue
+                    
+                    # Get CSAT score
+                    csat_score = csat_map.get(ticket_id)
+                    resolution_score = calculate_resolution_score(csat_score)
+                    
+                    # Create embedding
+                    embedding = create_embedding(ticket_text)
+                    
+                    # Create knowledge chunk
+                    chunk = KnowledgeChunk(
+                        company_id=user.company_id,
+                        source_type="zendesk_ticket",
+                        source_id=ticket_id,
+                        text=ticket_text,
+                        embedding=embedding,
+                        resolution_score=resolution_score
+                    )
+                    db.add(chunk)
+                    db.flush()  # Get chunk ID
+                    
+                    # Track imported ticket
+                    zd_ticket = ZendeskTicket(
+                        company_id=user.company_id,
+                        zendesk_ticket_id=ticket_id,
+                        subject=ticket.get("subject", "")[:255],
+                        status=ticket.get("status"),
+                        priority=ticket.get("priority"),
+                        csat_score=csat_score,
+                        resolution_score=resolution_score,
+                        chunk_id=chunk.id,
+                        ticket_created_at=ticket.get("created_at"),
+                        ticket_updated_at=ticket.get("updated_at")
+                    )
+                    db.add(zd_ticket)
+                    
+                    tickets_imported += 1
+                    chunks_created += 1
+                
+            except Exception as e:
+                print(f"Error fetching page {page}: {e}")
+                break
+        
+        # Update integration stats
+        integration.last_sync_at = datetime.utcnow()
+        integration.tickets_imported = (integration.tickets_imported or 0) + tickets_imported
+        db.commit()
+        
+        return {
+            "success": True,
+            "tickets_imported": tickets_imported,
+            "chunks_created": chunks_created,
+            "message": f"Successfully imported {tickets_imported} tickets"
+        }
+        
+    except Exception as e:
+        print(f"Zendesk sync error: {e}")
+        return {"success": False, "message": str(e)}
+
+
+@app.delete("/integrations/zendesk/disconnect")
+def zendesk_disconnect(db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+    """Disconnect Zendesk integration"""
+    
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return {"success": False, "message": "User not found"}
+    
+    integration = db.query(ZendeskIntegration).filter(ZendeskIntegration.company_id == user.company_id).first()
+    
+    if integration:
+        db.delete(integration)
+        db.commit()
+    
+    return {"success": True, "message": "Zendesk disconnected"}
+
+
+@app.get("/integrations/zendesk/tickets")
+def get_zendesk_tickets(db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+    """Get list of imported Zendesk tickets"""
+    
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return {"tickets": []}
+    
+    tickets = db.query(ZendeskTicket).filter(
+        ZendeskTicket.company_id == user.company_id
+    ).order_by(ZendeskTicket.imported_at.desc()).limit(100).all()
+    
+    return {
+        "tickets": [
+            {
+                "zendesk_ticket_id": t.zendesk_ticket_id,
+                "subject": t.subject,
+                "status": t.status,
+                "csat_score": t.csat_score,
+                "resolution_score": t.resolution_score,
+                "imported_at": t.imported_at
+            }
+            for t in tickets
+        ]
     }

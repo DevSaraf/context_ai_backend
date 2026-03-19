@@ -724,6 +724,64 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Integrations Section -->
+                <div class="card" style="margin-top: 24px;">
+                    <div class="card-header">
+                        <h2 class="card-title">Integrations</h2>
+                    </div>
+                    <div class="card-body">
+                        <div id="zendesk-section">
+                            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                                <div style="width: 48px; height: 48px; background: #03363D; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#78A300">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                    </svg>
+                                </div>
+                                <div style="flex: 1;">
+                                    <h3 style="margin-bottom: 4px;">Zendesk</h3>
+                                    <p style="color: var(--text-secondary); font-size: 13px;" id="zendesk-status-text">Import support tickets to train your knowledge base</p>
+                                </div>
+                                <div id="zendesk-actions">
+                                    <button class="btn btn-primary" onclick="showZendeskConnect()" id="zendesk-connect-btn">Connect</button>
+                                </div>
+                            </div>
+
+                            <!-- Zendesk Connect Modal -->
+                            <div id="zendesk-modal" class="hidden" style="background: var(--bg-tertiary); border-radius: 8px; padding: 20px; margin-top: 16px;">
+                                <div class="form-group">
+                                    <label>Zendesk Subdomain</label>
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <input type="text" id="zendesk-subdomain" placeholder="yourcompany" style="flex: 1;">
+                                        <span style="color: var(--text-secondary);">.zendesk.com</span>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 12px;">
+                                    <button class="btn btn-primary" onclick="connectZendesk()">Connect Zendesk</button>
+                                    <button class="btn" style="background: var(--bg-secondary); color: var(--text-primary);" onclick="hideZendeskConnect()">Cancel</button>
+                                </div>
+                            </div>
+
+                            <!-- Zendesk Connected State -->
+                            <div id="zendesk-connected" class="hidden" style="background: var(--bg-tertiary); border-radius: 8px; padding: 20px; margin-top: 16px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                    <div>
+                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                            <span style="width: 8px; height: 8px; background: var(--success); border-radius: 50%;"></span>
+                                            <span style="color: var(--success); font-size: 13px;">Connected</span>
+                                        </div>
+                                        <p style="color: var(--text-secondary); font-size: 13px;" id="zendesk-info">-</p>
+                                    </div>
+                                    <div style="display: flex; gap: 12px;">
+                                        <button class="btn btn-primary" onclick="syncZendesk()" id="zendesk-sync-btn">Sync Tickets</button>
+                                        <button class="btn" style="background: var(--error); color: #fff;" onclick="disconnectZendesk()">Disconnect</button>
+                                    </div>
+                                </div>
+                                <div id="zendesk-sync-status"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -1058,6 +1116,147 @@
             div.textContent = text;
             return div.innerHTML;
         }
+
+        // ============== ZENDESK INTEGRATION ==============
+
+        function showZendeskConnect() {
+            document.getElementById('zendesk-modal').classList.remove('hidden');
+        }
+
+        function hideZendeskConnect() {
+            document.getElementById('zendesk-modal').classList.add('hidden');
+        }
+
+        async function checkZendeskStatus() {
+            try {
+                const res = await fetch(`${API_URL}/integrations/zendesk/status`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await res.json();
+
+                if (data.connected) {
+                    document.getElementById('zendesk-connect-btn').classList.add('hidden');
+                    document.getElementById('zendesk-connected').classList.remove('hidden');
+                    document.getElementById('zendesk-modal').classList.add('hidden');
+                    document.getElementById('zendesk-status-text').textContent = 'Connected to Zendesk';
+                    document.getElementById('zendesk-info').textContent = 
+                        `${data.subdomain}.zendesk.com • ${data.tickets_imported || 0} tickets imported`;
+                } else {
+                    document.getElementById('zendesk-connect-btn').classList.remove('hidden');
+                    document.getElementById('zendesk-connected').classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Failed to check Zendesk status:', error);
+            }
+        }
+
+        async function connectZendesk() {
+            const subdomain = document.getElementById('zendesk-subdomain').value.trim();
+            if (!subdomain) {
+                alert('Please enter your Zendesk subdomain');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/integrations/zendesk/connect`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ subdomain })
+                });
+                const data = await res.json();
+
+                if (data.oauth_url) {
+                    // Redirect to Zendesk OAuth
+                    window.location.href = data.oauth_url;
+                } else {
+                    alert(data.error || 'Failed to start OAuth flow');
+                }
+            } catch (error) {
+                console.error('Failed to connect Zendesk:', error);
+                alert('Connection error');
+            }
+        }
+
+        async function syncZendesk() {
+            const btn = document.getElementById('zendesk-sync-btn');
+            const status = document.getElementById('zendesk-sync-status');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Syncing...';
+            status.innerHTML = '<p style="color: var(--text-secondary); font-size: 13px;">Importing tickets from Zendesk...</p>';
+
+            try {
+                const res = await fetch(`${API_URL}/integrations/zendesk/sync`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    status.innerHTML = `
+                        <div class="alert alert-success" style="margin-top: 12px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            ${data.message}
+                        </div>
+                    `;
+                    // Refresh data
+                    checkZendeskStatus();
+                    loadKnowledge();
+                    loadAnalytics();
+                } else {
+                    status.innerHTML = `
+                        <div class="alert alert-error" style="margin-top: 12px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            ${data.message}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to sync Zendesk:', error);
+                status.innerHTML = `
+                    <div class="alert alert-error" style="margin-top: 12px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        Connection error
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Sync Tickets';
+            }
+        }
+
+        async function disconnectZendesk() {
+            if (!confirm('Are you sure you want to disconnect Zendesk?')) return;
+
+            try {
+                await fetch(`${API_URL}/integrations/zendesk/disconnect`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                checkZendeskStatus();
+            } catch (error) {
+                console.error('Failed to disconnect Zendesk:', error);
+            }
+        }
+
+        // Check for OAuth callback parameters
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('zendesk') === 'connected') {
+                // Clean URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
+
+        // Original DOMContentLoaded is above, modify showDashboard to include Zendesk check
+        const originalShowDashboard = showDashboard;
+        showDashboard = function() {
+            originalShowDashboard();
+            checkZendeskStatus();
+        };
     </script>
 </body>
 </html>

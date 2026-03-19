@@ -28,6 +28,9 @@ class KnowledgeChunk(Base):
     embedding = Column(Vector(384))
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # For Zendesk tickets: store CSAT-based quality score (0.0-1.0)
+    resolution_score = Column(Float, nullable=True)
 
 
 class SearchLog(Base):
@@ -65,3 +68,48 @@ class Feedback(Base):
     similarity_score = Column(Float)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ZendeskIntegration(Base):
+    """Store Zendesk OAuth credentials per company"""
+    __tablename__ = "zendesk_integrations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(String, unique=True, index=True)
+    
+    subdomain = Column(String)  # e.g., "mycompany" for mycompany.zendesk.com
+    access_token = Column(String)
+    refresh_token = Column(String, nullable=True)
+    token_expires_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Sync tracking
+    last_sync_at = Column(DateTime(timezone=True), nullable=True)
+    tickets_imported = Column(Integer, default=0)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class ZendeskTicket(Base):
+    """Track imported Zendesk tickets"""
+    __tablename__ = "zendesk_tickets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(String, index=True)
+    
+    zendesk_ticket_id = Column(Integer, index=True)  # Original Zendesk ID
+    
+    subject = Column(String)
+    status = Column(String)  # open, pending, solved, closed
+    priority = Column(String, nullable=True)
+    
+    # CSAT data
+    csat_score = Column(Integer, nullable=True)  # 1-5 rating
+    resolution_score = Column(Float, nullable=True)  # Normalized 0.0-1.0
+    
+    # Link to knowledge chunk created from this ticket
+    chunk_id = Column(Integer, ForeignKey("knowledge_chunks.id"), nullable=True)
+    
+    ticket_created_at = Column(DateTime(timezone=True))
+    ticket_updated_at = Column(DateTime(timezone=True))
+    imported_at = Column(DateTime(timezone=True), server_default=func.now())

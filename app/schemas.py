@@ -35,3 +35,37 @@ class AnalyticsResponse(BaseModel):
     top_sources: List[dict]
     recent_searches: int
     searches_by_day: List[dict]
+
+
+# ============== ZENDESK SCHEMAS ==============
+
+class ZendeskConnectRequest(BaseModel):
+    subdomain: str  # e.g., "mycompany" for mycompany.zendesk.com
+
+
+class ZendeskConnectResponse(BaseModel):
+    oauth_url: str
+    state: str
+
+
+class ZendeskStatusResponse(BaseModel):
+    connected: bool
+    subdomain: Optional[str] = None
+    last_sync_at: Optional[datetime] = None
+    tickets_imported: int = 0
+
+
+class ZendeskSyncResponse(BaseModel):
+    success: bool
+    tickets_imported: int
+    chunks_created: int
+    message: str
+
+
+class ZendeskTicketInfo(BaseModel):
+    zendesk_ticket_id: int
+    subject: str
+    status: str
+    csat_score: Optional[int] = None
+    resolution_score: Optional[float] = None
+    imported_at: datetime
