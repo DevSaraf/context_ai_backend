@@ -22,6 +22,7 @@ from app.integrations.zendesk import (
     calculate_resolution_score, format_ticket_for_embedding
 )
 from app.rag_engine import generate_answer, generate_ticket_response
+from app.hybrid_search import hybrid_search
 
 app = FastAPI()
 
@@ -228,38 +229,7 @@ def search(data: dict, db: Session = Depends(get_db), user_id: int = Depends(get
 
     try:
         query_embedding = create_embedding(query)
-
-        # Query includes resolution_score for CSAT-based boosting
-        results = db.execute(
-            text("""
-                SELECT 
-                    id,
-                    text, 
-                    source_type, 
-                    source_id,
-                    1 - (embedding <=> CAST(:embedding AS vector)) AS similarity,
-                    resolution_score,
-                    created_at
-                FROM knowledge_chunks
-                WHERE company_id = :company_id
-                ORDER BY embedding <=> CAST(:embedding AS vector)
-                LIMIT 5
-            """),
-            {"embedding": query_embedding, "company_id": company_id}
-        ).mappings().all()
-
-        # Add confidence based on similarity + resolution score (for Zendesk tickets)
-        enhanced_results = []
-        for r in results:
-            r_dict = dict(r)
-            similarity = r_dict.get('similarity', 0)
-            resolution_score = r_dict.get('resolution_score') or 0.5  # Default 0.5 for non-Zendesk
-            
-            # Base confidence from similarity (70%) + resolution quality boost (30%)
-            confidence = (similarity * 0.7) + (resolution_score * 0.3)
-            r_dict['confidence'] = round(min(confidence + 0.1, 1.0), 3)  # Cap at 1.0
-            enhanced_results.append(r_dict)
-
+        enhanced_results = hybrid_search(db, company_id, query, query_embedding, limit=5)
         return {"results": enhanced_results}
 
     except Exception as e:
@@ -287,36 +257,7 @@ async def get_context(data: dict, db: Session = Depends(get_db), user_id: int = 
 
     try:
         query_embedding = create_embedding(prompt)
-
-        results = db.execute(
-            text('''
-                SELECT
-                    id,
-                    text,
-                    source_type,
-                    source_id,
-                    1 - (embedding <=> CAST(:embedding AS vector)) AS similarity,
-                    resolution_score,
-                    created_at
-                FROM knowledge_chunks
-                WHERE company_id = :company_id
-                ORDER BY embedding <=> CAST(:embedding AS vector)
-                LIMIT 5
-            '''),
-            {"embedding": query_embedding, "company_id": company_id}
-        ).mappings().all()
-
-        enhanced_results = []
-        for r in results:
-            r_dict = dict(r)
-            similarity = r_dict.get('similarity', 0)
-            resolution_score = r_dict.get('resolution_score') or 0.5
-            confidence = (similarity * 0.7) + (resolution_score * 0.3)
-            r_dict['confidence'] = round(min(confidence + 0.1, 1.0), 3)
-            enhanced_results.append(r_dict)
-
-        enhanced_results.sort(key=lambda x: x['confidence'], reverse=True)
-        enhanced_results = enhanced_results[:5]
+        enhanced_results = hybrid_search(db, company_id, prompt, query_embedding, limit=5)
 
         # Generate concise answer for the extension sidebar
         rag_response = await generate_answer(prompt, enhanced_results, mode="extension")
@@ -369,42 +310,14 @@ async def ask_question(data: dict, db: Session = Depends(get_db), user_id: int =
     company_id = user.company_id
 
     try:
-        # Step 1: Retrieve relevant chunks (reuse your existing search logic)
         query_embedding = create_embedding(query)
+        chunks = hybrid_search(db, company_id, query, query_embedding, limit=5)
 
-        results = db.execute(
-            text('''
-                SELECT
-                    id,
-                    text,
-                    source_type,
-                    source_id,
-                    1 - (embedding <=> CAST(:embedding AS vector)) AS similarity,
-                    resolution_score,
-                    created_at
-                FROM knowledge_chunks
-                WHERE company_id = :company_id
-                ORDER BY embedding <=> CAST(:embedding AS vector)
-                LIMIT 5
-            '''),
-            {"embedding": query_embedding, "company_id": company_id}
-        ).mappings().all()
-
-        # Enhance with confidence scores
-        chunks = []
-        for r in results:
-            r_dict = dict(r)
-            similarity = r_dict.get('similarity', 0)
-            resolution_score = r_dict.get('resolution_score') or 0.5
-            confidence = (similarity * 0.7) + (resolution_score * 0.3)
-            r_dict['confidence'] = round(min(confidence + 0.1, 1.0), 3)
-            chunks.append(r_dict)
-
-        # Step 2: Generate answer using RAG
+        # Generate answer using RAG
         mode = data.get("mode", "qa")  # "qa", "extension", or "ticket"
         rag_response = await generate_answer(query, chunks, mode=mode)
 
-        # Step 3: Log the search
+        # Log the search
         search_log = SearchLog(
             user_id=user_id,
             company_id=company_id,
@@ -450,38 +363,9 @@ async def match_ticket(data: dict, db: Session = Depends(get_db), user_id: int =
     company_id = user.company_id
 
     try:
-        # Combine subject + body for search
         search_text = f"{subject}. {body}".strip()
         query_embedding = create_embedding(search_text)
-
-        # Search specifically for past ticket resolutions
-        results = db.execute(
-            text('''
-                SELECT
-                    id,
-                    text,
-                    source_type,
-                    source_id,
-                    1 - (embedding <=> CAST(:embedding AS vector)) AS similarity,
-                    resolution_score,
-                    created_at
-                FROM knowledge_chunks
-                WHERE company_id = :company_id
-                ORDER BY embedding <=> CAST(:embedding AS vector)
-                LIMIT 5
-            '''),
-            {"embedding": query_embedding, "company_id": company_id}
-        ).mappings().all()
-
-        # Enhance results
-        similar_tickets = []
-        for r in results:
-            r_dict = dict(r)
-            similarity = r_dict.get('similarity', 0)
-            resolution_score = r_dict.get('resolution_score') or 0.5
-            confidence = (similarity * 0.7) + (resolution_score * 0.3)
-            r_dict['confidence'] = round(min(confidence + 0.1, 1.0), 3)
-            similar_tickets.append(r_dict)
+        similar_tickets = hybrid_search(db, company_id, search_text, query_embedding, limit=5)
 
         # Generate suggested response
         rag_response = await generate_ticket_response(subject, body, similar_tickets)
