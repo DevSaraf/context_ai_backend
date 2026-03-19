@@ -941,7 +941,6 @@
         }
 
         function handleFile(file) {
-            const validTypes = ['text/plain', 'text/markdown', 'application/json'];
             const validExts = ['.txt', '.md', '.json'];
             const ext = file.name.substring(file.name.lastIndexOf('.'));
 
@@ -974,23 +973,59 @@
             await doUpload(content, sourceType, 'upload-text-btn');
         }
 
-        // Upload File
+        // ------------------------------------------------
+        // Upload File — uses FormData so the backend
+        // receives a real multipart file upload via
+        // POST /knowledge/upload-file
+        // ------------------------------------------------
         async function uploadFile() {
             if (!selectedFile) return;
 
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const content = e.target.result;
+            const btn = document.getElementById('upload-file-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Uploading...';
+
+            try {
                 const sourceType = document.getElementById('file-source-type').value;
-                await doUpload(content, sourceType, 'upload-file-btn');
-                
-                // Reset file input
-                selectedFile = null;
-                document.getElementById('file-input').value = '';
-                document.getElementById('file-name').classList.remove('show');
-                document.getElementById('upload-file-btn').disabled = true;
-            };
-            reader.readAsText(selectedFile);
+
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                formData.append('source_type', sourceType);
+
+                // Note: do NOT set Content-Type manually — the browser sets it
+                // automatically with the correct multipart boundary.
+                const res = await fetch(`${API_URL}/knowledge/upload-file`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+
+                if (res.status === 401) {
+                    showAlert('upload-alert', 'error', 'Session expired. Please login again.');
+                    logout();
+                    return;
+                }
+
+                const data = await res.json();
+
+                if (data.error) {
+                    showAlert('upload-alert', 'error', data.error);
+                } else {
+                    showAlert('upload-alert', 'success', `Successfully uploaded ${data.chunks} knowledge chunks!`);
+                    // Reset file input
+                    selectedFile = null;
+                    document.getElementById('file-input').value = '';
+                    document.getElementById('file-name').classList.remove('show');
+                    loadKnowledge();
+                }
+            } catch (error) {
+                showAlert('upload-alert', 'error', 'Upload failed. Check your connection.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Upload File';
+            }
         }
 
         async function doUpload(content, sourceType, btnId) {
@@ -1169,7 +1204,6 @@
                 const data = await res.json();
 
                 if (data.oauth_url) {
-                    // Redirect to Zendesk OAuth
                     window.location.href = data.oauth_url;
                 } else {
                     alert(data.error || 'Failed to start OAuth flow');
@@ -1202,7 +1236,6 @@
                             ${data.message}
                         </div>
                     `;
-                    // Refresh data
                     checkZendeskStatus();
                     loadKnowledge();
                     loadAnalytics();
@@ -1246,12 +1279,10 @@
         document.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
             if (params.get('zendesk') === 'connected') {
-                // Clean URL
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         });
 
-        // Original DOMContentLoaded is above, modify showDashboard to include Zendesk check
         const originalShowDashboard = showDashboard;
         showDashboard = function() {
             originalShowDashboard();

@@ -7,7 +7,8 @@ from sqlalchemy import text, func as sql_func
 from datetime import datetime, timedelta
 import secrets
 import os
-
+from fastapi import UploadFile, File, HTTPException   # add UploadFile, File, HTTPException
+from app.file_parser import parse_uploaded_file, parse_raw_text
 from app.database import Base, engine, get_db
 from app.models import KnowledgeChunk, SearchLog, Feedback, ZendeskIntegration, ZendeskTicket
 from app import models, schemas, auth
@@ -752,4 +753,47 @@ def get_zendesk_tickets(db: Session = Depends(get_db), user_id: int = Depends(ge
             }
             for t in tickets
         ]
+    }
+
+
+@app.post("/knowledge/upload-file")
+async def upload_file(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user)
+):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+ 
+    parsed = await parse_uploaded_file(file)
+    if not parsed.is_valid:
+        raise HTTPException(status_code=400, detail=parsed.error)
+ 
+    chunks = chunk_text(parsed.text)
+    if not chunks:
+        raise HTTPException(status_code=400, detail="No content extracted from file.")
+ 
+    chunks_created = 0
+    for chunk in chunks:
+        embedding = create_embedding(chunk)
+        item = KnowledgeChunk(
+            company_id=user.company_id,
+            source_type=f"file:{parsed.file_type}",
+            source_id=0,
+            text=chunk,
+            embedding=embedding
+        )
+        db.add(item)
+        chunks_created += 1
+ 
+    db.commit()
+ 
+    return {
+        "success": True,
+        "filename": parsed.filename,
+        "file_type": parsed.file_type,
+        "pages": parsed.page_count,
+        "words_extracted": parsed.word_count,
+        "chunks_created": chunks_created
     }
