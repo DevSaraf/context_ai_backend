@@ -554,6 +554,250 @@
         .hidden {
             display: none !important;
         }
+
+        /* Ask Knowledge Section */
+        .ask-section {
+            margin-bottom: 24px;
+        }
+
+        .ask-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .ask-input-row {
+            display: flex;
+            gap: 12px;
+            padding: 20px 24px;
+            background: var(--bg-secondary);
+        }
+
+        .ask-input {
+            flex: 1;
+            padding: 14px 18px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .ask-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .ask-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .ask-btn {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ask-btn:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            transform: translateY(-1px);
+        }
+
+        .ask-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .ask-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Answer Area */
+        .ask-answer-area {
+            border-top: 1px solid var(--border-color);
+        }
+
+        .ask-answer-area.hidden {
+            display: none;
+        }
+
+        .ask-loading {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 24px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .ask-answer {
+            padding: 24px;
+        }
+
+        .ask-answer-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent);
+            background: rgba(59, 130, 246, 0.1);
+            padding: 4px 10px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .ask-answer-badge svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .ask-answer-text {
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--text-primary);
+            white-space: pre-wrap;
+            margin-bottom: 16px;
+        }
+
+        .ask-confidence {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .ask-confidence-bar {
+            width: 60px;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .ask-confidence-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+
+        .ask-confidence-fill.high { background: var(--success); }
+        .ask-confidence-fill.medium { background: var(--warning); }
+        .ask-confidence-fill.low { background: var(--error); }
+
+        /* Sources accordion */
+        .ask-sources-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ask-sources-toggle:hover {
+            border-color: var(--text-muted);
+            color: var(--text-primary);
+        }
+
+        .ask-sources-toggle svg {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.2s;
+        }
+
+        .ask-sources-toggle.open svg {
+            transform: rotate(180deg);
+        }
+
+        .ask-sources {
+            margin-top: 12px;
+            display: none;
+        }
+
+        .ask-sources.open {
+            display: block;
+        }
+
+        .ask-source-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .ask-source-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .ask-source-label {
+            color: var(--accent);
+        }
+
+        .ask-source-conf {
+            color: var(--text-muted);
+        }
+
+        .ask-no-answer {
+            padding: 24px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Ticket Resolution Section */
+        .ticket-section {
+            margin-top: 24px;
+        }
+
+        .ticket-input-group {
+            padding: 20px 24px;
+        }
+
+        .ticket-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .ticket-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
     </style>
 </head>
 <body>
@@ -635,6 +879,50 @@
                     <div class="stat">
                         <div class="stat-value" id="stat-usage">-</div>
                         <div class="stat-label">Usage Rate</div>
+                    </div>
+                </div>
+
+                <div class="ask-section">
+                    <div class="ask-card">
+                        <div class="ask-input-row">
+                            <input type="text" class="ask-input" id="ask-input"
+                                   placeholder="Ask your knowledge base anything..."
+                                   onkeydown="if(event.key==='Enter')askQuestion()">
+                            <button class="ask-btn" id="ask-btn" onclick="askQuestion()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                </svg>
+                                Ask AI
+                            </button>
+                        </div>
+                        <div class="ask-answer-area hidden" id="ask-answer-area">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ticket-section">
+                    <div class="ask-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Ticket Resolution</h2>
+                            <span style="font-size:12px;color:var(--text-muted);">AI-powered support response</span>
+                        </div>
+                        <div class="ticket-input-group">
+                            <div class="ticket-row">
+                                <div class="form-group">
+                                    <label>Ticket Subject</label>
+                                    <input type="text" id="ticket-subject" placeholder="e.g. API keeps timing out">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Customer Message</label>
+                                <textarea id="ticket-body" placeholder="Paste the customer's message here..." style="min-height:100px;"></textarea>
+                            </div>
+                            <button class="btn btn-primary btn-full" id="ticket-btn" onclick="resolveTicket()">
+                                Generate Response
+                            </button>
+                            <div id="ticket-result" style="margin-top:16px;"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -1288,6 +1576,209 @@
             originalShowDashboard();
             checkZendeskStatus();
         };
+
+        // ============== ASK KNOWLEDGE ==============
+
+        async function askQuestion() {
+            const input = document.getElementById('ask-input');
+            const btn = document.getElementById('ask-btn');
+            const area = document.getElementById('ask-answer-area');
+            const query = input.value.trim();
+
+            if (!query) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Thinking...';
+            area.classList.remove('hidden');
+            area.innerHTML = `
+                <div class="ask-loading">
+                    <span class="loading"></span>
+                    Searching knowledge and generating answer...
+                </div>
+            `;
+
+            try {
+                const res = await fetch(`${API_URL}/ask`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ query })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Failed to get answer');
+                }
+
+                const data = await res.json();
+
+                if (!data.has_answer || !data.answer) {
+                    area.innerHTML = `
+                        <div class="ask-no-answer">
+                            No relevant information found. Try rephrasing or upload more content.
+                        </div>
+                    `;
+                    return;
+                }
+
+                const confPercent = Math.round((data.confidence || 0) * 100);
+                const confLevel = confPercent >= 70 ? 'high' : confPercent >= 40 ? 'medium' : 'low';
+                const sources = data.sources || [];
+
+                let sourcesHtml = '';
+                sources.forEach((s, i) => {
+                    const sConf = Math.round((s.confidence || s.similarity || 0) * 100);
+                    sourcesHtml += `
+                        <div class="ask-source-item">
+                            <div class="ask-source-meta">
+                                <span class="ask-source-label">[Source ${i+1}] ${s.source_type || 'Document'} #${s.source_id || ''}</span>
+                                <span class="ask-source-conf">${sConf}% match</span>
+                            </div>
+                            ${escapeHtml(s.text || '').substring(0, 300)}${(s.text || '').length > 300 ? '...' : ''}
+                        </div>
+                    `;
+                });
+
+                area.innerHTML = `
+                    <div class="ask-answer">
+                        <div class="ask-answer-badge">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
+                                <line x1="9" y1="22" x2="15" y2="22"/>
+                            </svg>
+                            AI Answer
+                        </div>
+                        <div class="ask-answer-text">${escapeHtml(data.answer)}</div>
+                        <div class="ask-confidence">
+                            <span>Confidence:</span>
+                            <div class="ask-confidence-bar">
+                                <div class="ask-confidence-fill ${confLevel}" style="width:${confPercent}%"></div>
+                            </div>
+                            <span>${confPercent}%</span>
+                            <span style="margin-left:8px;">· ${data.chunks_used || 0} sources used</span>
+                        </div>
+                        <button class="ask-sources-toggle" onclick="toggleSources(this)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                            View ${sources.length} source${sources.length !== 1 ? 's' : ''}
+                        </button>
+                        <div class="ask-sources" id="ask-sources">
+                            ${sourcesHtml}
+                        </div>
+                    </div>
+                `;
+
+            } catch (error) {
+                area.innerHTML = `
+                    <div class="ask-no-answer" style="color:var(--error);">
+                        Error: ${escapeHtml(error.message)}
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    Ask AI
+                `;
+            }
+        }
+
+        function toggleSources(btn) {
+            const sources = document.getElementById('ask-sources');
+            btn.classList.toggle('open');
+            sources.classList.toggle('open');
+        }
+
+
+        // ============== TICKET RESOLUTION ==============
+
+        async function resolveTicket() {
+            const subject = document.getElementById('ticket-subject').value.trim();
+            const body = document.getElementById('ticket-body').value.trim();
+            const btn = document.getElementById('ticket-btn');
+            const result = document.getElementById('ticket-result');
+
+            if (!subject && !body) {
+                result.innerHTML = `<div class="alert alert-error">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    Please provide a ticket subject or customer message
+                </div>`;
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Generating response...';
+            result.innerHTML = '';
+
+            try {
+                const res = await fetch(`${API_URL}/tickets/match`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ subject, body })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Failed to generate response');
+                }
+
+                const data = await res.json();
+
+                if (!data.has_answer) {
+                    result.innerHTML = `<div class="alert alert-warning">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        No similar past tickets found. This may need manual investigation.
+                    </div>`;
+                    return;
+                }
+
+                const confPercent = Math.round((data.confidence || 0) * 100);
+
+                result.innerHTML = `
+                    <div style="background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:10px;padding:20px;margin-top:8px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                            <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--success);background:rgba(34,197,94,0.1);padding:4px 10px;border-radius:6px;">
+                                Suggested Response
+                            </span>
+                            <span style="font-size:12px;color:var(--text-muted);">${confPercent}% confidence</span>
+                        </div>
+                        <div style="font-size:14px;line-height:1.8;color:var(--text-primary);white-space:pre-wrap;margin-bottom:16px;padding:16px;background:var(--bg-secondary);border-radius:8px;border:1px solid var(--border-color);">${escapeHtml(data.suggested_response)}</div>
+                        <button style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;" onclick="copyTicketResponse()">
+                            Copy Response
+                        </button>
+                    </div>
+                `;
+
+                // Store for copy
+                window._lastTicketResponse = data.suggested_response;
+
+            } catch (error) {
+                result.innerHTML = `<div class="alert alert-error">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    Error: ${escapeHtml(error.message)}
+                </div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Generate Response';
+            }
+        }
+
+        function copyTicketResponse() {
+            if (window._lastTicketResponse) {
+                navigator.clipboard.writeText(window._lastTicketResponse);
+                event.target.textContent = 'Copied!';
+                setTimeout(() => { event.target.textContent = 'Copy Response'; }, 2000);
+            }
+        }
     </script>
 </body>
 </html>

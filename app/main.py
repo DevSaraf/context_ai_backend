@@ -21,6 +21,7 @@ from app.integrations.zendesk import (
     ZendeskClient, get_oauth_url, exchange_code_for_token,
     calculate_resolution_score, format_ticket_for_embedding
 )
+from app.rag_engine import generate_answer, generate_ticket_response
 
 app = FastAPI()
 
@@ -268,28 +269,31 @@ def search(data: dict, db: Session = Depends(get_db), user_id: int = Depends(get
         return {"results": []}
 
 @app.post("/context")
-def get_context(data: dict, db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+async def get_context(data: dict, db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+    '''
+    Extension context endpoint — returns both raw chunks AND a generated summary.
+    The extension sidebar shows the summary + individual chunks with feedback.
+    '''
 
     prompt = data.get("prompt")
     if not prompt:
-        return {"context": "", "sources": []}
+        return {"context": "", "sources": [], "answer": ""}
 
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
-        return {"context": "", "sources": []}
+        return {"context": "", "sources": [], "answer": ""}
 
     company_id = user.company_id
 
     try:
         query_embedding = create_embedding(prompt)
 
-        # Query includes resolution_score for CSAT-based boosting
         results = db.execute(
-            text("""
-                SELECT 
+            text('''
+                SELECT
                     id,
-                    text, 
-                    source_type, 
+                    text,
+                    source_type,
                     source_id,
                     1 - (embedding <=> CAST(:embedding AS vector)) AS similarity,
                     resolution_score,
@@ -298,25 +302,24 @@ def get_context(data: dict, db: Session = Depends(get_db), user_id: int = Depend
                 WHERE company_id = :company_id
                 ORDER BY embedding <=> CAST(:embedding AS vector)
                 LIMIT 5
-            """),
+            '''),
             {"embedding": query_embedding, "company_id": company_id}
         ).mappings().all()
 
-        # Add confidence based on similarity + resolution score (for Zendesk tickets)
         enhanced_results = []
         for r in results:
             r_dict = dict(r)
             similarity = r_dict.get('similarity', 0)
             resolution_score = r_dict.get('resolution_score') or 0.5
-            
-            # Base confidence from similarity (70%) + resolution quality boost (30%)
             confidence = (similarity * 0.7) + (resolution_score * 0.3)
             r_dict['confidence'] = round(min(confidence + 0.1, 1.0), 3)
             enhanced_results.append(r_dict)
 
-        # Sort by confidence and take top 5
         enhanced_results.sort(key=lambda x: x['confidence'], reverse=True)
         enhanced_results = enhanced_results[:5]
+
+        # Generate concise answer for the extension sidebar
+        rag_response = await generate_answer(prompt, enhanced_results, mode="extension")
 
         # Log the search
         search_log = SearchLog(
@@ -328,16 +331,184 @@ def get_context(data: dict, db: Session = Depends(get_db), user_id: int = Depend
         db.add(search_log)
         db.commit()
 
+        # Build context string (backward compatible)
         context = build_context(enhanced_results)
 
         return {
             "context": context,
-            "sources": enhanced_results
+            "sources": enhanced_results,
+            "answer": rag_response.answer,         # NEW: AI-generated summary
+            "confidence": rag_response.confidence,  # NEW: overall confidence
+            "has_answer": rag_response.has_answer,  # NEW: whether answer was found
         }
 
     except Exception as e:
         print("Context error:", e)
-        return {"context": "", "sources": []}
+        import traceback
+        traceback.print_exc()
+        return {"context": "", "sources": [], "answer": ""}
+
+
+# ============== RAG ENDPOINTS ==============
+
+@app.post("/ask")
+async def ask_question(data: dict, db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+    '''
+    RAG-powered Q&A: search knowledge → generate grounded answer with citations.
+    Used by: Web app (Pillar 1), Extension sidebar, Ticket suggestions.
+    '''
+
+    query = data.get("query") or data.get("prompt")
+    if not query:
+        raise HTTPException(status_code=400, detail="No query provided")
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    company_id = user.company_id
+
+    try:
+        # Step 1: Retrieve relevant chunks (reuse your existing search logic)
+        query_embedding = create_embedding(query)
+
+        results = db.execute(
+            text('''
+                SELECT
+                    id,
+                    text,
+                    source_type,
+                    source_id,
+                    1 - (embedding <=> CAST(:embedding AS vector)) AS similarity,
+                    resolution_score,
+                    created_at
+                FROM knowledge_chunks
+                WHERE company_id = :company_id
+                ORDER BY embedding <=> CAST(:embedding AS vector)
+                LIMIT 5
+            '''),
+            {"embedding": query_embedding, "company_id": company_id}
+        ).mappings().all()
+
+        # Enhance with confidence scores
+        chunks = []
+        for r in results:
+            r_dict = dict(r)
+            similarity = r_dict.get('similarity', 0)
+            resolution_score = r_dict.get('resolution_score') or 0.5
+            confidence = (similarity * 0.7) + (resolution_score * 0.3)
+            r_dict['confidence'] = round(min(confidence + 0.1, 1.0), 3)
+            chunks.append(r_dict)
+
+        # Step 2: Generate answer using RAG
+        mode = data.get("mode", "qa")  # "qa", "extension", or "ticket"
+        rag_response = await generate_answer(query, chunks, mode=mode)
+
+        # Step 3: Log the search
+        search_log = SearchLog(
+            user_id=user_id,
+            company_id=company_id,
+            query=query[:500],
+            results_count=len(chunks)
+        )
+        db.add(search_log)
+        db.commit()
+
+        return {
+            "answer": rag_response.answer,
+            "citations": rag_response.citations,
+            "confidence": rag_response.confidence,
+            "has_answer": rag_response.has_answer,
+            "chunks_used": rag_response.chunks_used,
+            "sources": chunks  # Raw chunks for the extension sidebar
+        }
+
+    except Exception as e:
+        print(f"Ask error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to generate answer")
+
+
+@app.post("/tickets/match")
+async def match_ticket(data: dict, db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+    '''
+    Match a new support ticket against past resolutions and generate a suggested reply.
+    Used by: Ticket resolution system (Pillar 2), Zendesk integration.
+    '''
+
+    subject = data.get("subject", "")
+    body = data.get("body", "")
+
+    if not subject and not body:
+        raise HTTPException(status_code=400, detail="Provide at least a subject or body")
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    company_id = user.company_id
+
+    try:
+        # Combine subject + body for search
+        search_text = f"{subject}. {body}".strip()
+        query_embedding = create_embedding(search_text)
+
+        # Search specifically for past ticket resolutions
+        results = db.execute(
+            text('''
+                SELECT
+                    id,
+                    text,
+                    source_type,
+                    source_id,
+                    1 - (embedding <=> CAST(:embedding AS vector)) AS similarity,
+                    resolution_score,
+                    created_at
+                FROM knowledge_chunks
+                WHERE company_id = :company_id
+                ORDER BY embedding <=> CAST(:embedding AS vector)
+                LIMIT 5
+            '''),
+            {"embedding": query_embedding, "company_id": company_id}
+        ).mappings().all()
+
+        # Enhance results
+        similar_tickets = []
+        for r in results:
+            r_dict = dict(r)
+            similarity = r_dict.get('similarity', 0)
+            resolution_score = r_dict.get('resolution_score') or 0.5
+            confidence = (similarity * 0.7) + (resolution_score * 0.3)
+            r_dict['confidence'] = round(min(confidence + 0.1, 1.0), 3)
+            similar_tickets.append(r_dict)
+
+        # Generate suggested response
+        rag_response = await generate_ticket_response(subject, body, similar_tickets)
+
+        # Log search
+        search_log = SearchLog(
+            user_id=user_id,
+            company_id=company_id,
+            query=f"[TICKET] {search_text[:500]}",
+            results_count=len(similar_tickets)
+        )
+        db.add(search_log)
+        db.commit()
+
+        return {
+            "suggested_response": rag_response.answer,
+            "confidence": rag_response.confidence,
+            "has_answer": rag_response.has_answer,
+            "similar_tickets": similar_tickets,
+            "citations": rag_response.citations,
+        }
+
+    except Exception as e:
+        print(f"Ticket match error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to match ticket")
 
 
 # ============== FEEDBACK ENDPOINTS ==============
