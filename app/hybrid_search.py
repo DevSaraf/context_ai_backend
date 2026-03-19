@@ -28,50 +28,45 @@ from app.embedding import create_embedding
 
 # ============== DATABASE MIGRATION ==============
 
-MIGRATION_SQL = """
--- Add tsvector column if it doesn't exist
-ALTER TABLE knowledge_chunks 
-ADD COLUMN IF NOT EXISTS search_vector tsvector;
+# Separate statements to avoid semicolon splitting issues in trigger functions
+MIGRATION_STATEMENTS = [
+    # Add tsvector column
+    """ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS search_vector tsvector""",
 
--- Populate search_vector from existing text
-UPDATE knowledge_chunks 
-SET search_vector = to_tsvector('english', COALESCE(text, ''))
-WHERE search_vector IS NULL;
+    # Populate from existing text
+    """UPDATE knowledge_chunks SET search_vector = to_tsvector('english', COALESCE(text, '')) WHERE search_vector IS NULL""",
 
--- Create GIN index for fast full-text search
-CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_search_vector 
-ON knowledge_chunks USING GIN (search_vector);
+    # Create GIN index
+    """CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_search_vector ON knowledge_chunks USING GIN (search_vector)""",
 
--- Create trigger to auto-update search_vector on insert/update
-CREATE OR REPLACE FUNCTION knowledge_chunks_search_trigger()
-RETURNS trigger AS $$
+    # Create trigger function (dollar-quoted, must be single statement)
+    """CREATE OR REPLACE FUNCTION knowledge_chunks_search_trigger() RETURNS trigger AS $func$
 BEGIN
     NEW.search_vector := to_tsvector('english', COALESCE(NEW.text, ''));
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$func$ LANGUAGE plpgsql""",
 
-DROP TRIGGER IF EXISTS trg_knowledge_chunks_search ON knowledge_chunks;
-CREATE TRIGGER trg_knowledge_chunks_search
-BEFORE INSERT OR UPDATE OF text ON knowledge_chunks
-FOR EACH ROW EXECUTE FUNCTION knowledge_chunks_search_trigger();
-"""
+    # Drop old trigger if exists
+    """DROP TRIGGER IF EXISTS trg_knowledge_chunks_search ON knowledge_chunks""",
+
+    # Create trigger
+    """CREATE TRIGGER trg_knowledge_chunks_search BEFORE INSERT OR UPDATE OF text ON knowledge_chunks FOR EACH ROW EXECUTE FUNCTION knowledge_chunks_search_trigger()""",
+]
 
 
 def setup_hybrid_search(db: Session):
     """
     Run the migration to add full-text search support.
     Call this once, or add to your startup.
-    
+
     Usage:
         from app.hybrid_search import setup_hybrid_search
         setup_hybrid_search(next(get_db()))
     """
     try:
-        for statement in MIGRATION_SQL.strip().split(';'):
-            statement = statement.strip()
-            if statement:
-                db.execute(text(statement))
+        for statement in MIGRATION_STATEMENTS:
+            db.execute(text(statement))
         db.commit()
         print("Hybrid search setup complete!")
         return True
