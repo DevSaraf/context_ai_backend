@@ -14,8 +14,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
       - name: Zip artifact for deployment
-        run: zip -r release.zip . -x '.git/*' 'venv/*' '__pycache__/*' 'antenv/*' '.env'
+        run: |
+          # Include installed packages in the zip so Azure doesn't need to reinstall
+          zip -r release.zip . -x '.git/*' 'venv/*' '__pycache__/*' 'antenv/*' '.env' '*.pyc'
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
