@@ -1,7 +1,13 @@
 from sentence_transformers import SentenceTransformer
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
+_model = None
+
+def _get_model():
+    global _model
+    if _model is None:
+        _model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _model
 
 def create_embedding(text: str):
-    embedding = model.encode(text)
+    embedding = _get_model().encode(text)
     return embedding.tolist()
