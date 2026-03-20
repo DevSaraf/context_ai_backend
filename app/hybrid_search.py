@@ -23,6 +23,7 @@ Usage:
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import List, Dict
+import math
 from app.embedding import create_embedding
 
 
@@ -173,13 +174,16 @@ def hybrid_search(
         enhanced = []
         for r in results:
             r_dict = dict(r)
-            similarity = r_dict.get("similarity", 0)
+            similarity = r_dict.get("similarity", 0) or 0
+            if math.isinf(similarity) or math.isnan(similarity):
+                similarity = 0.0
             resolution_score = r_dict.get("resolution_score") or 0.5
 
-            # Boost confidence for hybrid matches (found by both methods)
             hybrid_boost = 0.05 if r_dict.get("search_method") == "hybrid" else 0
             confidence = (similarity * 0.7) + (resolution_score * 0.3) + hybrid_boost
+            r_dict["similarity"] = round(float(similarity), 4)
             r_dict["confidence"] = round(min(confidence + 0.1, 1.0), 3)
+            r_dict["created_at"] = str(r_dict.get("created_at", ""))
             enhanced.append(r_dict)
 
         return enhanced
@@ -214,10 +218,15 @@ def _vector_only_search(
     enhanced = []
     for r in results:
         r_dict = dict(r)
-        similarity = r_dict.get("similarity", 0)
+        similarity = r_dict.get("similarity", 0) or 0
+        if math.isinf(similarity) or math.isnan(similarity):
+            similarity = 0.0
         resolution_score = r_dict.get("resolution_score") or 0.5
+
         confidence = (similarity * 0.7) + (resolution_score * 0.3)
+        r_dict["similarity"] = round(float(similarity), 4)
         r_dict["confidence"] = round(min(confidence + 0.1, 1.0), 3)
+        r_dict["created_at"] = str(r_dict.get("created_at", ""))
         r_dict["search_method"] = "vector"
         enhanced.append(r_dict)
 
