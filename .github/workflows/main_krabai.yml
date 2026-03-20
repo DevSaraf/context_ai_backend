@@ -19,15 +19,16 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Create virtual environment and install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python -m venv antenv
+          source antenv/bin/activate
+          pip install --upgrade pip
+          pip install gunicorn uvicorn fastapi sqlalchemy psycopg2-binary python-dotenv "python-jose[cryptography]" "passlib[bcrypt]" bcrypt pgvector httpx python-multipart pymupdf python-docx "pydantic[email]" email-validator
 
       - name: Zip artifact for deployment
         run: |
-          # Include installed packages in the zip so Azure doesn't need to reinstall
-          zip -r release.zip . -x '.git/*' 'venv/*' '__pycache__/*' 'antenv/*' '.env' '*.pyc'
+          zip -r release.zip app/ dashboard.html antenv/ -x 'antenv/bin/python*'
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
