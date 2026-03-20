@@ -19,16 +19,9 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Create virtual environment and install dependencies
-        run: |
-          python -m venv antenv
-          source antenv/bin/activate
-          pip install --upgrade pip
-          pip install gunicorn uvicorn fastapi sqlalchemy psycopg2-binary python-dotenv "python-jose[cryptography]" "passlib[bcrypt]" bcrypt pgvector httpx python-multipart pymupdf python-docx "pydantic[email]" email-validator
-
       - name: Zip artifact for deployment
         run: |
-          zip -r release.zip app/ dashboard.html antenv/ -x 'antenv/bin/python*'
+          zip -r release.zip app/ dashboard.html requirements.txt -x '__pycache__/*' '*.pyc' '.git/*' 'venv/*' 'antenv/*' '.env'
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
