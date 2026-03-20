@@ -1,7 +1,3 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
-
 name: Build and deploy Python app to Azure Web App - krabai
 
 on:
@@ -15,32 +11,17 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python version
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - name: Zip artifact for deployment
+        run: zip -r release.zip . -x '.git/*' 'venv/*' '__pycache__/*' 'antenv/*' '.env'
 
-      - name: Install dependencies
-        run: |
-          python -m venv antenv
-          source antenv/bin/activate
-          pip install -r requirements.txt
-
-      - name: Upload artifact for deployment jobs
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: |
-            .
-            !antenv/
-            !venv/
-            !.git/
-            !__pycache__/
-      
+          path: release.zip
 
   deploy:
     runs-on: ubuntu-latest
@@ -48,9 +29,8 @@ jobs:
     permissions:
       id-token: write
       contents: read
-
     steps:
-      - name: Download artifact from build job
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: python-app
@@ -62,10 +42,9 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_740DB584A597441888F0D54CE8E0AEB9 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_BE3B17030F9E4E21A16168AB23D384E6 }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
-        id: deploy-to-webapp
         with:
           app-name: 'krabai'
           slot-name: 'Production'
-          package: .
+          package: release.zip
