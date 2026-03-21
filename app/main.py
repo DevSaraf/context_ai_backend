@@ -33,7 +33,12 @@ app.add_middleware(
 # ============== STATIC FILES ==============
 
 @app.get("/")
-def root():
+async def root():
+    return FileResponse(os.path.join(os.path.dirname(os.path.dirname(__file__)), "dashboard.html"))
+
+
+@app.get("/health")
+def health():
     return {"message": "Context AI backend running"}
 
 
