@@ -690,6 +690,9 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 function logout() {
     authToken = null; userEmail = null; companyId = null;
     localStorage.removeItem('krab_auth');
+    document.getElementById('ask-answer-area').innerHTML = '';
+    document.getElementById('ask-answer-area').classList.add('hidden');
+    document.getElementById('ask-input').value = '';
     document.getElementById('auth-screen').classList.remove('hidden');
     document.getElementById('dashboard').classList.add('hidden');
 }
@@ -697,6 +700,9 @@ function logout() {
 function showDashboard() {
     document.getElementById('auth-screen').classList.add('hidden');
     document.getElementById('dashboard').classList.remove('hidden');
+    document.getElementById('ask-answer-area').innerHTML = '';
+    document.getElementById('ask-answer-area').classList.add('hidden');
+    document.getElementById('ask-input').value = '';
     document.getElementById('user-email').textContent = userEmail;
     const initials = userEmail ? userEmail.substring(0, 2).toUpperCase() : 'U';
     document.getElementById('user-avatar').textContent = initials;

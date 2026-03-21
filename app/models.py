@@ -20,7 +20,11 @@ class KnowledgeChunk(Base):
 
     company_id = Column(String, index=True)
 
-    source_type = Column(String)  
+    # User-level ownership: each user sees only their own uploads
+    # company_id kept for future team/shared workspace features
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=True)
+
+    source_type = Column(String)
     source_id = Column(Integer)
 
     text = Column(Text)
@@ -28,7 +32,7 @@ class KnowledgeChunk(Base):
     embedding = Column(Vector(768))
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     # For Zendesk tickets: store CSAT-based quality score (0.0-1.0)
     resolution_score = Column(Float, nullable=True)
 
@@ -38,13 +42,13 @@ class SearchLog(Base):
     __tablename__ = "search_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    
+
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     company_id = Column(String, index=True)
-    
+
     query = Column(Text)
     results_count = Column(Integer)
-    
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -53,20 +57,20 @@ class Feedback(Base):
     __tablename__ = "feedback"
 
     id = Column(Integer, primary_key=True, index=True)
-    
+
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     company_id = Column(String, index=True)
     chunk_id = Column(Integer, ForeignKey("knowledge_chunks.id"), index=True)
-    
+
     # Feedback type: 'helpful', 'not_helpful', 'used'
     feedback_type = Column(String, index=True)
-    
+
     # Optional: the query that led to this suggestion
     query = Column(Text)
-    
+
     # Similarity score at time of suggestion
     similarity_score = Column(Float)
-    
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -76,16 +80,15 @@ class ZendeskIntegration(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(String, unique=True, index=True)
-    
-    subdomain = Column(String)  # e.g., "mycompany" for mycompany.zendesk.com
+
+    subdomain = Column(String)
     access_token = Column(String)
     refresh_token = Column(String, nullable=True)
     token_expires_at = Column(DateTime(timezone=True), nullable=True)
-    
-    # Sync tracking
+
     last_sync_at = Column(DateTime(timezone=True), nullable=True)
     tickets_imported = Column(Integer, default=0)
-    
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -96,20 +99,18 @@ class ZendeskTicket(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(String, index=True)
-    
-    zendesk_ticket_id = Column(Integer, index=True)  # Original Zendesk ID
-    
+
+    zendesk_ticket_id = Column(Integer, index=True)
+
     subject = Column(String)
-    status = Column(String)  # open, pending, solved, closed
+    status = Column(String)
     priority = Column(String, nullable=True)
-    
-    # CSAT data
-    csat_score = Column(Integer, nullable=True)  # 1-5 rating
-    resolution_score = Column(Float, nullable=True)  # Normalized 0.0-1.0
-    
-    # Link to knowledge chunk created from this ticket
+
+    csat_score = Column(Integer, nullable=True)
+    resolution_score = Column(Float, nullable=True)
+
     chunk_id = Column(Integer, ForeignKey("knowledge_chunks.id"), nullable=True)
-    
+
     ticket_created_at = Column(DateTime(timezone=True))
     ticket_updated_at = Column(DateTime(timezone=True))
     imported_at = Column(DateTime(timezone=True), server_default=func.now())

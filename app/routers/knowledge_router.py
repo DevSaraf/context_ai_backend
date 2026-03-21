@@ -41,6 +41,7 @@ def upload_knowledge(
         embedding = create_embedding(chunk)
         item = KnowledgeChunk(
             company_id=user.company_id,
+            user_id=user_id,
             source_type=data.get("source_type", "document"),
             source_id=data.get("source_id", 0),
             text=chunk,
@@ -77,6 +78,7 @@ async def upload_file(
         embedding = create_embedding(chunk)
         item = KnowledgeChunk(
             company_id=user.company_id,
+            user_id=user_id,
             source_type=f"file:{parsed.file_type}",
             source_id=0,
             text=chunk,
@@ -102,22 +104,18 @@ def list_documents(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user)
 ):
-    """List knowledge sources for this company."""
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
+    """List knowledge sources for this user."""
     sources = db.execute(
         text("""
             SELECT source_type, COUNT(*) as chunk_count,
                    MIN(created_at) as first_uploaded,
                    MAX(created_at) as last_uploaded
             FROM knowledge_chunks
-            WHERE company_id = :company_id
+            WHERE user_id = :user_id
             GROUP BY source_type
             ORDER BY MAX(created_at) DESC
         """),
-        {"company_id": user.company_id}
+        {"user_id": user_id}
     ).mappings().all()
 
     total = sum(s["chunk_count"] for s in sources)
