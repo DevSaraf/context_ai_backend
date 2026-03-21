@@ -1,4 +1,4 @@
-"""Auth routes: login, register, user info."""
+"""Auth routes: login, register, user info, profile management."""
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -33,8 +33,78 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
 
 
 @router.get("/me")
-def get_user_data(user_id: int = Depends(get_current_user)):
-    return {"message": "Authenticated", "user_id": user_id}
+def get_user_data(db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "user_id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "company_id": user.company_id,
+        "api_key": user.api_key,
+        "created_at": str(user.created_at) if user.created_at else None,
+    }
+
+
+@router.put("/profile")
+def update_profile(
+    data: schemas.ProfileUpdate,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user)
+):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if data.email and data.email != user.email:
+        conflict = db.query(models.User).filter(models.User.email == data.email).first()
+        if conflict:
+            raise HTTPException(status_code=400, detail="Email already in use")
+        user.email = data.email
+
+    if data.name is not None:
+        user.name = data.name
+    if data.company_id is not None:
+        user.company_id = data.company_id
+
+    db.commit()
+    return {"success": True, "message": "Profile updated"}
+
+
+@router.post("/change-password")
+def change_password(
+    data: schemas.ChangePassword,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user)
+):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not auth.verify_password(data.current_password, user.password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+
+    user.password = auth.hash_password(data.new_password)
+    db.commit()
+    return {"success": True, "message": "Password updated"}
+
+
+@router.delete("/account")
+def delete_account(
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user)
+):
+    from sqlalchemy import text
+    db.execute(text("DELETE FROM feedback WHERE user_id = :uid"), {"uid": user_id})
+    db.execute(text("DELETE FROM search_logs WHERE user_id = :uid"), {"uid": user_id})
+    db.execute(text("DELETE FROM knowledge_chunks WHERE user_id = :uid"), {"uid": user_id})
+    db.execute(text("DELETE FROM users WHERE id = :uid"), {"uid": user_id})
+    db.commit()
+    return {"success": True, "message": "Account deleted"}
 
 
 @router.post("/register")
