@@ -3,1782 +3,979 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Context AI - Knowledge Dashboard</title>
+    <title>KRAB — Knowledge Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --bg-primary: #0a0a0a;
-            --bg-secondary: #111;
-            --bg-tertiary: #1a1a1a;
-            --border-color: #2a2a2a;
-            --text-primary: #fff;
-            --text-secondary: #888;
-            --text-muted: #555;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --success: #22c55e;
-            --error: #ef4444;
-            --warning: #eab308;
+            --bg: #262624;
+            --bg-elevated: #2e2e2c;
+            --bg-card: #1e1e1c;
+            --bg-input: #1a1a18;
+            --border: #3a3a38;
+            --border-subtle: #333331;
+            --accent: #c6613f;
+            --accent-hover: #d4734f;
+            --accent-muted: rgba(198, 97, 63, 0.12);
+            --accent-glow: rgba(198, 97, 63, 0.25);
+            --text: #e8e6e1;
+            --text-secondary: #9a9890;
+            --text-muted: #6a6960;
+            --text-dim: #4a4940;
+            --success: #5cb85c;
+            --error: #d9534f;
+            --warning: #f0ad4e;
+            --radius: 10px;
+            --radius-lg: 14px;
+            --radius-sm: 6px;
+            --font: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Layout */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 24px;
-        }
+        /* ========== SCROLLBAR ========== */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-        /* Header */
+        /* ========== ANIMATIONS ========== */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        .loading-spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+
+        /* ========== LAYOUT ========== */
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+        /* ========== HEADER ========== */
         .header {
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
-            padding: 16px 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-icon {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .logo-icon svg {
-            width: 20px;
-            height: 20px;
-            color: #fff;
-        }
-
-        .logo-text {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .user-email {
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-
-        .btn-logout {
-            padding: 8px 16px;
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-            border-radius: 6px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-logout:hover {
-            border-color: var(--error);
-            color: var(--error);
-        }
-
-        /* Main Content */
-        .main {
-            padding: 32px 0;
-        }
-
-        .page-title {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .page-subtitle {
-            color: var(--text-secondary);
-            margin-bottom: 32px;
-        }
-
-        /* Grid */
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-        }
-
-        @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Cards */
-        .card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .card-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .card-title {
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .card-body {
-            padding: 24px;
-        }
-
-        /* Forms */
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group:last-child {
-            margin-bottom: 0;
-        }
-
-        label {
-            display: block;
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        input, textarea, select {
-            width: 100%;
-            padding: 12px 14px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 14px;
-            font-family: inherit;
-            transition: all 0.2s;
-        }
-
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-
-        textarea {
-            min-height: 200px;
-            resize: vertical;
-        }
-
-        /* File Upload */
-        .file-upload {
-            border: 2px dashed var(--border-color);
-            border-radius: 8px;
-            padding: 32px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .file-upload:hover {
-            border-color: var(--accent);
-            background: rgba(59, 130, 246, 0.05);
-        }
-
-        .file-upload.dragover {
-            border-color: var(--accent);
-            background: rgba(59, 130, 246, 0.1);
-        }
-
-        .file-upload-icon {
-            width: 48px;
-            height: 48px;
-            margin: 0 auto 16px;
-            color: var(--text-muted);
-        }
-
-        .file-upload-text {
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }
-
-        .file-upload-hint {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        .file-input {
-            display: none;
-        }
-
-        .file-name {
-            margin-top: 12px;
-            padding: 10px 14px;
-            background: var(--bg-tertiary);
-            border-radius: 6px;
-            font-size: 13px;
-            color: var(--accent);
-            display: none;
-        }
-
-        .file-name.show {
-            display: block;
-        }
-
-        /* Buttons */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-            color: #fff;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-full {
-            width: 100%;
-        }
-
-        /* Tabs */
-        .tabs {
-            display: flex;
-            gap: 4px;
-            background: var(--bg-tertiary);
-            padding: 4px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .tab {
-            flex: 1;
-            padding: 10px 16px;
-            background: transparent;
-            border: none;
-            border-radius: 6px;
-            color: var(--text-secondary);
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .tab:hover {
-            color: var(--text-primary);
-        }
-
-        .tab.active {
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        /* Knowledge List */
-        .knowledge-list {
-            max-height: 500px;
-            overflow-y: auto;
-        }
-
-        .knowledge-item {
-            padding: 16px;
-            border-bottom: 1px solid var(--border-color);
-            transition: background 0.2s;
-        }
-
-        .knowledge-item:last-child {
-            border-bottom: none;
-        }
-
-        .knowledge-item:hover {
-            background: var(--bg-tertiary);
-        }
-
-        .knowledge-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .knowledge-source {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .knowledge-icon {
-            width: 24px;
-            height: 24px;
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .knowledge-icon svg {
-            width: 12px;
-            height: 12px;
-            color: #fff;
-        }
-
-        .knowledge-label {
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .knowledge-id {
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-
-        .knowledge-text {
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        /* Stats */
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .stat {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 16px 20px;
-        }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        /* Alerts */
-        .alert {
-            padding: 14px 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .alert svg {
-            flex-shrink: 0;
-            width: 18px;
-            height: 18px;
-        }
-
-        .alert-success {
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.2);
-            color: var(--success);
-        }
-
-        .alert-error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            color: var(--error);
-        }
-
-        .alert-warning {
-            background: rgba(234, 179, 8, 0.1);
-            border: 1px solid rgba(234, 179, 8, 0.2);
-            color: var(--warning);
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 48px 24px;
-            color: var(--text-muted);
-        }
-
-        .empty-state svg {
-            width: 48px;
-            height: 48px;
-            margin-bottom: 16px;
-            opacity: 0.3;
-        }
-
-        .empty-state p {
-            font-size: 14px;
-        }
-
-        /* Auth Screen */
-        .auth-screen {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .auth-card {
-            width: 100%;
-            max-width: 400px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 40px;
-        }
-
-        .auth-header {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-
-        .auth-logo {
-            width: 56px;
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(38,38,36,0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0;
+        }
+        .header-inner {
+            display: flex; justify-content: space-between; align-items: center;
             height: 56px;
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
         }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo img { height: 22px; }
+        .logo-text { font-size: 15px; font-weight: 600; color: var(--accent); letter-spacing: 2px; }
 
-        .auth-logo svg {
-            width: 28px;
-            height: 28px;
-            color: #fff;
+        .nav { display: flex; align-items: center; gap: 6px; }
+        .nav-item {
+            padding: 7px 14px; border-radius: var(--radius-sm);
+            font-size: 13px; color: var(--text-secondary);
+            cursor: pointer; transition: all 0.2s; border: none; background: none;
+            font-family: var(--font);
         }
+        .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+        .nav-item.active { color: var(--accent); background: var(--accent-muted); }
 
-        .auth-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 8px;
+        .header-right { display: flex; align-items: center; gap: 14px; }
+        .user-badge {
+            display: flex; align-items: center; gap: 8px;
+            padding: 5px 12px 5px 5px; border-radius: 20px;
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
         }
-
-        .auth-subtitle {
-            color: var(--text-secondary);
-            font-size: 14px;
+        .user-avatar {
+            width: 26px; height: 26px; border-radius: 50%;
+            background: var(--accent); color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 600;
         }
-
-        /* Loading */
-        .loading {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+        .user-email-text { font-size: 12px; color: var(--text-secondary); }
+        .btn-logout {
+            font-size: 12px; color: var(--text-muted); cursor: pointer;
+            background: none; border: none; font-family: var(--font);
+            transition: color 0.2s;
         }
+        .btn-logout:hover { color: var(--error); }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        /* ========== VIEWS ========== */
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* ========== HERO SEARCH ========== */
+        .hero {
+            padding: 52px 0 28px; text-align: center;
         }
+        .hero h1 { font-size: 28px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+        .hero p { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
 
-        /* Hidden */
-        .hidden {
-            display: none !important;
+        .search-box {
+            max-width: 620px; margin: 0 auto;
+            display: flex; align-items: center; gap: 10px;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 6px 6px 6px 18px;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
-
-        /* Ask Knowledge Section */
-        .ask-section {
-            margin-bottom: 24px;
-        }
-
-        .ask-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .ask-input-row {
-            display: flex;
-            gap: 12px;
-            padding: 20px 24px;
-            background: var(--bg-secondary);
-        }
-
-        .ask-input {
-            flex: 1;
-            padding: 14px 18px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 15px;
-            font-family: inherit;
-            transition: border-color 0.2s;
-        }
-
-        .ask-input:focus {
-            outline: none;
+        .search-box:focus-within {
             border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
         }
-
-        .ask-input::placeholder {
-            color: var(--text-muted);
+        .search-box svg { flex-shrink: 0; color: var(--text-muted); }
+        .search-input {
+            flex: 1; background: none; border: none; outline: none;
+            font-size: 15px; color: var(--text); font-family: var(--font);
+            padding: 10px 4px;
         }
-
-        .ask-btn {
-            padding: 14px 28px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .search-input::placeholder { color: var(--text-dim); }
+        .search-btn {
+            padding: 10px 22px; background: var(--accent); color: #fff;
+            border: none; border-radius: 9px; font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; font-family: var(--font);
+            white-space: nowrap; display: flex; align-items: center; gap: 6px;
         }
+        .search-btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        .search-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        .ask-btn:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            transform: translateY(-1px);
+        /* ========== STATS ========== */
+        .stats-row {
+            display: flex; gap: 10px; max-width: 620px; margin: 0 auto 32px;
         }
-
-        .ask-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
+        .stat-card {
+            flex: 1; background: var(--bg-card); border-radius: var(--radius);
+            padding: 14px 16px; border: 1px solid var(--border-subtle);
         }
+        .stat-value { font-size: 22px; font-weight: 600; color: var(--accent); }
+        .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 3px; }
 
-        .ask-btn svg {
-            width: 18px;
-            height: 18px;
+        /* ========== ANSWER AREA ========== */
+        .answer-area {
+            max-width: 620px; margin: 0 auto 28px;
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg); overflow: hidden;
         }
-
-        /* Answer Area */
-        .ask-answer-area {
-            border-top: 1px solid var(--border-color);
+        .answer-area.hidden { display: none; }
+        .answer-loading { display: flex; align-items: center; gap: 10px; padding: 20px; color: var(--text-secondary); font-size: 14px; }
+        .answer-content { padding: 20px; animation: fadeIn 0.3s ease; }
+        .answer-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+            color: var(--accent); background: var(--accent-muted);
+            padding: 4px 10px; border-radius: 5px; margin-bottom: 12px;
         }
+        .answer-text { font-size: 14px; line-height: 1.8; color: var(--text); white-space: pre-wrap; margin-bottom: 14px; }
+        .answer-confidence { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); margin-bottom: 14px; }
+        .conf-bar { width: 50px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+        .conf-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+        .conf-fill.high { background: var(--success); }
+        .conf-fill.medium { background: var(--warning); }
+        .conf-fill.low { background: var(--error); }
 
-        .ask-answer-area.hidden {
-            display: none;
+        .sources-toggle {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 11px; color: var(--text-muted); background: none;
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 6px 10px; cursor: pointer; font-family: var(--font); transition: all 0.2s;
         }
-
-        .ask-loading {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 24px;
-            color: var(--text-secondary);
-            font-size: 14px;
+        .sources-toggle:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+        .sources-toggle svg { width: 12px; height: 12px; transition: transform 0.2s; }
+        .sources-toggle.open svg { transform: rotate(180deg); }
+        .sources-list { margin-top: 10px; display: none; }
+        .sources-list.open { display: block; }
+        .source-item {
+            background: var(--bg-input); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius); padding: 10px 12px; margin-bottom: 6px;
+            font-size: 12px; line-height: 1.6; color: var(--text-secondary);
         }
+        .source-meta { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 10px; font-weight: 500; }
+        .source-label { color: var(--accent); }
+        .source-conf { color: var(--text-dim); }
+        .no-answer { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
 
-        .ask-answer {
-            padding: 24px;
+        /* ========== TWO COLUMN ========== */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        /* ========== CARD ========== */
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg); overflow: hidden;
         }
-
-        .ask-answer-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--accent);
-            background: rgba(59, 130, 246, 0.1);
-            padding: 4px 10px;
-            border-radius: 6px;
-            margin-bottom: 12px;
+        .card-head {
+            padding: 16px 20px; border-bottom: 1px solid var(--border-subtle);
+            display: flex; justify-content: space-between; align-items: center;
         }
+        .card-title { font-size: 14px; font-weight: 500; }
+        .card-body { padding: 20px; }
 
-        .ask-answer-badge svg {
-            width: 14px;
-            height: 14px;
+        /* ========== TABS ========== */
+        .tabs {
+            display: inline-flex; gap: 3px; background: var(--bg); padding: 3px; border-radius: var(--radius-sm);
         }
-
-        .ask-answer-text {
-            font-size: 15px;
-            line-height: 1.8;
-            color: var(--text-primary);
-            white-space: pre-wrap;
-            margin-bottom: 16px;
+        .tab-btn {
+            padding: 5px 14px; border-radius: 4px; border: none; background: none;
+            font-size: 11px; font-weight: 500; color: var(--text-muted);
+            cursor: pointer; font-family: var(--font); transition: all 0.2s;
         }
+        .tab-btn.active { background: var(--accent); color: #fff; }
+        .tab-btn:hover:not(.active) { color: var(--text-secondary); }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
 
-        .ask-confidence {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 16px;
-        }
-
-        .ask-confidence-bar {
-            width: 60px;
-            height: 4px;
-            background: #333;
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .ask-confidence-fill {
-            height: 100%;
-            border-radius: 2px;
-            transition: width 0.3s;
-        }
-
-        .ask-confidence-fill.high { background: var(--success); }
-        .ask-confidence-fill.medium { background: var(--warning); }
-        .ask-confidence-fill.low { background: var(--error); }
-
-        /* Sources accordion */
-        .ask-sources-toggle {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            background: none;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 8px 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .ask-sources-toggle:hover {
-            border-color: var(--text-muted);
-            color: var(--text-primary);
-        }
-
-        .ask-sources-toggle svg {
-            width: 14px;
-            height: 14px;
-            transition: transform 0.2s;
-        }
-
-        .ask-sources-toggle.open svg {
-            transform: rotate(180deg);
-        }
-
-        .ask-sources {
-            margin-top: 12px;
-            display: none;
-        }
-
-        .ask-sources.open {
-            display: block;
-        }
-
-        .ask-source-item {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 12px 14px;
-            margin-bottom: 8px;
-            font-size: 13px;
-            line-height: 1.6;
-            color: var(--text-secondary);
-        }
-
-        .ask-source-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        /* ========== FORMS ========== */
+        label.field-label {
+            display: block; font-size: 11px; font-weight: 500;
+            color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
             margin-bottom: 6px;
-            font-size: 11px;
-            font-weight: 500;
         }
+        input[type="text"], input[type="email"], input[type="password"], textarea, select {
+            width: 100%; padding: 10px 14px;
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: var(--radius); color: var(--text); font-size: 13px;
+            font-family: var(--font); transition: border-color 0.2s;
+            outline: none;
+        }
+        input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+        textarea { min-height: 100px; resize: vertical; }
+        select { -webkit-appearance: none; appearance: none; cursor: pointer; }
 
-        .ask-source-label {
-            color: var(--accent);
-        }
+        .form-group { margin-bottom: 14px; }
+        .form-group:last-child { margin-bottom: 0; }
 
-        .ask-source-conf {
-            color: var(--text-muted);
+        /* ========== BUTTONS ========== */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 10px 18px; border: none; border-radius: var(--radius);
+            font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+            font-family: var(--font);
         }
+        .btn-accent { background: var(--accent); color: #fff; }
+        .btn-accent:hover { background: var(--accent-hover); }
+        .btn-accent:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-full { width: 100%; }
+        .btn-outline { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+        .btn-outline:hover { border-color: var(--text-muted); color: var(--text); }
+        .btn-sm { padding: 6px 12px; font-size: 11px; }
+        .btn-danger { background: var(--error); color: #fff; }
 
-        .ask-no-answer {
-            padding: 24px;
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 14px;
+        /* ========== FILE UPLOAD ========== */
+        .drop-zone {
+            border: 1.5px dashed var(--border); border-radius: var(--radius);
+            padding: 32px 20px; text-align: center; cursor: pointer;
+            transition: all 0.2s;
         }
+        .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: var(--accent-muted); }
+        .drop-icon {
+            width: 36px; height: 36px; margin: 0 auto 12px;
+            background: var(--bg); border-radius: var(--radius);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .drop-text { color: var(--text-secondary); font-size: 13px; margin-bottom: 4px; }
+        .drop-hint { color: var(--text-dim); font-size: 11px; }
+        .file-input { display: none; }
+        .file-name-display {
+            margin-top: 10px; padding: 8px 12px; background: var(--bg);
+            border-radius: var(--radius-sm); font-size: 12px; color: var(--accent); display: none;
+        }
+        .file-name-display.show { display: block; }
 
-        /* Ticket Resolution Section */
-        .ticket-section {
-            margin-top: 24px;
+        /* ========== KNOWLEDGE LIST ========== */
+        .knowledge-list { max-height: 420px; overflow-y: auto; }
+        .k-item {
+            padding: 12px 20px; border-bottom: 1px solid var(--border-subtle);
+            display: flex; align-items: center; gap: 12px; transition: background 0.15s;
         }
+        .k-item:last-child { border-bottom: none; }
+        .k-item:hover { background: rgba(255,255,255,0.02); }
+        .k-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            background: var(--accent-muted); display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .k-icon svg { width: 14px; height: 14px; color: var(--accent); }
+        .k-info { flex: 1; min-width: 0; }
+        .k-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .k-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .k-conf { font-size: 11px; color: var(--text-dim); flex-shrink: 0; }
 
-        .ticket-input-group {
-            padding: 20px 24px;
-        }
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-dim); }
+        .empty-state svg { width: 36px; height: 36px; margin-bottom: 10px; opacity: 0.3; }
+        .empty-state p { font-size: 13px; }
 
-        .ticket-row {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
+        /* ========== TICKET SECTION ========== */
+        .ticket-section { margin-bottom: 24px; }
 
-        .ticket-row .form-group {
-            flex: 1;
-            margin-bottom: 0;
+        /* ========== INTEGRATIONS ========== */
+        .integration-row {
+            display: flex; align-items: center; gap: 14px; padding: 16px 0;
         }
+        .integration-icon {
+            width: 40px; height: 40px; border-radius: var(--radius);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .integration-info { flex: 1; }
+        .integration-name { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+        .integration-desc { font-size: 12px; color: var(--text-muted); }
+
+        /* ========== AUTH ========== */
+        .auth-screen {
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: var(--bg);
+        }
+        .auth-card {
+            width: 100%; max-width: 380px;
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg); padding: 36px 28px;
+        }
+        .auth-header { text-align: center; margin-bottom: 28px; }
+        .auth-logo { margin-bottom: 16px; }
+        .auth-logo img { height: 22px; }
+        .auth-title { font-size: 18px; font-weight: 500; margin-bottom: 6px; }
+        .auth-subtitle { font-size: 13px; color: var(--text-muted); }
+        .auth-toggle { text-align: center; margin-top: 16px; font-size: 12px; color: var(--text-muted); }
+        .auth-toggle a { color: var(--accent); cursor: pointer; text-decoration: none; }
+
+        /* ========== ALERTS ========== */
+        .alert {
+            padding: 10px 14px; border-radius: var(--radius); margin-bottom: 14px;
+            font-size: 13px; display: flex; align-items: center; gap: 8px;
+        }
+        .alert svg { width: 16px; height: 16px; flex-shrink: 0; }
+        .alert-success { background: rgba(92,184,92,0.1); border: 1px solid rgba(92,184,92,0.2); color: var(--success); }
+        .alert-error { background: rgba(217,83,79,0.1); border: 1px solid rgba(217,83,79,0.2); color: var(--error); }
+        .alert-warning { background: rgba(240,173,78,0.1); border: 1px solid rgba(240,173,78,0.2); color: var(--warning); }
+
+        .hidden { display: none !important; }
+
+        /* ========== ZENDESK MODAL ========== */
+        .z-modal { background: var(--bg); border-radius: var(--radius); padding: 16px; margin-top: 12px; }
+        .z-connected { background: var(--bg); border-radius: var(--radius); padding: 16px; margin-top: 12px; }
+        .z-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--success); margin-bottom: 4px; }
+        .z-dot { width: 7px; height: 7px; background: var(--success); border-radius: 50%; }
     </style>
 </head>
 <body>
-    <!-- Auth Screen -->
-    <div id="auth-screen" class="auth-screen">
-        <div class="auth-card">
-            <div class="auth-header">
-                <div class="auth-logo">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path d="M12 6v6l4 2"/>
-                    </svg>
+
+<!-- ==================== AUTH SCREEN ==================== -->
+<div id="auth-screen" class="auth-screen">
+    <div class="auth-card fade-in">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <span style="font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: 3px;">KRAB</span>
+            </div>
+            <h2 class="auth-title" id="auth-form-title">Welcome back</h2>
+            <p class="auth-subtitle" id="auth-form-subtitle">Sign in to your account</p>
+        </div>
+        <div id="auth-alert"></div>
+        <form id="login-form">
+            <div class="form-group" id="register-company-field" style="display:none;">
+                <label class="field-label">Company ID</label>
+                <input type="text" id="auth-company" placeholder="your-company">
+            </div>
+            <div class="form-group">
+                <label class="field-label">Email</label>
+                <input type="email" id="auth-email" placeholder="you@company.com" required>
+            </div>
+            <div class="form-group">
+                <label class="field-label">Password</label>
+                <input type="password" id="auth-password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-accent btn-full" id="auth-btn" style="margin-top:4px;">Sign in</button>
+        </form>
+        <div class="auth-toggle">
+            <span id="auth-toggle-text">Don't have an account?</span>
+            <a id="auth-toggle-link" onclick="toggleAuthMode()">Register</a>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== DASHBOARD ==================== -->
+<div id="dashboard" class="hidden">
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="container">
+            <div class="header-inner">
+                <a class="logo" href="#">
+                    <span class="logo-text">KRAB</span>
+                </a>
+                <div class="nav">
+                    <button class="nav-item active" onclick="showView('dashboard-view', this)">Dashboard</button>
+                    <button class="nav-item" onclick="showView('knowledge-view', this)">Knowledge</button>
+                    <button class="nav-item" onclick="showView('tickets-view', this)">Tickets</button>
+                    <button class="nav-item" onclick="showView('integrations-view', this)">Integrations</button>
                 </div>
-                <h1 class="auth-title">Knowledge Dashboard</h1>
-                <p class="auth-subtitle">Login to manage your company knowledge</p>
+                <div class="header-right">
+                    <div class="user-badge">
+                        <div class="user-avatar" id="user-avatar">DS</div>
+                        <span class="user-email-text" id="user-email"></span>
+                    </div>
+                    <button class="btn-logout" onclick="logout()">Sign out</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ====== DASHBOARD VIEW ====== -->
+    <div id="dashboard-view" class="view active">
+        <div class="container">
+            <div class="hero">
+                <h1>What do you want to know?</h1>
+                <p>Search across your entire knowledge base</p>
+                <div class="search-box">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" class="search-input" id="ask-input" placeholder="Ask anything about your documents..." onkeydown="if(event.key==='Enter')askQuestion()">
+                    <button class="search-btn" id="ask-btn" onclick="askQuestion()">Ask AI</button>
+                </div>
             </div>
 
-            <div id="auth-alert"></div>
+            <div class="stats-row">
+                <div class="stat-card"><div class="stat-value" id="stat-chunks">-</div><div class="stat-label">Documents</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-searches">-</div><div class="stat-label">Searches</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-helpful">-</div><div class="stat-label">Helpful</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-usage">-</div><div class="stat-label">Usage</div></div>
+            </div>
 
-            <form id="login-form">
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="auth-email" placeholder="you@company.com" required>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="auth-password" placeholder="Enter your password" required>
-                </div>
-                <button type="submit" class="btn btn-primary btn-full" id="auth-btn">
-                    Login
-                </button>
-            </form>
+            <div class="answer-area hidden" id="ask-answer-area"></div>
         </div>
     </div>
 
-    <!-- Dashboard -->
-    <div id="dashboard" class="hidden">
-        <!-- Header -->
-        <header class="header">
-            <div class="container">
-                <div class="header-content">
-                    <div class="logo">
-                        <div class="logo-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"/>
-                                <path d="M12 6v6l4 2"/>
-                            </svg>
+    <!-- ====== KNOWLEDGE VIEW ====== -->
+    <div id="knowledge-view" class="view">
+        <div class="container" style="padding-top: 28px; padding-bottom: 40px;">
+            <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Knowledge base</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">Upload and manage your company documents</p>
+
+            <div class="grid-2">
+                <!-- UPLOAD -->
+                <div class="card">
+                    <div class="card-head">
+                        <span class="card-title">Upload knowledge</span>
+                        <div class="tabs">
+                            <button class="tab-btn active" onclick="switchUploadTab('file', this)">File</button>
+                            <button class="tab-btn" onclick="switchUploadTab('text', this)">Text</button>
                         </div>
-                        <span class="logo-text">Context AI</span>
-                    </div>
-                    <div class="user-info">
-                        <span class="user-email" id="user-email"></span>
-                        <button class="btn-logout" onclick="logout()">Logout</button>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="main">
-            <div class="container">
-                <h1 class="page-title">Knowledge Dashboard</h1>
-                <p class="page-subtitle">Upload and manage your company's knowledge base</p>
-
-                <!-- Stats -->
-                <div class="stats">
-                    <div class="stat">
-                        <div class="stat-value" id="stat-chunks">-</div>
-                        <div class="stat-label">Knowledge Chunks</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value" id="stat-searches">-</div>
-                        <div class="stat-label">Total Searches</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value" id="stat-helpful">-</div>
-                        <div class="stat-label">Helpful Rate</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value" id="stat-usage">-</div>
-                        <div class="stat-label">Usage Rate</div>
-                    </div>
-                </div>
-
-                <div class="ask-section">
-                    <div class="ask-card">
-                        <div class="ask-input-row">
-                            <input type="text" class="ask-input" id="ask-input"
-                                   placeholder="Ask your knowledge base anything..."
-                                   onkeydown="if(event.key==='Enter')askQuestion()">
-                            <button class="ask-btn" id="ask-btn" onclick="askQuestion()">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="11" cy="11" r="8"/>
-                                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                                </svg>
-                                Ask AI
-                            </button>
-                        </div>
-                        <div class="ask-answer-area hidden" id="ask-answer-area">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="ticket-section">
-                    <div class="ask-card">
-                        <div class="card-header">
-                            <h2 class="card-title">Ticket Resolution</h2>
-                            <span style="font-size:12px;color:var(--text-muted);">AI-powered support response</span>
-                        </div>
-                        <div class="ticket-input-group">
-                            <div class="ticket-row">
-                                <div class="form-group">
-                                    <label>Ticket Subject</label>
-                                    <input type="text" id="ticket-subject" placeholder="e.g. API keeps timing out">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Customer Message</label>
-                                <textarea id="ticket-body" placeholder="Paste the customer's message here..." style="min-height:100px;"></textarea>
-                            </div>
-                            <button class="btn btn-primary btn-full" id="ticket-btn" onclick="resolveTicket()">
-                                Generate Response
-                            </button>
-                            <div id="ticket-result" style="margin-top:16px;"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid">
-                    <!-- Upload Card -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h2 class="card-title">Upload Knowledge</h2>
-                        </div>
-                        <div class="card-body">
-                            <div id="upload-alert"></div>
-
-                            <div class="tabs">
-                                <button class="tab active" onclick="switchTab('text')">Paste Text</button>
-                                <button class="tab" onclick="switchTab('file')">Upload File</button>
-                            </div>
-
-                            <!-- Text Tab -->
-                            <div id="tab-text" class="tab-content active">
-                                <div class="form-group">
-                                    <label>Source Type</label>
-                                    <select id="source-type">
-                                        <option value="document">Document</option>
-                                        <option value="wiki">Wiki</option>
-                                        <option value="faq">FAQ</option>
-                                        <option value="policy">Policy</option>
-                                        <option value="guide">Guide</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Content</label>
-                                    <textarea id="content" placeholder="Paste your knowledge content here..."></textarea>
-                                </div>
-                                <button class="btn btn-primary btn-full" onclick="uploadText()" id="upload-text-btn">
-                                    Upload Knowledge
-                                </button>
-                            </div>
-
-                            <!-- File Tab -->
-                            <div id="tab-file" class="tab-content">
-                                <div class="form-group">
-                                    <label>Source Type</label>
-                                    <select id="file-source-type">
-                                        <option value="document">Document</option>
-                                        <option value="wiki">Wiki</option>
-                                        <option value="faq">FAQ</option>
-                                        <option value="policy">Policy</option>
-                                        <option value="guide">Guide</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <div class="file-upload" id="file-drop-zone" onclick="document.getElementById('file-input').click()">
-                                        <svg class="file-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                            <polyline points="17 8 12 3 7 8"/>
-                                            <line x1="12" y1="3" x2="12" y2="15"/>
-                                        </svg>
-                                        <p class="file-upload-text">Drop your file here or click to browse</p>
-                                        <p class="file-upload-hint">Supports .txt, .md, .json files (max 5MB)</p>
-                                    </div>
-                                    <input type="file" id="file-input" class="file-input" accept=".txt,.md,.json" onchange="handleFileSelect(this)">
-                                    <div class="file-name" id="file-name"></div>
-                                </div>
-                                <button class="btn btn-primary btn-full" onclick="uploadFile()" id="upload-file-btn" disabled>
-                                    Upload File
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Knowledge List Card -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h2 class="card-title">Recent Knowledge</h2>
-                            <button class="btn-logout" onclick="loadKnowledge()">Refresh</button>
-                        </div>
-                        <div class="card-body" style="padding: 0;">
-                            <div class="knowledge-list" id="knowledge-list">
-                                <div class="empty-state">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                        <polyline points="14 2 14 8 20 8"/>
-                                    </svg>
-                                    <p>No knowledge uploaded yet</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Integrations Section -->
-                <div class="card" style="margin-top: 24px;">
-                    <div class="card-header">
-                        <h2 class="card-title">Integrations</h2>
                     </div>
                     <div class="card-body">
-                        <div id="zendesk-section">
-                            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-                                <div style="width: 48px; height: 48px; background: #03363D; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#78A300">
-                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                                    </svg>
-                                </div>
-                                <div style="flex: 1;">
-                                    <h3 style="margin-bottom: 4px;">Zendesk</h3>
-                                    <p style="color: var(--text-secondary); font-size: 13px;" id="zendesk-status-text">Import support tickets to train your knowledge base</p>
-                                </div>
-                                <div id="zendesk-actions">
-                                    <button class="btn btn-primary" onclick="showZendeskConnect()" id="zendesk-connect-btn">Connect</button>
-                                </div>
-                            </div>
+                        <div id="upload-alert"></div>
 
-                            <!-- Zendesk Connect Modal -->
-                            <div id="zendesk-modal" class="hidden" style="background: var(--bg-tertiary); border-radius: 8px; padding: 20px; margin-top: 16px;">
-                                <div class="form-group">
-                                    <label>Zendesk Subdomain</label>
-                                    <div style="display: flex; gap: 8px; align-items: center;">
-                                        <input type="text" id="zendesk-subdomain" placeholder="yourcompany" style="flex: 1;">
-                                        <span style="color: var(--text-secondary);">.zendesk.com</span>
-                                    </div>
-                                </div>
-                                <div style="display: flex; gap: 12px;">
-                                    <button class="btn btn-primary" onclick="connectZendesk()">Connect Zendesk</button>
-                                    <button class="btn" style="background: var(--bg-secondary); color: var(--text-primary);" onclick="hideZendeskConnect()">Cancel</button>
-                                </div>
+                        <!-- FILE TAB -->
+                        <div id="upload-tab-file" class="tab-pane active">
+                            <div class="form-group">
+                                <label class="field-label">Source type</label>
+                                <select id="file-source-type">
+                                    <option value="document">Document</option>
+                                    <option value="wiki">Wiki</option>
+                                    <option value="faq">FAQ</option>
+                                    <option value="policy">Policy</option>
+                                    <option value="guide">Guide</option>
+                                </select>
                             </div>
+                            <div class="form-group">
+                                <div class="drop-zone" id="file-drop-zone" onclick="document.getElementById('file-input').click()">
+                                    <div class="drop-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    </div>
+                                    <p class="drop-text">Drop files here or click to browse</p>
+                                    <p class="drop-hint">PDF, DOCX, TXT, CSV, MD — up to 20MB</p>
+                                </div>
+                                <input type="file" id="file-input" class="file-input" accept=".pdf,.docx,.txt,.md,.csv,.json" onchange="handleFileSelect(this)">
+                                <div class="file-name-display" id="file-name"></div>
+                            </div>
+                            <button class="btn btn-accent btn-full" onclick="uploadFile()" id="upload-file-btn" disabled>Upload file</button>
+                        </div>
 
-                            <!-- Zendesk Connected State -->
-                            <div id="zendesk-connected" class="hidden" style="background: var(--bg-tertiary); border-radius: 8px; padding: 20px; margin-top: 16px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                                    <div>
-                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                                            <span style="width: 8px; height: 8px; background: var(--success); border-radius: 50%;"></span>
-                                            <span style="color: var(--success); font-size: 13px;">Connected</span>
-                                        </div>
-                                        <p style="color: var(--text-secondary); font-size: 13px;" id="zendesk-info">-</p>
-                                    </div>
-                                    <div style="display: flex; gap: 12px;">
-                                        <button class="btn btn-primary" onclick="syncZendesk()" id="zendesk-sync-btn">Sync Tickets</button>
-                                        <button class="btn" style="background: var(--error); color: #fff;" onclick="disconnectZendesk()">Disconnect</button>
-                                    </div>
-                                </div>
-                                <div id="zendesk-sync-status"></div>
+                        <!-- TEXT TAB -->
+                        <div id="upload-tab-text" class="tab-pane">
+                            <div class="form-group">
+                                <label class="field-label">Source type</label>
+                                <select id="source-type">
+                                    <option value="document">Document</option>
+                                    <option value="wiki">Wiki</option>
+                                    <option value="faq">FAQ</option>
+                                    <option value="policy">Policy</option>
+                                    <option value="guide">Guide</option>
+                                </select>
                             </div>
+                            <div class="form-group">
+                                <label class="field-label">Content</label>
+                                <textarea id="content" placeholder="Paste your knowledge content here..." style="min-height: 160px;"></textarea>
+                            </div>
+                            <button class="btn btn-accent btn-full" onclick="uploadText()" id="upload-text-btn">Upload knowledge</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RECENT KNOWLEDGE -->
+                <div class="card">
+                    <div class="card-head">
+                        <span class="card-title">Recent documents</span>
+                        <button class="btn btn-outline btn-sm" onclick="loadKnowledge()">Refresh</button>
+                    </div>
+                    <div class="knowledge-list" id="knowledge-list">
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <p>No knowledge uploaded yet</p>
                         </div>
                     </div>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
 
-    <script>
-        const API_URL = "";
-        let authToken = null;
-        let userEmail = null;
-        let companyId = null;
-        let selectedFile = null;
+    <!-- ====== TICKETS VIEW ====== -->
+    <div id="tickets-view" class="view">
+        <div class="container" style="padding-top: 28px; padding-bottom: 40px;">
+            <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Ticket resolution</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">AI-powered support response generation</p>
 
-        // Check for saved auth on load
-        document.addEventListener('DOMContentLoaded', () => {
-            const saved = localStorage.getItem('contextai_auth');
-            if (saved) {
-                const { token, email, company_id } = JSON.parse(saved);
-                authToken = token;
-                userEmail = email;
-                companyId = company_id;
-                showDashboard();
-            }
-            setupDragDrop();
-        });
-
-        // Login
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-password').value;
-            const btn = document.getElementById('auth-btn');
-            const alert = document.getElementById('auth-alert');
-
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading"></span>';
-            alert.innerHTML = '';
-
-            try {
-                const res = await fetch(`${API_URL}/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-
-                const data = await res.json();
-
-                if (data.error) {
-                    alert.innerHTML = `<div class="alert alert-error">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        ${data.error}
-                    </div>`;
-                    return;
-                }
-
-                authToken = data.access_token;
-                userEmail = data.email;
-                companyId = data.company_id;
-
-                localStorage.setItem('contextai_auth', JSON.stringify({
-                    token: authToken,
-                    email: userEmail,
-                    company_id: companyId
-                }));
-
-                showDashboard();
-            } catch (error) {
-                alert.innerHTML = `<div class="alert alert-error">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    Connection error. Is the backend running?
-                </div>`;
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Login';
-            }
-        });
-
-        function logout() {
-            authToken = null;
-            userEmail = null;
-            companyId = null;
-            localStorage.removeItem('contextai_auth');
-            document.getElementById('auth-screen').classList.remove('hidden');
-            document.getElementById('dashboard').classList.add('hidden');
-        }
-
-        function showDashboard() {
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('dashboard').classList.remove('hidden');
-            document.getElementById('user-email').textContent = userEmail;
-            loadKnowledge();
-            loadAnalytics();
-        }
-
-        // Load Analytics
-        async function loadAnalytics() {
-            try {
-                const res = await fetch(`${API_URL}/analytics`, {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    }
-                });
-
-                if (res.status === 401) {
-                    logout();
-                    return;
-                }
-
-                const data = await res.json();
-
-                document.getElementById('stat-chunks').textContent = data.total_chunks || 0;
-                document.getElementById('stat-searches').textContent = data.total_searches || 0;
-                document.getElementById('stat-helpful').textContent = 
-                    data.helpful_rate ? `${(data.helpful_rate * 100).toFixed(0)}%` : '-';
-                document.getElementById('stat-usage').textContent = 
-                    data.usage_rate ? `${(data.usage_rate * 100).toFixed(0)}%` : '-';
-
-            } catch (error) {
-                console.error('Failed to load analytics:', error);
-            }
-        }
-
-        // Tabs
-        function switchTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
-            document.getElementById(`tab-${tab}`).classList.add('active');
-        }
-
-        // File Upload
-        function setupDragDrop() {
-            const dropZone = document.getElementById('file-drop-zone');
-            
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                });
-            });
-
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'));
-            });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'));
-            });
-
-            dropZone.addEventListener('drop', (e) => {
-                const file = e.dataTransfer.files[0];
-                if (file) handleFile(file);
-            });
-        }
-
-        function handleFileSelect(input) {
-            const file = input.files[0];
-            if (file) handleFile(file);
-        }
-
-        function handleFile(file) {
-            const validExts = ['.txt', '.md', '.json'];
-            const ext = file.name.substring(file.name.lastIndexOf('.'));
-
-            if (!validExts.includes(ext)) {
-                showAlert('upload-alert', 'error', 'Invalid file type. Please use .txt, .md, or .json files.');
-                return;
-            }
-
-            if (file.size > 5 * 1024 * 1024) {
-                showAlert('upload-alert', 'error', 'File too large. Maximum size is 5MB.');
-                return;
-            }
-
-            selectedFile = file;
-            document.getElementById('file-name').textContent = file.name;
-            document.getElementById('file-name').classList.add('show');
-            document.getElementById('upload-file-btn').disabled = false;
-        }
-
-        // Upload Text
-        async function uploadText() {
-            const content = document.getElementById('content').value.trim();
-            const sourceType = document.getElementById('source-type').value;
-
-            if (!content) {
-                showAlert('upload-alert', 'error', 'Please enter some content.');
-                return;
-            }
-
-            await doUpload(content, sourceType, 'upload-text-btn');
-        }
-
-        // ------------------------------------------------
-        // Upload File — uses FormData so the backend
-        // receives a real multipart file upload via
-        // POST /knowledge/upload-file
-        // ------------------------------------------------
-        async function uploadFile() {
-            if (!selectedFile) return;
-
-            const btn = document.getElementById('upload-file-btn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading"></span> Uploading...';
-
-            try {
-                const sourceType = document.getElementById('file-source-type').value;
-
-                const formData = new FormData();
-                formData.append('file', selectedFile);
-                formData.append('source_type', sourceType);
-
-                // Note: do NOT set Content-Type manually — the browser sets it
-                // automatically with the correct multipart boundary.
-                const res = await fetch(`${API_URL}/knowledge/upload-file`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: formData
-                });
-
-                if (res.status === 401) {
-                    showAlert('upload-alert', 'error', 'Session expired. Please login again.');
-                    logout();
-                    return;
-                }
-
-                const data = await res.json();
-
-                if (data.error) {
-                    showAlert('upload-alert', 'error', data.error);
-                } else {
-                    showAlert('upload-alert', 'success', `Successfully uploaded ${data.chunks} knowledge chunks!`);
-                    // Reset file input
-                    selectedFile = null;
-                    document.getElementById('file-input').value = '';
-                    document.getElementById('file-name').classList.remove('show');
-                    loadKnowledge();
-                }
-            } catch (error) {
-                showAlert('upload-alert', 'error', 'Upload failed. Check your connection.');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Upload File';
-            }
-        }
-
-        async function doUpload(content, sourceType, btnId) {
-            const btn = document.getElementById(btnId);
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading"></span> Uploading...';
-
-            try {
-                const res = await fetch(`${API_URL}/knowledge/upload`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({ content, source_type: sourceType })
-                });
-
-                if (res.status === 401) {
-                    showAlert('upload-alert', 'error', 'Session expired. Please login again.');
-                    logout();
-                    return;
-                }
-
-                const data = await res.json();
-
-                if (data.error) {
-                    showAlert('upload-alert', 'error', data.error);
-                } else {
-                    showAlert('upload-alert', 'success', `Successfully uploaded ${data.chunks} knowledge chunks!`);
-                    document.getElementById('content').value = '';
-                    loadKnowledge();
-                }
-            } catch (error) {
-                showAlert('upload-alert', 'error', 'Upload failed. Check your connection.');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = btnId.includes('file') ? 'Upload File' : 'Upload Knowledge';
-            }
-        }
-
-        // Load Knowledge
-        async function loadKnowledge() {
-            const list = document.getElementById('knowledge-list');
-            
-            try {
-                const res = await fetch(`${API_URL}/search`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({ query: '*' })
-                });
-
-                const data = await res.json();
-                const results = data.results || [];
-
-                if (results.length === 0) {
-                    list.innerHTML = `
-                        <div class="empty-state">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                            </svg>
-                            <p>No knowledge uploaded yet</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                list.innerHTML = results.map(item => `
-                    <div class="knowledge-item">
-                        <div class="knowledge-header">
-                            <div class="knowledge-source">
-                                <div class="knowledge-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                        <polyline points="14 2 14 8 20 8"/>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div class="knowledge-label">${item.source_type || 'Document'}</div>
-                                    <div class="knowledge-id">#${item.source_id || ''}</div>
-                                </div>
-                            </div>
-                            <div class="knowledge-confidence" style="font-size:11px;color:#888;">
-                                ${item.confidence ? `${(item.confidence * 100).toFixed(0)}% conf` : ''}
-                            </div>
-                        </div>
-                        <p class="knowledge-text">${escapeHtml(item.text || '')}</p>
+            <div class="card" style="max-width: 680px;">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="field-label">Ticket subject</label>
+                        <input type="text" id="ticket-subject" placeholder="e.g. API keeps timing out">
                     </div>
-                `).join('');
-
-            } catch (error) {
-                console.error('Failed to load knowledge:', error);
-            }
-        }
-
-        // Helpers
-        function showAlert(id, type, message) {
-            const icons = {
-                success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
-                error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
-                warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
-            };
-            
-            document.getElementById(id).innerHTML = `
-                <div class="alert alert-${type}">
-                    ${icons[type]}
-                    ${message}
+                    <div class="form-group">
+                        <label class="field-label">Customer message</label>
+                        <textarea id="ticket-body" placeholder="Paste the customer's message here..."></textarea>
+                    </div>
+                    <button class="btn btn-accent btn-full" id="ticket-btn" onclick="resolveTicket()">Generate response</button>
+                    <div id="ticket-result" style="margin-top: 14px;"></div>
                 </div>
-            `;
+            </div>
+        </div>
+    </div>
 
-            if (type === 'success') {
-                setTimeout(() => {
-                    document.getElementById(id).innerHTML = '';
-                }, 3000);
+    <!-- ====== INTEGRATIONS VIEW ====== -->
+    <div id="integrations-view" class="view">
+        <div class="container" style="padding-top: 28px; padding-bottom: 40px;">
+            <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Integrations</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">Connect your tools</p>
+
+            <div class="card" style="max-width: 680px;">
+                <div class="card-body">
+                    <div class="integration-row">
+                        <div class="integration-icon" style="background: #03363D;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#78A300"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        </div>
+                        <div class="integration-info">
+                            <div class="integration-name">Zendesk</div>
+                            <p class="integration-desc" id="zendesk-status-text">Import support tickets to train your knowledge base</p>
+                        </div>
+                        <div id="zendesk-actions">
+                            <button class="btn btn-accent btn-sm" onclick="showZendeskConnect()" id="zendesk-connect-btn">Connect</button>
+                        </div>
+                    </div>
+
+                    <div id="zendesk-modal" class="z-modal hidden">
+                        <div class="form-group">
+                            <label class="field-label">Zendesk subdomain</label>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="text" id="zendesk-subdomain" placeholder="yourcompany" style="flex:1;">
+                                <span style="color: var(--text-muted); font-size: 12px;">.zendesk.com</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-accent btn-sm" onclick="connectZendesk()">Connect</button>
+                            <button class="btn btn-outline btn-sm" onclick="hideZendeskConnect()">Cancel</button>
+                        </div>
+                    </div>
+
+                    <div id="zendesk-connected" class="z-connected hidden">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div>
+                                <div class="z-status"><span class="z-dot"></span> Connected</div>
+                                <p style="color: var(--text-muted); font-size: 12px;" id="zendesk-info">-</p>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-accent btn-sm" onclick="syncZendesk()" id="zendesk-sync-btn">Sync</button>
+                                <button class="btn btn-danger btn-sm" onclick="disconnectZendesk()">Disconnect</button>
+                            </div>
+                        </div>
+                        <div id="zendesk-sync-status"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ==================== JAVASCRIPT ==================== -->
+<script>
+const API_URL = "";
+let authToken = null;
+let userEmail = null;
+let companyId = null;
+let selectedFile = null;
+let isRegisterMode = false;
+
+// ====== INIT ======
+document.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('krab_auth');
+    if (saved) {
+        const d = JSON.parse(saved);
+        authToken = d.token; userEmail = d.email; companyId = d.company_id;
+        showDashboard();
+    }
+    setupDragDrop();
+});
+
+// ====== AUTH ======
+function toggleAuthMode() {
+    isRegisterMode = !isRegisterMode;
+    document.getElementById('auth-form-title').textContent = isRegisterMode ? 'Create account' : 'Welcome back';
+    document.getElementById('auth-form-subtitle').textContent = isRegisterMode ? 'Get started with KRAB' : 'Sign in to your account';
+    document.getElementById('auth-btn').textContent = isRegisterMode ? 'Create account' : 'Sign in';
+    document.getElementById('auth-toggle-text').textContent = isRegisterMode ? 'Already have an account?' : "Don't have an account?";
+    document.getElementById('auth-toggle-link').textContent = isRegisterMode ? 'Sign in' : 'Register';
+    document.getElementById('register-company-field').style.display = isRegisterMode ? 'block' : 'none';
+    document.getElementById('auth-alert').innerHTML = '';
+}
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    const btn = document.getElementById('auth-btn');
+    const alertEl = document.getElementById('auth-alert');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span>';
+    alertEl.innerHTML = '';
+
+    try {
+        if (isRegisterMode) {
+            const company = document.getElementById('auth-company').value || 'default';
+            const res = await fetch(`${API_URL}/register`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, company_id: company })
+            });
+            const data = await res.json();
+            if (data.error || data.detail) {
+                alertEl.innerHTML = mkAlert('error', data.error || data.detail);
+                return;
             }
+            alertEl.innerHTML = mkAlert('success', 'Account created! Signing in...');
+            await new Promise(r => setTimeout(r, 800));
         }
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        const res = await fetch(`${API_URL}/login`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.error || data.detail) {
+            alertEl.innerHTML = mkAlert('error', data.error || data.detail);
+            return;
         }
+        authToken = data.access_token; userEmail = data.email; companyId = data.company_id;
+        localStorage.setItem('krab_auth', JSON.stringify({ token: authToken, email: userEmail, company_id: companyId }));
+        showDashboard();
+    } catch (err) {
+        alertEl.innerHTML = mkAlert('error', 'Connection error. Is the backend running?');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = isRegisterMode ? 'Create account' : 'Sign in';
+    }
+});
 
-        // ============== ZENDESK INTEGRATION ==============
+function logout() {
+    authToken = null; userEmail = null; companyId = null;
+    localStorage.removeItem('krab_auth');
+    document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('dashboard').classList.add('hidden');
+}
 
-        function showZendeskConnect() {
-            document.getElementById('zendesk-modal').classList.remove('hidden');
+function showDashboard() {
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    document.getElementById('user-email').textContent = userEmail;
+    const initials = userEmail ? userEmail.substring(0, 2).toUpperCase() : 'U';
+    document.getElementById('user-avatar').textContent = initials;
+    loadKnowledge();
+    loadAnalytics();
+    checkZendeskStatus();
+}
+
+// ====== VIEWS ======
+function showView(viewId, btn) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(viewId).classList.add('active');
+    if (btn) btn.classList.add('active');
+}
+
+// ====== ANALYTICS ======
+async function loadAnalytics() {
+    try {
+        const res = await fetch(`${API_URL}/analytics`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        if (res.status === 401) { logout(); return; }
+        const d = await res.json();
+        document.getElementById('stat-chunks').textContent = d.total_chunks || 0;
+        document.getElementById('stat-searches').textContent = d.total_searches || 0;
+        document.getElementById('stat-helpful').textContent = d.helpful_rate ? `${(d.helpful_rate * 100).toFixed(0)}%` : '-';
+        document.getElementById('stat-usage').textContent = d.usage_rate ? `${(d.usage_rate * 100).toFixed(0)}%` : '-';
+    } catch (e) { console.error('Analytics error:', e); }
+}
+
+// ====== UPLOAD TABS ======
+function switchUploadTab(tab, btn) {
+    document.querySelectorAll('.card .tab-btn').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`upload-tab-${tab}`).classList.add('active');
+}
+
+// ====== DRAG & DROP ======
+function setupDragDrop() {
+    const dz = document.getElementById('file-drop-zone');
+    if (!dz) return;
+    ['dragenter','dragover','dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); }));
+    ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, () => dz.classList.add('dragover')));
+    ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, () => dz.classList.remove('dragover')));
+    dz.addEventListener('drop', e => { if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+}
+
+function handleFileSelect(input) { if (input.files[0]) handleFile(input.files[0]); }
+
+function handleFile(file) {
+    if (file.size > 20 * 1024 * 1024) { showAlert('upload-alert', 'error', 'File too large. Max 20MB.'); return; }
+    selectedFile = file;
+    const fn = document.getElementById('file-name');
+    fn.textContent = file.name; fn.classList.add('show');
+    document.getElementById('upload-file-btn').disabled = false;
+}
+
+// ====== UPLOAD TEXT ======
+async function uploadText() {
+    const content = document.getElementById('content').value.trim();
+    const sourceType = document.getElementById('source-type').value;
+    if (!content) { showAlert('upload-alert', 'error', 'Please enter some content.'); return; }
+    const btn = document.getElementById('upload-text-btn');
+    btn.disabled = true; btn.innerHTML = '<span class="loading-spinner"></span> Uploading...';
+    try {
+        const res = await fetch(`${API_URL}/knowledge/upload`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ content, source_type: sourceType })
+        });
+        if (res.status === 401) { logout(); return; }
+        const data = await res.json();
+        if (data.error) { showAlert('upload-alert', 'error', data.error); }
+        else { showAlert('upload-alert', 'success', `Uploaded ${data.chunks || ''} chunks!`); document.getElementById('content').value = ''; loadKnowledge(); loadAnalytics(); }
+    } catch (e) { showAlert('upload-alert', 'error', 'Upload failed.'); }
+    finally { btn.disabled = false; btn.textContent = 'Upload knowledge'; }
+}
+
+// ====== UPLOAD FILE ======
+async function uploadFile() {
+    if (!selectedFile) return;
+    const btn = document.getElementById('upload-file-btn');
+    btn.disabled = true; btn.innerHTML = '<span class="loading-spinner"></span> Uploading...';
+    try {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('source_type', document.getElementById('file-source-type').value);
+        const res = await fetch(`${API_URL}/knowledge/upload-file`, {
+            method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: formData
+        });
+        if (res.status === 401) { logout(); return; }
+        const data = await res.json();
+        if (data.error || data.detail) { showAlert('upload-alert', 'error', data.error || data.detail); }
+        else {
+            showAlert('upload-alert', 'success', `Uploaded ${data.chunks_created || data.chunks || ''} chunks from ${data.filename || 'file'}!`);
+            selectedFile = null; document.getElementById('file-input').value = '';
+            document.getElementById('file-name').classList.remove('show');
+            loadKnowledge(); loadAnalytics();
         }
+    } catch (e) { showAlert('upload-alert', 'error', 'Upload failed.'); }
+    finally { btn.disabled = false; btn.textContent = 'Upload file'; }
+}
 
-        function hideZendeskConnect() {
+// ====== LOAD KNOWLEDGE ======
+async function loadKnowledge() {
+    const list = document.getElementById('knowledge-list');
+    try {
+        const res = await fetch(`${API_URL}/search`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ query: '*' })
+        });
+        const data = await res.json();
+        const results = data.results || [];
+        if (!results.length) {
+            list.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>No knowledge uploaded yet</p></div>';
+            return;
+        }
+        list.innerHTML = results.map(item => `
+            <div class="k-item">
+                <div class="k-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                <div class="k-info">
+                    <div class="k-name">${esc(item.source_type || 'Document')}</div>
+                    <div class="k-meta">#${item.source_id || ''} · ${item.text ? item.text.split(' ').length + ' words' : ''}</div>
+                </div>
+                ${item.confidence ? `<span class="k-conf">${(item.confidence * 100).toFixed(0)}%</span>` : ''}
+            </div>
+        `).join('');
+    } catch (e) { console.error('Load knowledge error:', e); }
+}
+
+// ====== ASK AI ======
+async function askQuestion() {
+    const input = document.getElementById('ask-input');
+    const btn = document.getElementById('ask-btn');
+    const area = document.getElementById('ask-answer-area');
+    const q = input.value.trim();
+    if (!q) return;
+    btn.disabled = true; btn.innerHTML = '<span class="loading-spinner"></span>';
+    area.classList.remove('hidden');
+    area.innerHTML = '<div class="answer-loading"><span class="loading-spinner"></span> Searching knowledge...</div>';
+    try {
+        const res = await fetch(`${API_URL}/ask`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ query: q })
+        });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Failed'); }
+        const data = await res.json();
+        if (!data.has_answer || !data.answer) { area.innerHTML = '<div class="no-answer">No relevant information found. Try rephrasing or upload more content.</div>'; return; }
+        const cp = Math.round((data.confidence || 0) * 100);
+        const cl = cp >= 70 ? 'high' : cp >= 40 ? 'medium' : 'low';
+        const sources = data.sources || [];
+        let sh = ''; sources.forEach((s, i) => {
+            const sc = Math.round((s.confidence || s.similarity || 0) * 100);
+            sh += `<div class="source-item"><div class="source-meta"><span class="source-label">[${i+1}] ${s.source_type || 'Doc'} #${s.source_id || ''}</span><span class="source-conf">${sc}%</span></div>${esc(s.text || '').substring(0, 250)}${(s.text||'').length > 250 ? '...' : ''}</div>`;
+        });
+        area.innerHTML = `<div class="answer-content">
+            <div class="answer-badge">AI Answer</div>
+            <div class="answer-text">${esc(data.answer)}</div>
+            <div class="answer-confidence"><span>Confidence:</span><div class="conf-bar"><div class="conf-fill ${cl}" style="width:${cp}%"></div></div><span>${cp}%</span><span style="margin-left:6px;">· ${data.chunks_used || 0} sources</span></div>
+            ${sources.length ? `<button class="sources-toggle" onclick="toggleSources(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>${sources.length} source${sources.length!==1?'s':''}</button><div class="sources-list" id="ask-sources">${sh}</div>` : ''}
+        </div>`;
+    } catch (e) { area.innerHTML = `<div class="no-answer" style="color:var(--error);">Error: ${esc(e.message)}</div>`; }
+    finally { btn.disabled = false; btn.textContent = 'Ask AI'; }
+}
+
+function toggleSources(btn) { btn.classList.toggle('open'); document.getElementById('ask-sources').classList.toggle('open'); }
+
+// ====== TICKET RESOLUTION ======
+async function resolveTicket() {
+    const subject = document.getElementById('ticket-subject').value.trim();
+    const body = document.getElementById('ticket-body').value.trim();
+    const btn = document.getElementById('ticket-btn');
+    const result = document.getElementById('ticket-result');
+    if (!subject && !body) { result.innerHTML = mkAlert('error', 'Provide a subject or message'); return; }
+    btn.disabled = true; btn.innerHTML = '<span class="loading-spinner"></span> Generating...';
+    result.innerHTML = '';
+    try {
+        const res = await fetch(`${API_URL}/tickets/match`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ subject, body })
+        });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Failed'); }
+        const data = await res.json();
+        if (!data.has_answer) { result.innerHTML = mkAlert('warning', 'No similar past tickets found.'); return; }
+        const cp = Math.round((data.confidence || 0) * 100);
+        result.innerHTML = `<div style="background:var(--bg);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:16px;margin-top:8px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+                <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--success);background:rgba(92,184,92,0.1);padding:3px 8px;border-radius:4px;">Suggested response</span>
+                <span style="font-size:11px;color:var(--text-dim);">${cp}% confidence</span>
+            </div>
+            <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;padding:14px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border-subtle);margin-bottom:12px;">${esc(data.suggested_response)}</div>
+            <button class="btn btn-accent btn-sm" onclick="copyTicket()">Copy response</button>
+        </div>`;
+        window._lastTicketResponse = data.suggested_response;
+    } catch (e) { result.innerHTML = mkAlert('error', e.message); }
+    finally { btn.disabled = false; btn.textContent = 'Generate response'; }
+}
+
+function copyTicket() {
+    if (window._lastTicketResponse) {
+        navigator.clipboard.writeText(window._lastTicketResponse);
+        event.target.textContent = 'Copied!';
+        setTimeout(() => { event.target.textContent = 'Copy response'; }, 2000);
+    }
+}
+
+// ====== ZENDESK ======
+function showZendeskConnect() { document.getElementById('zendesk-modal').classList.remove('hidden'); }
+function hideZendeskConnect() { document.getElementById('zendesk-modal').classList.add('hidden'); }
+
+async function checkZendeskStatus() {
+    try {
+        const res = await fetch(`${API_URL}/integrations/zendesk/status`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        const data = await res.json();
+        if (data.connected) {
+            document.getElementById('zendesk-connect-btn').classList.add('hidden');
+            document.getElementById('zendesk-connected').classList.remove('hidden');
             document.getElementById('zendesk-modal').classList.add('hidden');
+            document.getElementById('zendesk-status-text').textContent = 'Connected to Zendesk';
+            document.getElementById('zendesk-info').textContent = `${data.subdomain}.zendesk.com · ${data.tickets_imported || 0} tickets`;
+        } else {
+            document.getElementById('zendesk-connect-btn').classList.remove('hidden');
+            document.getElementById('zendesk-connected').classList.add('hidden');
         }
+    } catch (e) { console.error('Zendesk status error:', e); }
+}
 
-        async function checkZendeskStatus() {
-            try {
-                const res = await fetch(`${API_URL}/integrations/zendesk/status`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                const data = await res.json();
-
-                if (data.connected) {
-                    document.getElementById('zendesk-connect-btn').classList.add('hidden');
-                    document.getElementById('zendesk-connected').classList.remove('hidden');
-                    document.getElementById('zendesk-modal').classList.add('hidden');
-                    document.getElementById('zendesk-status-text').textContent = 'Connected to Zendesk';
-                    document.getElementById('zendesk-info').textContent = 
-                        `${data.subdomain}.zendesk.com • ${data.tickets_imported || 0} tickets imported`;
-                } else {
-                    document.getElementById('zendesk-connect-btn').classList.remove('hidden');
-                    document.getElementById('zendesk-connected').classList.add('hidden');
-                }
-            } catch (error) {
-                console.error('Failed to check Zendesk status:', error);
-            }
-        }
-
-        async function connectZendesk() {
-            const subdomain = document.getElementById('zendesk-subdomain').value.trim();
-            if (!subdomain) {
-                alert('Please enter your Zendesk subdomain');
-                return;
-            }
-
-            try {
-                const res = await fetch(`${API_URL}/integrations/zendesk/connect`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({ subdomain })
-                });
-                const data = await res.json();
-
-                if (data.oauth_url) {
-                    window.location.href = data.oauth_url;
-                } else {
-                    alert(data.error || 'Failed to start OAuth flow');
-                }
-            } catch (error) {
-                console.error('Failed to connect Zendesk:', error);
-                alert('Connection error');
-            }
-        }
-
-        async function syncZendesk() {
-            const btn = document.getElementById('zendesk-sync-btn');
-            const status = document.getElementById('zendesk-sync-status');
-            
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading"></span> Syncing...';
-            status.innerHTML = '<p style="color: var(--text-secondary); font-size: 13px;">Importing tickets from Zendesk...</p>';
-
-            try {
-                const res = await fetch(`${API_URL}/integrations/zendesk/sync`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    status.innerHTML = `
-                        <div class="alert alert-success" style="margin-top: 12px;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                            ${data.message}
-                        </div>
-                    `;
-                    checkZendeskStatus();
-                    loadKnowledge();
-                    loadAnalytics();
-                } else {
-                    status.innerHTML = `
-                        <div class="alert alert-error" style="margin-top: 12px;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                            ${data.message}
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('Failed to sync Zendesk:', error);
-                status.innerHTML = `
-                    <div class="alert alert-error" style="margin-top: 12px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        Connection error
-                    </div>
-                `;
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Sync Tickets';
-            }
-        }
-
-        async function disconnectZendesk() {
-            if (!confirm('Are you sure you want to disconnect Zendesk?')) return;
-
-            try {
-                await fetch(`${API_URL}/integrations/zendesk/disconnect`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                checkZendeskStatus();
-            } catch (error) {
-                console.error('Failed to disconnect Zendesk:', error);
-            }
-        }
-
-        // Check for OAuth callback parameters
-        document.addEventListener('DOMContentLoaded', () => {
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('zendesk') === 'connected') {
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
+async function connectZendesk() {
+    const sub = document.getElementById('zendesk-subdomain').value.trim();
+    if (!sub) return;
+    try {
+        const res = await fetch(`${API_URL}/integrations/zendesk/connect`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ subdomain: sub })
         });
+        const data = await res.json();
+        if (data.oauth_url) window.location.href = data.oauth_url;
+    } catch (e) { console.error('Zendesk connect error:', e); }
+}
 
-        const originalShowDashboard = showDashboard;
-        showDashboard = function() {
-            originalShowDashboard();
-            checkZendeskStatus();
-        };
+async function syncZendesk() {
+    const btn = document.getElementById('zendesk-sync-btn');
+    const st = document.getElementById('zendesk-sync-status');
+    btn.disabled = true; btn.innerHTML = '<span class="loading-spinner"></span>';
+    st.innerHTML = '<p style="color:var(--text-muted);font-size:12px;">Importing tickets...</p>';
+    try {
+        const res = await fetch(`${API_URL}/integrations/zendesk/sync`, { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` } });
+        const data = await res.json();
+        st.innerHTML = data.success ? mkAlert('success', data.message) : mkAlert('error', data.message);
+        if (data.success) { checkZendeskStatus(); loadKnowledge(); loadAnalytics(); }
+    } catch (e) { st.innerHTML = mkAlert('error', 'Connection error'); }
+    finally { btn.disabled = false; btn.textContent = 'Sync'; }
+}
 
-        // ============== ASK KNOWLEDGE ==============
+async function disconnectZendesk() {
+    if (!confirm('Disconnect Zendesk?')) return;
+    try { await fetch(`${API_URL}/integrations/zendesk/disconnect`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}` } }); checkZendeskStatus(); }
+    catch (e) { console.error(e); }
+}
 
-        async function askQuestion() {
-            const input = document.getElementById('ask-input');
-            const btn = document.getElementById('ask-btn');
-            const area = document.getElementById('ask-answer-area');
-            const query = input.value.trim();
+// ====== HELPERS ======
+function esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
-            if (!query) return;
+function mkAlert(type, msg) {
+    const icons = {
+        success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+        error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+        warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+    };
+    return `<div class="alert alert-${type}">${icons[type]}${msg}</div>`;
+}
 
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading"></span> Thinking...';
-            area.classList.remove('hidden');
-            area.innerHTML = `
-                <div class="ask-loading">
-                    <span class="loading"></span>
-                    Searching knowledge and generating answer...
-                </div>
-            `;
+function showAlert(id, type, msg) {
+    document.getElementById(id).innerHTML = mkAlert(type, msg);
+    if (type === 'success') setTimeout(() => { document.getElementById(id).innerHTML = ''; }, 3000);
+}
 
-            try {
-                const res = await fetch(`${API_URL}/ask`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({ query })
-                });
-
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.detail || 'Failed to get answer');
-                }
-
-                const data = await res.json();
-
-                if (!data.has_answer || !data.answer) {
-                    area.innerHTML = `
-                        <div class="ask-no-answer">
-                            No relevant information found. Try rephrasing or upload more content.
-                        </div>
-                    `;
-                    return;
-                }
-
-                const confPercent = Math.round((data.confidence || 0) * 100);
-                const confLevel = confPercent >= 70 ? 'high' : confPercent >= 40 ? 'medium' : 'low';
-                const sources = data.sources || [];
-
-                let sourcesHtml = '';
-                sources.forEach((s, i) => {
-                    const sConf = Math.round((s.confidence || s.similarity || 0) * 100);
-                    sourcesHtml += `
-                        <div class="ask-source-item">
-                            <div class="ask-source-meta">
-                                <span class="ask-source-label">[Source ${i+1}] ${s.source_type || 'Document'} #${s.source_id || ''}</span>
-                                <span class="ask-source-conf">${sConf}% match</span>
-                            </div>
-                            ${escapeHtml(s.text || '').substring(0, 300)}${(s.text || '').length > 300 ? '...' : ''}
-                        </div>
-                    `;
-                });
-
-                area.innerHTML = `
-                    <div class="ask-answer">
-                        <div class="ask-answer-badge">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
-                                <line x1="9" y1="22" x2="15" y2="22"/>
-                            </svg>
-                            AI Answer
-                        </div>
-                        <div class="ask-answer-text">${escapeHtml(data.answer)}</div>
-                        <div class="ask-confidence">
-                            <span>Confidence:</span>
-                            <div class="ask-confidence-bar">
-                                <div class="ask-confidence-fill ${confLevel}" style="width:${confPercent}%"></div>
-                            </div>
-                            <span>${confPercent}%</span>
-                            <span style="margin-left:8px;">· ${data.chunks_used || 0} sources used</span>
-                        </div>
-                        <button class="ask-sources-toggle" onclick="toggleSources(this)">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"/>
-                            </svg>
-                            View ${sources.length} source${sources.length !== 1 ? 's' : ''}
-                        </button>
-                        <div class="ask-sources" id="ask-sources">
-                            ${sourcesHtml}
-                        </div>
-                    </div>
-                `;
-
-            } catch (error) {
-                area.innerHTML = `
-                    <div class="ask-no-answer" style="color:var(--error);">
-                        Error: ${escapeHtml(error.message)}
-                    </div>
-                `;
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = `
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"/>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    </svg>
-                    Ask AI
-                `;
-            }
-        }
-
-        function toggleSources(btn) {
-            const sources = document.getElementById('ask-sources');
-            btn.classList.toggle('open');
-            sources.classList.toggle('open');
-        }
-
-
-        // ============== TICKET RESOLUTION ==============
-
-        async function resolveTicket() {
-            const subject = document.getElementById('ticket-subject').value.trim();
-            const body = document.getElementById('ticket-body').value.trim();
-            const btn = document.getElementById('ticket-btn');
-            const result = document.getElementById('ticket-result');
-
-            if (!subject && !body) {
-                result.innerHTML = `<div class="alert alert-error">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    Please provide a ticket subject or customer message
-                </div>`;
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading"></span> Generating response...';
-            result.innerHTML = '';
-
-            try {
-                const res = await fetch(`${API_URL}/tickets/match`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({ subject, body })
-                });
-
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.detail || 'Failed to generate response');
-                }
-
-                const data = await res.json();
-
-                if (!data.has_answer) {
-                    result.innerHTML = `<div class="alert alert-warning">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                        No similar past tickets found. This may need manual investigation.
-                    </div>`;
-                    return;
-                }
-
-                const confPercent = Math.round((data.confidence || 0) * 100);
-
-                result.innerHTML = `
-                    <div style="background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:10px;padding:20px;margin-top:8px;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                            <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--success);background:rgba(34,197,94,0.1);padding:4px 10px;border-radius:6px;">
-                                Suggested Response
-                            </span>
-                            <span style="font-size:12px;color:var(--text-muted);">${confPercent}% confidence</span>
-                        </div>
-                        <div style="font-size:14px;line-height:1.8;color:var(--text-primary);white-space:pre-wrap;margin-bottom:16px;padding:16px;background:var(--bg-secondary);border-radius:8px;border:1px solid var(--border-color);">${escapeHtml(data.suggested_response)}</div>
-                        <button style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;" onclick="copyTicketResponse()">
-                            Copy Response
-                        </button>
-                    </div>
-                `;
-
-                // Store for copy
-                window._lastTicketResponse = data.suggested_response;
-
-            } catch (error) {
-                result.innerHTML = `<div class="alert alert-error">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    Error: ${escapeHtml(error.message)}
-                </div>`;
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Generate Response';
-            }
-        }
-
-        function copyTicketResponse() {
-            if (window._lastTicketResponse) {
-                navigator.clipboard.writeText(window._lastTicketResponse);
-                event.target.textContent = 'Copied!';
-                setTimeout(() => { event.target.textContent = 'Copy Response'; }, 2000);
-            }
-        }
-    </script>
+// OAuth callback check
+const params = new URLSearchParams(window.location.search);
+if (params.get('zendesk') === 'connected') window.history.replaceState({}, document.title, window.location.pathname);
+</script>
 </body>
 </html>
