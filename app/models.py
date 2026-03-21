@@ -11,6 +11,8 @@ class User(Base):
     password = Column(String)
     company_id = Column(String)
     api_key = Column(String, unique=True)
+    name = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class KnowledgeChunk(Base):

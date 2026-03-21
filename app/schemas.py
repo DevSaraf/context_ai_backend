@@ -13,6 +13,17 @@ class UserLogin(BaseModel):
     password: str
 
 
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    company_id: Optional[str] = None
+
+
+class ChangePassword(BaseModel):
+    current_password: str
+    new_password: str
+
+
 class FeedbackCreate(BaseModel):
     chunk_id: int
     feedback_type: str  # 'helpful', 'not_helpful', 'used'
