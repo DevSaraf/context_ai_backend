@@ -27,8 +27,8 @@ def submit_feedback(
         raise HTTPException(status_code=404, detail="User not found")
 
     chunk_exists = db.execute(
-        text("SELECT id FROM knowledge_chunks WHERE id = :chunk_id"),
-        {"chunk_id": feedback.chunk_id}
+        text("SELECT id FROM knowledge_chunks WHERE id = :chunk_id AND user_id = :user_id"),
+        {"chunk_id": feedback.chunk_id, "user_id": user_id}
     ).fetchone()
 
     if not chunk_exists:
@@ -83,58 +83,57 @@ def get_analytics(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user)
 ):
-    """Get analytics for the user's company."""
+    """Get analytics for this user."""
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    company_id = user.company_id
     week_ago = datetime.utcnow() - timedelta(days=7)
 
-    total_searches = db.query(SearchLog).filter(SearchLog.company_id == company_id).count()
+    total_searches = db.query(SearchLog).filter(SearchLog.user_id == user_id).count()
 
     recent_searches = db.query(SearchLog).filter(
-        SearchLog.company_id == company_id,
+        SearchLog.user_id == user_id,
         SearchLog.created_at >= week_ago
     ).count()
 
-    total_feedback = db.query(Feedback).filter(Feedback.company_id == company_id).count()
+    total_feedback = db.query(Feedback).filter(Feedback.user_id == user_id).count()
 
     helpful_count = db.query(Feedback).filter(
-        Feedback.company_id == company_id, Feedback.feedback_type == "helpful"
+        Feedback.user_id == user_id, Feedback.feedback_type == "helpful"
     ).count()
 
     not_helpful_count = db.query(Feedback).filter(
-        Feedback.company_id == company_id, Feedback.feedback_type == "not_helpful"
+        Feedback.user_id == user_id, Feedback.feedback_type == "not_helpful"
     ).count()
 
     total_ratings = helpful_count + not_helpful_count
     helpful_rate = helpful_count / max(1, total_ratings)
 
     used_count = db.query(Feedback).filter(
-        Feedback.company_id == company_id, Feedback.feedback_type == "used"
+        Feedback.user_id == user_id, Feedback.feedback_type == "used"
     ).count()
     usage_rate = used_count / max(1, total_searches)
 
     top_sources = db.execute(
         text("""
             SELECT source_type, COUNT(*) as count
-            FROM knowledge_chunks WHERE company_id = :company_id
+            FROM knowledge_chunks WHERE user_id = :user_id
             GROUP BY source_type ORDER BY count DESC LIMIT 5
         """),
-        {"company_id": company_id}
+        {"user_id": user_id}
     ).mappings().all()
 
     searches_by_day = db.execute(
         text("""
             SELECT DATE(created_at) as date, COUNT(*) as count
-            FROM search_logs WHERE company_id = :company_id AND created_at >= :week_ago
+            FROM search_logs WHERE user_id = :user_id AND created_at >= :week_ago
             GROUP BY DATE(created_at) ORDER BY date
         """),
-        {"company_id": company_id, "week_ago": week_ago}
+        {"user_id": user_id, "week_ago": week_ago}
     ).mappings().all()
 
-    total_chunks = db.query(KnowledgeChunk).filter(KnowledgeChunk.company_id == company_id).count()
+    total_chunks = db.query(KnowledgeChunk).filter(KnowledgeChunk.user_id == user_id).count()
 
     return {
         "total_searches": total_searches,

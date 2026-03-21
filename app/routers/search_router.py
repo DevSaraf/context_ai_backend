@@ -15,12 +15,12 @@ from app.rag_engine import generate_answer, generate_ticket_response
 router = APIRouter(tags=["search"])
 
 
-def _get_company_id(db: Session, user_id: int) -> str:
-    """Helper: get company_id from user, raise if not found."""
+def _get_user_info(db: Session, user_id: int):
+    """Helper: get user, raise if not found."""
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user.company_id
+    return user
 
 
 def _log_search(db: Session, user_id: int, company_id: str, query: str, count: int):
@@ -41,8 +41,8 @@ def search(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user)
 ):
-    """Semantic + hybrid search. Returns ranked chunks."""
-    company_id = _get_company_id(db, user_id)
+    """Semantic + hybrid search. Returns ranked chunks for this user."""
+    user = _get_user_info(db, user_id)
     query = data.get("query") or data.get("prompt")
 
     if not query:
@@ -50,7 +50,7 @@ def search(
 
     try:
         query_embedding = create_embedding(query)
-        results = hybrid_search(db, company_id, query, query_embedding, limit=5)
+        results = hybrid_search(db, user_id, query, query_embedding, limit=5, filter_by="user_id")
         return {"results": results}
     except Exception as e:
         print(f"Search error: {e}")
@@ -68,13 +68,13 @@ async def get_context(
     if not prompt:
         return {"context": "", "sources": []}
 
-    company_id = _get_company_id(db, user_id)
+    user = _get_user_info(db, user_id)
 
     try:
         query_embedding = create_embedding(prompt)
-        results = hybrid_search(db, company_id, prompt, query_embedding, limit=5)
+        results = hybrid_search(db, user_id, prompt, query_embedding, limit=5, filter_by="user_id")
 
-        _log_search(db, user_id, company_id, prompt, len(results))
+        _log_search(db, user_id, user.company_id, prompt, len(results))
 
         context = build_context(results)
 
@@ -98,15 +98,15 @@ async def ask_question(
     if not query:
         raise HTTPException(status_code=400, detail="No query provided")
 
-    company_id = _get_company_id(db, user_id)
+    user = _get_user_info(db, user_id)
 
     try:
         query_embedding = create_embedding(query)
-        chunks = hybrid_search(db, company_id, query, query_embedding, limit=5)
+        chunks = hybrid_search(db, user_id, query, query_embedding, limit=5, filter_by="user_id")
 
         rag_response = await generate_answer(query, chunks, mode="qa")
 
-        _log_search(db, user_id, company_id, query, len(chunks))
+        _log_search(db, user_id, user.company_id, query, len(chunks))
 
         return {
             "answer": rag_response.answer,
@@ -136,16 +136,16 @@ async def match_ticket(
     if not subject and not body:
         raise HTTPException(status_code=400, detail="Provide at least a subject or body")
 
-    company_id = _get_company_id(db, user_id)
+    user = _get_user_info(db, user_id)
 
     try:
         search_text = f"{subject}. {body}".strip()
         query_embedding = create_embedding(search_text)
-        similar_tickets = hybrid_search(db, company_id, search_text, query_embedding, limit=5)
+        similar_tickets = hybrid_search(db, user_id, search_text, query_embedding, limit=5, filter_by="user_id")
 
         rag_response = await generate_ticket_response(subject, body, similar_tickets)
 
-        _log_search(db, user_id, company_id, f"[TICKET] {search_text}", len(similar_tickets))
+        _log_search(db, user_id, user.company_id, f"[TICKET] {search_text}", len(similar_tickets))
 
         return {
             "suggested_response": rag_response.answer,

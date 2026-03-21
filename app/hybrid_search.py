@@ -2,22 +2,6 @@
 Hybrid Search Module
 Combines pgvector semantic search with PostgreSQL full-text search (tsvector).
 Uses Reciprocal Rank Fusion (RRF) to merge rankings from both methods.
-
-Why hybrid?
-- Vector search finds semantically similar content ("API timeout" matches "request latency")
-- Full-text search catches exact keyword matches ("JWT" matches "JWT", vectors might miss this)
-- Combined: best of both worlds, significantly better retrieval quality
-
-Setup (run once):
-    You need a tsvector column + GIN index on knowledge_chunks.
-    Run the migration SQL below, or use the setup_hybrid_search() function.
-
-Usage:
-    from app.hybrid_search import hybrid_search
-
-    results = hybrid_search(db, company_id, query, query_embedding, limit=5)
-    # Returns list of dicts with: id, text, source_type, source_id, similarity,
-    #   resolution_score, created_at, confidence, search_method
 """
 
 from sqlalchemy.orm import Session
@@ -27,115 +11,63 @@ import math
 from app.embedding import create_embedding
 
 
-# ============== DATABASE MIGRATION ==============
-
-# Separate statements to avoid semicolon splitting issues in trigger functions
-MIGRATION_STATEMENTS = [
-    # Add tsvector column
-    """ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS search_vector tsvector""",
-
-    # Populate from existing text
-    """UPDATE knowledge_chunks SET search_vector = to_tsvector('english', COALESCE(text, '')) WHERE search_vector IS NULL""",
-
-    # Create GIN index
-    """CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_search_vector ON knowledge_chunks USING GIN (search_vector)""",
-
-    # Create trigger function (dollar-quoted, must be single statement)
-    """CREATE OR REPLACE FUNCTION knowledge_chunks_search_trigger() RETURNS trigger AS $func$
-BEGIN
-    NEW.search_vector := to_tsvector('english', COALESCE(NEW.text, ''));
-    RETURN NEW;
-END;
-$func$ LANGUAGE plpgsql""",
-
-    # Drop old trigger if exists
-    """DROP TRIGGER IF EXISTS trg_knowledge_chunks_search ON knowledge_chunks""",
-
-    # Create trigger
-    """CREATE TRIGGER trg_knowledge_chunks_search BEFORE INSERT OR UPDATE OF text ON knowledge_chunks FOR EACH ROW EXECUTE FUNCTION knowledge_chunks_search_trigger()""",
-]
-
-
-def setup_hybrid_search(db: Session):
-    """
-    Run the migration to add full-text search support.
-    Call this once, or add to your startup.
-
-    Usage:
-        from app.hybrid_search import setup_hybrid_search
-        setup_hybrid_search(next(get_db()))
-    """
-    try:
-        for statement in MIGRATION_STATEMENTS:
-            db.execute(text(statement))
-        db.commit()
-        print("Hybrid search setup complete!")
-        return True
-    except Exception as e:
-        db.rollback()
-        print(f"Hybrid search setup error: {e}")
-        return False
-
-
-# ============== HYBRID SEARCH ==============
-
 def hybrid_search(
     db: Session,
-    company_id: str,
+    filter_value,
     query: str,
     query_embedding: list,
     limit: int = 5,
     vector_weight: float = 0.6,
     text_weight: float = 0.4,
     rrf_k: int = 60,
+    filter_by: str = "user_id",
 ) -> List[Dict]:
     """
     Hybrid search combining vector similarity + full-text search.
-    
-    Uses Reciprocal Rank Fusion (RRF) to merge results:
-        RRF_score = weight_v / (k + rank_vector) + weight_t / (k + rank_text)
-    
-    This avoids the problem of comparing raw scores across different methods
-    (cosine similarity 0-1 vs ts_rank which has a different scale).
-    
+
     Args:
         db:              Database session
-        company_id:      Company isolation
+        filter_value:    user_id or company_id value to filter by
         query:           User's search query (text)
         query_embedding: Pre-computed embedding vector
         limit:           Max results to return
         vector_weight:   Weight for vector search ranking (0-1)
         text_weight:     Weight for full-text search ranking (0-1)
         rrf_k:           RRF constant (higher = less weight to top ranks)
+        filter_by:       "user_id" (default, per-user) or "company_id" (team mode)
     """
+    # Validate filter_by to prevent SQL injection
+    if filter_by not in ("user_id", "company_id"):
+        filter_by = "user_id"
+
     try:
         results = db.execute(
-            text("""
+            text(f"""
                 WITH vector_results AS (
-                    SELECT 
+                    SELECT
                         id, text, source_type, source_id,
                         1 - (embedding <=> CAST(:embedding AS vector)) AS similarity,
                         resolution_score, created_at,
                         ROW_NUMBER() OVER (ORDER BY embedding <=> CAST(:embedding AS vector)) AS v_rank
                     FROM knowledge_chunks
-                    WHERE company_id = :company_id
+                    WHERE {filter_by} = :filter_value
                     ORDER BY embedding <=> CAST(:embedding AS vector)
                     LIMIT 20
                 ),
                 text_results AS (
-                    SELECT 
+                    SELECT
                         id,
                         ts_rank_cd(search_vector, plainto_tsquery('english', :query)) AS text_score,
                         ROW_NUMBER() OVER (
                             ORDER BY ts_rank_cd(search_vector, plainto_tsquery('english', :query)) DESC
                         ) AS t_rank
                     FROM knowledge_chunks
-                    WHERE company_id = :company_id
+                    WHERE {filter_by} = :filter_value
                         AND search_vector @@ plainto_tsquery('english', :query)
                     LIMIT 20
                 ),
                 combined AS (
-                    SELECT 
+                    SELECT
                         v.id, v.text, v.source_type, v.source_id,
                         v.similarity, v.resolution_score, v.created_at,
                         v.v_rank,
@@ -144,14 +76,14 @@ def hybrid_search(
                             :vector_weight / (:rrf_k + v.v_rank) +
                             COALESCE(:text_weight / (:rrf_k + t.t_rank), 0)
                         ) AS rrf_score,
-                        CASE 
+                        CASE
                             WHEN t.t_rank IS NOT NULL THEN 'hybrid'
                             ELSE 'vector'
                         END AS search_method
                     FROM vector_results v
                     LEFT JOIN text_results t ON v.id = t.id
                 )
-                SELECT 
+                SELECT
                     id, text, source_type, source_id,
                     similarity, resolution_score, created_at,
                     rrf_score, search_method
@@ -161,7 +93,7 @@ def hybrid_search(
             """),
             {
                 "embedding": query_embedding,
-                "company_id": company_id,
+                "filter_value": filter_value,
                 "query": query,
                 "vector_weight": vector_weight,
                 "text_weight": text_weight,
@@ -170,7 +102,6 @@ def hybrid_search(
             }
         ).mappings().all()
 
-        # Enhance with confidence scores
         enhanced = []
         for r in results:
             r_dict = dict(r)
@@ -189,30 +120,33 @@ def hybrid_search(
         return enhanced
 
     except Exception as e:
-        # If full-text search fails (column missing), fall back to vector-only
         print(f"Hybrid search error (falling back to vector-only): {e}")
-        return _vector_only_search(db, company_id, query_embedding, limit)
+        return _vector_only_search(db, filter_value, query_embedding, limit, filter_by)
 
 
 def _vector_only_search(
     db: Session,
-    company_id: str,
+    filter_value,
     query_embedding: list,
     limit: int = 5,
+    filter_by: str = "user_id",
 ) -> List[Dict]:
-    """Fallback: vector-only search (your original query)."""
+    """Fallback: vector-only search."""
+    if filter_by not in ("user_id", "company_id"):
+        filter_by = "user_id"
+
     results = db.execute(
-        text("""
-            SELECT 
+        text(f"""
+            SELECT
                 id, text, source_type, source_id,
                 1 - (embedding <=> CAST(:embedding AS vector)) AS similarity,
                 resolution_score, created_at
             FROM knowledge_chunks
-            WHERE company_id = :company_id
+            WHERE {filter_by} = :filter_value
             ORDER BY embedding <=> CAST(:embedding AS vector)
             LIMIT :limit
         """),
-        {"embedding": query_embedding, "company_id": company_id, "limit": limit}
+        {"embedding": query_embedding, "filter_value": filter_value, "limit": limit}
     ).mappings().all()
 
     enhanced = []
