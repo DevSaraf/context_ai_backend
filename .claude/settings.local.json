@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git -C d:/context-ai-backend status)",
+      "Bash(findstr venv:*)"
+    ]
+  }
+}
