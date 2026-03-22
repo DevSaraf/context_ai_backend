@@ -34,6 +34,11 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
+    return FileResponse(os.path.join(os.path.dirname(os.path.dirname(__file__)), "landing.html"))
+
+
+@app.get("/app")
+async def dashboard_app():
     return FileResponse(os.path.join(os.path.dirname(os.path.dirname(__file__)), "dashboard.html"))
 
 
