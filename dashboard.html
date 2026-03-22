@@ -42,28 +42,39 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        /* ========== SCROLLBAR ========== */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
+        /* ========== ANIMATIONS ========== */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
         .fade-in { animation: fadeIn 0.4s ease-out; }
         .loading-spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
 
+        /* ========== LAYOUT ========== */
         .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
 
+        /* ========== HEADER ========== */
         .header {
             position: sticky; top: 0; z-index: 100;
             background: rgba(38,38,36,0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-subtle);
+            padding: 0;
         }
-        .header-inner { display: flex; justify-content: space-between; align-items: center; height: 56px; }
+        .header-inner {
+            display: flex; justify-content: space-between; align-items: center;
+            height: 56px;
+        }
         .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; flex-shrink: 0; }
+        .logo img { height: 22px; }
         .logo-text { font-size: 15px; font-weight: 600; color: var(--accent); letter-spacing: 2px; }
 
         .nav { display: flex; align-items: center; gap: 6px; }
@@ -96,14 +107,18 @@
         }
         .btn-logout:hover { color: var(--error); }
 
+        /* ========== MOBILE HAMBURGER ========== */
         .mobile-menu-btn {
             display: none;
             background: none; border: none; cursor: pointer;
             padding: 6px; color: var(--text-secondary);
             border-radius: var(--radius-sm);
+            transition: background 0.2s, color 0.2s;
         }
         .mobile-menu-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+        .mobile-menu-btn svg { display: block; }
 
+        /* Mobile nav overlay */
         .mobile-nav-overlay {
             display: none;
             position: fixed; inset: 0; z-index: 199;
@@ -134,6 +149,7 @@
             background: none; border: none; cursor: pointer;
             color: var(--text-muted); padding: 4px; border-radius: var(--radius-sm);
         }
+        .mobile-nav-close:hover { color: var(--text); }
 
         .mobile-nav-item {
             display: flex; align-items: center; gap: 10px;
@@ -147,9 +163,15 @@
         .mobile-nav-item.active { color: var(--accent); background: var(--accent-muted); }
         .mobile-nav-item svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.6; }
 
-        .mobile-nav-divider { height: 1px; background: var(--border-subtle); margin: 8px 20px; }
+        .mobile-nav-divider {
+            height: 1px; background: var(--border-subtle);
+            margin: 8px 20px;
+        }
 
-        .mobile-nav-user { padding: 12px 20px; display: flex; align-items: center; gap: 10px; }
+        .mobile-nav-user {
+            padding: 12px 20px;
+            display: flex; align-items: center; gap: 10px;
+        }
         .mobile-nav-user-email { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; }
 
         .mobile-nav-logout {
@@ -158,14 +180,19 @@
             font-size: 14px; color: var(--error);
             background: none; border: none; cursor: pointer;
             font-family: var(--font); text-align: left;
+            transition: background 0.15s;
             opacity: 0.8;
         }
         .mobile-nav-logout:hover { background: rgba(217,83,79,0.08); opacity: 1; }
 
+        /* ========== VIEWS ========== */
         .view { display: none; }
         .view.active { display: block; }
 
-        .hero { padding: 52px 0 28px; text-align: center; }
+        /* ========== HERO SEARCH ========== */
+        .hero {
+            padding: 52px 0 28px; text-align: center;
+        }
         .hero h1 { font-size: 28px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
         .hero p { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
 
@@ -176,7 +203,10 @@
             border-radius: 12px; padding: 6px 6px 6px 18px;
             transition: border-color 0.3s, box-shadow 0.3s;
         }
-        .search-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+        .search-box:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
         .search-box svg { flex-shrink: 0; color: var(--text-muted); }
         .search-input {
             flex: 1; background: none; border: none; outline: none;
@@ -194,6 +224,7 @@
         .search-btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
         .search-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
+        /* ========== STATS ========== */
         .stats-row {
             display: grid; grid-template-columns: repeat(4, 1fr);
             gap: 10px; max-width: 620px; margin: 0 auto 32px;
@@ -205,6 +236,7 @@
         .stat-value { font-size: 22px; font-weight: 600; color: var(--accent); }
         .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 3px; }
 
+        /* ========== ANSWER AREA ========== */
         .answer-area {
             max-width: 620px; margin: 0 auto 28px;
             background: var(--bg-card); border: 1px solid var(--border-subtle);
@@ -249,8 +281,10 @@
         .source-conf { color: var(--text-dim); }
         .no-answer { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
 
+        /* ========== TWO COLUMN ========== */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
 
+        /* ========== CARD ========== */
         .card {
             background: var(--bg-card); border: 1px solid var(--border-subtle);
             border-radius: var(--radius-lg); overflow: hidden;
@@ -263,7 +297,10 @@
         .card-title { font-size: 14px; font-weight: 500; }
         .card-body { padding: 20px; }
 
-        .tabs { display: inline-flex; gap: 3px; background: var(--bg); padding: 3px; border-radius: var(--radius-sm); }
+        /* ========== TABS ========== */
+        .tabs {
+            display: inline-flex; gap: 3px; background: var(--bg); padding: 3px; border-radius: var(--radius-sm);
+        }
         .tab-btn {
             padding: 5px 14px; border-radius: 4px; border: none; background: none;
             font-size: 11px; font-weight: 500; color: var(--text-muted);
@@ -274,6 +311,7 @@
         .tab-pane { display: none; }
         .tab-pane.active { display: block; }
 
+        /* ========== FORMS ========== */
         label.field-label {
             display: block; font-size: 11px; font-weight: 500;
             color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
@@ -293,6 +331,7 @@
         .form-group { margin-bottom: 14px; }
         .form-group:last-child { margin-bottom: 0; }
 
+        /* ========== BUTTONS ========== */
         .btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 6px;
             padding: 10px 18px; border: none; border-radius: var(--radius);
@@ -308,6 +347,7 @@
         .btn-sm { padding: 6px 12px; font-size: 11px; }
         .btn-danger { background: var(--error); color: #fff; }
 
+        /* ========== FILE UPLOAD ========== */
         .drop-zone {
             border: 1.5px dashed var(--border); border-radius: var(--radius);
             padding: 32px 20px; text-align: center; cursor: pointer;
@@ -329,6 +369,7 @@
         }
         .file-name-display.show { display: block; }
 
+        /* ========== KNOWLEDGE LIST ========== */
         .knowledge-list { max-height: 420px; overflow-y: auto; }
         .k-item {
             padding: 12px 20px; border-bottom: 1px solid var(--border-subtle);
@@ -351,7 +392,13 @@
         .empty-state svg { width: 36px; height: 36px; margin-bottom: 10px; opacity: 0.3; }
         .empty-state p { font-size: 13px; }
 
-        .integration-row { display: flex; align-items: center; gap: 14px; padding: 16px 0; }
+        /* ========== TICKET SECTION ========== */
+        .ticket-section { margin-bottom: 24px; }
+
+        /* ========== INTEGRATIONS ========== */
+        .integration-row {
+            display: flex; align-items: center; gap: 14px; padding: 16px 0;
+        }
         .integration-icon {
             width: 40px; height: 40px; border-radius: var(--radius);
             display: flex; align-items: center; justify-content: center;
@@ -361,6 +408,7 @@
         .integration-name { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
         .integration-desc { font-size: 12px; color: var(--text-muted); }
 
+        /* ========== AUTH ========== */
         .auth-screen {
             min-height: 100vh; display: flex; align-items: center; justify-content: center;
             background: var(--bg); padding: 20px;
@@ -371,11 +419,14 @@
             border-radius: var(--radius-lg); padding: 36px 28px;
         }
         .auth-header { text-align: center; margin-bottom: 28px; }
+        .auth-logo { margin-bottom: 16px; }
+        .auth-logo img { height: 22px; }
         .auth-title { font-size: 18px; font-weight: 500; margin-bottom: 6px; }
         .auth-subtitle { font-size: 13px; color: var(--text-muted); }
         .auth-toggle { text-align: center; margin-top: 16px; font-size: 12px; color: var(--text-muted); }
         .auth-toggle a { color: var(--accent); cursor: pointer; text-decoration: none; }
 
+        /* ========== ALERTS ========== */
         .alert {
             padding: 10px 14px; border-radius: var(--radius); margin-bottom: 14px;
             font-size: 13px; display: flex; align-items: center; gap: 8px;
@@ -387,72 +438,139 @@
 
         .hidden { display: none !important; }
 
+        /* ========== ZENDESK MODAL ========== */
         .z-modal { background: var(--bg); border-radius: var(--radius); padding: 16px; margin-top: 12px; }
         .z-connected { background: var(--bg); border-radius: var(--radius); padding: 16px; margin-top: 12px; }
         .z-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--success); margin-bottom: 4px; }
         .z-dot { width: 7px; height: 7px; background: var(--success); border-radius: 50%; }
 
+        /* ==========================================================================
+           RESPONSIVE — TABLET (max-width: 768px)
+           ========================================================================== */
         @media (max-width: 768px) {
             .container { padding: 0 16px; }
+
+            /* Header: hide desktop nav, show hamburger */
             .nav { display: none; }
             .mobile-menu-btn { display: block; }
             .mobile-nav, .mobile-nav-overlay { display: block; }
+
             .header-inner { height: 52px; }
+
+            /* User badge — show avatar only */
             .user-email-text { display: none; }
             .user-badge { padding: 3px; border: none; background: none; }
             .btn-logout { display: none; }
+
+            /* Hero */
             .hero { padding: 36px 0 20px; }
             .hero h1 { font-size: 22px; }
             .hero p { font-size: 13px; margin-bottom: 24px; }
-            .stats-row { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 24px; }
+
+            /* Stats: 2x2 grid */
+            .stats-row {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px; margin-bottom: 24px;
+            }
             .stat-card { padding: 12px 14px; }
             .stat-value { font-size: 20px; }
+
+            /* Grid: stack columns */
             .grid-2 { grid-template-columns: 1fr; }
+
+            /* Cards */
             .card-head { padding: 14px 16px; }
             .card-body { padding: 16px; }
+
+            /* Integration row */
             .integration-row { flex-wrap: wrap; gap: 10px; }
             .integration-info { flex-basis: calc(100% - 54px); }
-            .z-connected > div:first-child { flex-direction: column; align-items: flex-start; gap: 10px; }
+
+            /* Zendesk connected */
+            .z-connected > div:first-child {
+                flex-direction: column; align-items: flex-start; gap: 10px;
+            }
+
+            /* Settings */
             #settings-view .container { max-width: 100%; }
-            #settings-view .card:last-child .card-body > div { flex-direction: column; align-items: flex-start; gap: 12px; }
+
+            /* Danger zone row */
+            #settings-view .card:last-child .card-body > div {
+                flex-direction: column; align-items: flex-start; gap: 12px;
+            }
         }
 
+        /* ==========================================================================
+           RESPONSIVE — SMALL MOBILE (max-width: 480px)
+           ========================================================================== */
         @media (max-width: 480px) {
             .container { padding: 0 12px; }
+
+            /* Auth card */
             .auth-card { padding: 28px 20px; }
             .auth-title { font-size: 16px; }
+
+            /* Hero */
             .hero { padding: 28px 0 16px; }
             .hero h1 { font-size: 20px; line-height: 1.3; }
             .hero p { margin-bottom: 20px; }
+
+            /* Search box */
             .search-box { padding: 4px 4px 4px 12px; gap: 6px; border-radius: 10px; }
             .search-input { font-size: 14px; padding: 8px 2px; }
             .search-btn { padding: 9px 16px; font-size: 12px; }
+
+            /* Stats: still 2x2 but tighter */
             .stats-row { gap: 6px; }
             .stat-card { padding: 10px 12px; }
             .stat-value { font-size: 18px; }
             .stat-label { font-size: 9px; letter-spacing: 0.5px; }
+
+            /* Answer area */
             .answer-content { padding: 16px; }
             .answer-text { font-size: 13px; line-height: 1.7; }
+
+            /* Cards */
             .card-head { padding: 12px 14px; }
             .card-body { padding: 14px; }
+
+            /* Knowledge items */
             .k-item { padding: 10px 14px; gap: 10px; }
+
+            /* Drop zone */
             .drop-zone { padding: 24px 16px; }
+
+            /* Tickets card full width */
             #tickets-view .card { max-width: 100%; }
+
+            /* Settings: account usage 1 col on very small screens */
+            #settings-view .card-body div[style*="grid-template-columns: 1fr 1fr"] {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            /* Integration buttons stack */
             #zendesk-actions .btn { font-size: 10px; padding: 5px 10px; }
         }
 
+        /* Fix: iOS input zoom prevention */
         @media (max-width: 768px) {
-            input[type="text"], input[type="email"], input[type="password"], textarea, select { font-size: 16px; }
+            input[type="text"], input[type="email"], input[type="password"],
+            textarea, select {
+                font-size: 16px;
+            }
             .search-input { font-size: 16px; }
         }
     </style>
 </head>
 <body>
 
+<!-- ==================== AUTH SCREEN ==================== -->
 <div id="auth-screen" class="auth-screen">
     <div class="auth-card fade-in">
         <div class="auth-header">
-            <div class="auth-logo"><span style="font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: 3px;">KRAB</span></div>
+            <div class="auth-logo">
+                <span style="font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: 3px;">KRAB</span>
+            </div>
             <h2 class="auth-title" id="auth-form-title">Welcome back</h2>
             <p class="auth-subtitle" id="auth-form-subtitle">Sign in to your account</p>
         </div>
@@ -479,11 +597,16 @@
     </div>
 </div>
 
+<!-- ==================== DASHBOARD ==================== -->
 <div id="dashboard" class="hidden">
+
+    <!-- HEADER -->
     <header class="header">
         <div class="container">
             <div class="header-inner">
-                <a class="logo" href="#"><span class="logo-text">KRAB</span></a>
+                <a class="logo" href="#">
+                    <span class="logo-text">KRAB</span>
+                </a>
                 <div class="nav">
                     <button class="nav-item active" onclick="showView('dashboard-view', this)">Dashboard</button>
                     <button class="nav-item" onclick="showView('knowledge-view', this)">Knowledge</button>
@@ -504,6 +627,7 @@
         </div>
     </header>
 
+    <!-- MOBILE NAV DRAWER -->
     <div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="closeMobileNav()"></div>
     <nav class="mobile-nav" id="mobile-nav">
         <div class="mobile-nav-header">
@@ -544,6 +668,7 @@
         </button>
     </nav>
 
+    <!-- ====== DASHBOARD VIEW ====== -->
     <div id="dashboard-view" class="view active">
         <div class="container">
             <div class="hero">
@@ -555,21 +680,26 @@
                     <button class="search-btn" id="ask-btn" onclick="askQuestion()">Ask AI</button>
                 </div>
             </div>
+
             <div class="stats-row">
                 <div class="stat-card"><div class="stat-value" id="stat-chunks">-</div><div class="stat-label">Documents</div></div>
                 <div class="stat-card"><div class="stat-value" id="stat-searches">-</div><div class="stat-label">Searches</div></div>
                 <div class="stat-card"><div class="stat-value" id="stat-helpful">-</div><div class="stat-label">Helpful</div></div>
                 <div class="stat-card"><div class="stat-value" id="stat-usage">-</div><div class="stat-label">Usage</div></div>
             </div>
+
             <div class="answer-area hidden" id="ask-answer-area"></div>
         </div>
     </div>
 
+    <!-- ====== KNOWLEDGE VIEW ====== -->
     <div id="knowledge-view" class="view">
         <div class="container" style="padding-top: 28px; padding-bottom: 40px;">
             <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Knowledge base</h2>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">Upload and manage your company documents</p>
+
             <div class="grid-2">
+                <!-- UPLOAD -->
                 <div class="card">
                     <div class="card-head">
                         <span class="card-title">Upload knowledge</span>
@@ -580,6 +710,8 @@
                     </div>
                     <div class="card-body">
                         <div id="upload-alert"></div>
+
+                        <!-- FILE TAB -->
                         <div id="upload-tab-file" class="tab-pane active">
                             <div class="form-group">
                                 <label class="field-label">Source type</label>
@@ -604,6 +736,8 @@
                             </div>
                             <button class="btn btn-accent btn-full" onclick="uploadFile()" id="upload-file-btn" disabled>Upload file</button>
                         </div>
+
+                        <!-- TEXT TAB -->
                         <div id="upload-tab-text" class="tab-pane">
                             <div class="form-group">
                                 <label class="field-label">Source type</label>
@@ -623,6 +757,8 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- RECENT KNOWLEDGE -->
                 <div class="card">
                     <div class="card-head">
                         <span class="card-title">Recent documents</span>
@@ -639,10 +775,12 @@
         </div>
     </div>
 
+    <!-- ====== TICKETS VIEW ====== -->
     <div id="tickets-view" class="view">
         <div class="container" style="padding-top: 28px; padding-bottom: 40px;">
             <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Ticket resolution</h2>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">AI-powered support response generation</p>
+
             <div class="card" style="max-width: 680px;">
                 <div class="card-body">
                     <div class="form-group">
@@ -660,10 +798,12 @@
         </div>
     </div>
 
+    <!-- ====== INTEGRATIONS VIEW ====== -->
     <div id="integrations-view" class="view">
         <div class="container" style="padding-top: 28px; padding-bottom: 40px;">
             <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Integrations</h2>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">Connect your tools</p>
+
             <div class="card" style="max-width: 680px;">
                 <div class="card-body">
                     <div class="integration-row">
@@ -678,6 +818,7 @@
                             <button class="btn btn-accent btn-sm" onclick="showZendeskConnect()" id="zendesk-connect-btn">Connect</button>
                         </div>
                     </div>
+
                     <div id="zendesk-modal" class="z-modal hidden">
                         <div class="form-group">
                             <label class="field-label">Zendesk subdomain</label>
@@ -691,6 +832,7 @@
                             <button class="btn btn-outline btn-sm" onclick="hideZendeskConnect()">Cancel</button>
                         </div>
                     </div>
+
                     <div id="zendesk-connected" class="z-connected hidden">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
                             <div>
@@ -709,20 +851,35 @@
         </div>
     </div>
 
+    <!-- ====== SETTINGS VIEW ====== -->
     <div id="settings-view" class="view">
         <div class="container" style="padding-top: 28px; padding-bottom: 40px; max-width: 680px;">
             <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Settings</h2>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">Manage your account and preferences</p>
+
             <div id="settings-alert"></div>
+
+            <!-- PROFILE -->
             <div class="card" style="margin-bottom: 16px;">
                 <div class="card-head"><span class="card-title">Profile</span></div>
                 <div class="card-body">
-                    <div class="form-group"><label class="field-label">Name</label><input type="text" id="settings-name" placeholder="Your name"></div>
-                    <div class="form-group"><label class="field-label">Email</label><input type="email" id="settings-email" placeholder="you@company.com"></div>
-                    <div class="form-group"><label class="field-label">Company / Team</label><input type="text" id="settings-company" placeholder="Company name"></div>
+                    <div class="form-group">
+                        <label class="field-label">Name</label>
+                        <input type="text" id="settings-name" placeholder="Your name">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Email</label>
+                        <input type="email" id="settings-email" placeholder="you@company.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Company / Team</label>
+                        <input type="text" id="settings-company" placeholder="Company name">
+                    </div>
                     <button class="btn btn-accent" id="save-profile-btn" onclick="saveProfile()">Save changes</button>
                 </div>
             </div>
+
+            <!-- API KEY -->
             <div class="card" style="margin-bottom: 16px;">
                 <div class="card-head"><span class="card-title">API key</span></div>
                 <div class="card-body">
@@ -733,20 +890,33 @@
                     </div>
                 </div>
             </div>
+
+            <!-- CHANGE PASSWORD -->
             <div class="card" style="margin-bottom: 16px;">
                 <div class="card-head"><span class="card-title">Change password</span></div>
                 <div class="card-body">
                     <div id="password-alert"></div>
-                    <div class="form-group"><label class="field-label">Current password</label><input type="password" id="settings-current-pw" placeholder="••••••••"></div>
-                    <div class="form-group"><label class="field-label">New password</label><input type="password" id="settings-new-pw" placeholder="••••••••"></div>
+                    <div class="form-group">
+                        <label class="field-label">Current password</label>
+                        <input type="password" id="settings-current-pw" placeholder="••••••••">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">New password</label>
+                        <input type="password" id="settings-new-pw" placeholder="••••••••">
+                    </div>
                     <button class="btn btn-accent" onclick="changePassword()">Update password</button>
                 </div>
             </div>
+
+            <!-- APPEARANCE -->
             <div class="card" style="margin-bottom: 16px;">
                 <div class="card-head"><span class="card-title">Appearance</span></div>
                 <div class="card-body">
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-                        <div style="min-width: 0;"><div style="font-size: 13px; font-weight: 500;">Theme</div><div style="font-size: 12px; color: var(--text-muted);">Switch between dark and light mode</div></div>
+                        <div style="min-width: 0;">
+                            <div style="font-size: 13px; font-weight: 500;">Theme</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">Switch between dark and light mode</div>
+                        </div>
                         <div class="tabs" style="margin: 0; flex-shrink: 0;">
                             <button class="tab-btn active" id="theme-dark-btn" onclick="setTheme('dark')">Dark</button>
                             <button class="tab-btn" id="theme-light-btn" onclick="setTheme('light')">Light</button>
@@ -754,6 +924,8 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ACCOUNT STATS -->
             <div class="card" style="margin-bottom: 16px;">
                 <div class="card-head"><span class="card-title">Account usage</span></div>
                 <div class="card-body">
@@ -765,19 +937,28 @@
                     </div>
                 </div>
             </div>
+
+            <!-- DANGER ZONE -->
             <div class="card" style="border-color: rgba(217,83,79,0.3);">
-                <div class="card-head" style="border-color: rgba(217,83,79,0.2);"><span class="card-title" style="color: var(--error);">Danger zone</span></div>
+                <div class="card-head" style="border-color: rgba(217,83,79,0.2);">
+                    <span class="card-title" style="color: var(--error);">Danger zone</span>
+                </div>
                 <div class="card-body">
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-                        <div style="min-width: 0;"><div style="font-size: 13px; font-weight: 500;">Delete account</div><div style="font-size: 12px; color: var(--text-muted);">Permanently delete your account and all data. Cannot be undone.</div></div>
+                        <div style="min-width: 0;">
+                            <div style="font-size: 13px; font-weight: 500;">Delete account</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">Permanently delete your account and all data. Cannot be undone.</div>
+                        </div>
                         <button class="btn btn-danger btn-sm" onclick="deleteAccount()" style="flex-shrink: 0;">Delete account</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
 </div>
 
+<!-- ==================== JAVASCRIPT ==================== -->
 <script>
 const API_URL = "";
 let authToken = null;
@@ -786,6 +967,7 @@ let companyId = null;
 let selectedFile = null;
 let isRegisterMode = false;
 
+// ====== MOBILE NAV ======
 function openMobileNav() {
     document.getElementById('mobile-nav').classList.add('open');
     document.getElementById('mobile-nav-overlay').classList.add('open');
@@ -802,6 +984,7 @@ function mobileShowView(viewId, btn) {
     document.querySelectorAll('.mobile-nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById(viewId).classList.add('active');
     if (btn) btn.classList.add('active');
+    // Also sync desktop nav if visible
     document.querySelectorAll('.nav-item').forEach(n => {
         const map = { 'Dashboard': 'dashboard-view', 'Knowledge': 'knowledge-view', 'Tickets': 'tickets-view', 'Integrations': 'integrations-view' };
         if (map[n.textContent.trim()] === viewId) n.classList.add('active');
@@ -809,6 +992,7 @@ function mobileShowView(viewId, btn) {
     closeMobileNav();
 }
 
+// ====== INIT ======
 document.addEventListener('DOMContentLoaded', () => {
     const saved = localStorage.getItem('krab_auth');
     if (saved) {
@@ -817,10 +1001,9 @@ document.addEventListener('DOMContentLoaded', () => {
         showDashboard();
     }
     setupDragDrop();
-    const t = localStorage.getItem('krab_theme');
-    if (t) setTheme(t);
 });
 
+// ====== AUTH ======
 function toggleAuthMode() {
     isRegisterMode = !isRegisterMode;
     document.getElementById('auth-form-title').textContent = isRegisterMode ? 'Create account' : 'Welcome back';
@@ -841,6 +1024,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     btn.disabled = true;
     btn.innerHTML = '<span class="loading-spinner"></span>';
     alertEl.innerHTML = '';
+
     try {
         if (isRegisterMode) {
             const company = document.getElementById('auth-company').value || 'default';
@@ -849,16 +1033,23 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
                 body: JSON.stringify({ email, password, company_id: company })
             });
             const data = await res.json();
-            if (data.error || data.detail) { alertEl.innerHTML = mkAlert('error', data.error || data.detail); return; }
+            if (data.error || data.detail) {
+                alertEl.innerHTML = mkAlert('error', data.error || data.detail);
+                return;
+            }
             alertEl.innerHTML = mkAlert('success', 'Account created! Signing in...');
             await new Promise(r => setTimeout(r, 800));
         }
+
         const res = await fetch(`${API_URL}/login`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
         const data = await res.json();
-        if (data.error || data.detail) { alertEl.innerHTML = mkAlert('error', data.error || data.detail); return; }
+        if (data.error || data.detail) {
+            alertEl.innerHTML = mkAlert('error', data.error || data.detail);
+            return;
+        }
         authToken = data.access_token; userEmail = data.email; companyId = data.company_id;
         localStorage.setItem('krab_auth', JSON.stringify({ token: authToken, email: userEmail, company_id: companyId }));
         showDashboard();
@@ -890,6 +1081,7 @@ function showDashboard() {
     document.getElementById('user-email').textContent = userEmail;
     const initials = userEmail ? userEmail.substring(0, 2).toUpperCase() : 'U';
     document.getElementById('user-avatar').textContent = initials;
+    // Update mobile nav user info
     const mobileAvatar = document.getElementById('mobile-user-avatar');
     const mobileEmail = document.getElementById('mobile-user-email');
     if (mobileAvatar) mobileAvatar.textContent = initials;
@@ -900,17 +1092,20 @@ function showDashboard() {
     loadProfile();
 }
 
+// ====== VIEWS ======
 function showView(viewId, btn) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.querySelectorAll('.mobile-nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById(viewId).classList.add('active');
     if (btn) btn.classList.add('active');
+    // Sync mobile nav
     document.querySelectorAll('.mobile-nav-item').forEach(n => {
         if (n.dataset.view === viewId) n.classList.add('active');
     });
 }
 
+// ====== ANALYTICS ======
 async function loadAnalytics() {
     try {
         const res = await fetch(`${API_URL}/analytics`, { headers: { 'Authorization': `Bearer ${authToken}` } });
@@ -923,6 +1118,7 @@ async function loadAnalytics() {
     } catch (e) { console.error('Analytics error:', e); }
 }
 
+// ====== UPLOAD TABS ======
 function switchUploadTab(tab, btn) {
     document.querySelectorAll('.card .tab-btn').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
@@ -930,6 +1126,7 @@ function switchUploadTab(tab, btn) {
     document.getElementById(`upload-tab-${tab}`).classList.add('active');
 }
 
+// ====== DRAG & DROP ======
 function setupDragDrop() {
     const dz = document.getElementById('file-drop-zone');
     if (!dz) return;
@@ -949,6 +1146,7 @@ function handleFile(file) {
     document.getElementById('upload-file-btn').disabled = false;
 }
 
+// ====== UPLOAD TEXT ======
 async function uploadText() {
     const content = document.getElementById('content').value.trim();
     const sourceType = document.getElementById('source-type').value;
@@ -968,6 +1166,7 @@ async function uploadText() {
     finally { btn.disabled = false; btn.textContent = 'Upload knowledge'; }
 }
 
+// ====== UPLOAD FILE ======
 async function uploadFile() {
     if (!selectedFile) return;
     const btn = document.getElementById('upload-file-btn');
@@ -992,6 +1191,7 @@ async function uploadFile() {
     finally { btn.disabled = false; btn.textContent = 'Upload file'; }
 }
 
+// ====== LOAD KNOWLEDGE ======
 async function loadKnowledge() {
     const list = document.getElementById('knowledge-list');
     try {
@@ -1018,6 +1218,7 @@ async function loadKnowledge() {
     } catch (e) { console.error('Load knowledge error:', e); }
 }
 
+// ====== ASK AI ======
 async function askQuestion() {
     const input = document.getElementById('ask-input');
     const btn = document.getElementById('ask-btn');
@@ -1054,6 +1255,7 @@ async function askQuestion() {
 
 function toggleSources(btn) { btn.classList.toggle('open'); document.getElementById('ask-sources').classList.toggle('open'); }
 
+// ====== TICKET RESOLUTION ======
 async function resolveTicket() {
     const subject = document.getElementById('ticket-subject').value.trim();
     const body = document.getElementById('ticket-body').value.trim();
@@ -1092,6 +1294,7 @@ function copyTicket() {
     }
 }
 
+// ====== ZENDESK ======
 function showZendeskConnect() { document.getElementById('zendesk-modal').classList.remove('hidden'); }
 function hideZendeskConnect() { document.getElementById('zendesk-modal').classList.add('hidden'); }
 
@@ -1145,6 +1348,7 @@ async function disconnectZendesk() {
     catch (e) { console.error(e); }
 }
 
+// ====== HELPERS ======
 function esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
 function mkAlert(type, msg) {
@@ -1161,9 +1365,11 @@ function showAlert(id, type, msg) {
     if (type === 'success') setTimeout(() => { document.getElementById(id).innerHTML = ''; }, 3000);
 }
 
+// OAuth callback check
 const params = new URLSearchParams(window.location.search);
 if (params.get('zendesk') === 'connected') window.history.replaceState({}, document.title, window.location.pathname);
 
+// ====== SETTINGS / PROFILE ======
 async function loadProfile() {
     try {
         const res = await fetch(`${API_URL}/me`, { headers: { 'Authorization': `Bearer ${authToken}` } });
@@ -1269,6 +1475,12 @@ function setTheme(theme) {
         document.documentElement.style.setProperty('--text-dim', '#4a4940');
     }
 }
+
+// Apply saved theme on load
+document.addEventListener('DOMContentLoaded', () => {
+    const t = localStorage.getItem('krab_theme');
+    if (t) setTheme(t);
+});
 
 async function deleteAccount() {
     if (!confirm('Delete your account? This will permanently remove all your data.')) return;
