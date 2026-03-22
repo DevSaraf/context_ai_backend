@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KRAB — Grab your knowledge, anytime and anywhere you work</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #121210;
+            --bg-card: #1a1a17;
+            --accent: #c6613f;
+            --accent-hover: #d4734f;
+            --accent-glow: rgba(198, 97, 63, 0.15);
+            --text: #e8e6e1;
+            --text-secondary: #9a9890;
+            --text-dim: #5a5850;
+            --border: #2a2a27;
+            --serif: 'Instrument Serif', Georgia, serif;
+            --sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0; z-index: 0;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            pointer-events: none;
+        }
+
+        .glow-orb {
+            position: fixed;
+            width: 600px; height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            pointer-events: none; z-index: 0;
+            top: -200px; left: 50%; transform: translateX(-50%);
+            animation: breathe 8s ease-in-out infinite;
+        }
+        @keyframes breathe {
+            0%, 100% { opacity: 0.4; transform: translateX(-50%) scale(1); }
+            50% { opacity: 0.7; transform: translateX(-50%) scale(1.1); }
+        }
+
+        .content {
+            position: relative; z-index: 1;
+            display: flex; flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* ===== NAV ===== */
+        nav {
+            display: flex; justify-content: space-between; align-items: center;
+            max-width: 960px; margin: 0 auto; width: 100%;
+            padding: 24px 24px 0;
+        }
+        .nav-brand {
+            font-size: 15px; font-weight: 600; color: var(--accent);
+            letter-spacing: 2.5px; text-decoration: none;
+        }
+        .nav-link {
+            font-size: 13px; color: var(--text-secondary);
+            text-decoration: none; padding: 8px 16px;
+            border: 1px solid var(--border); border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover { border-color: var(--accent); color: var(--text); }
+
+        /* ===== HERO ===== */
+        .hero {
+            max-width: 680px; margin: 0 auto;
+            text-align: center;
+            padding: 140px 24px 60px;
+            flex: 1;
+            display: flex; flex-direction: column;
+            justify-content: center;
+        }
+
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 11px; font-weight: 500; letter-spacing: 1px;
+            text-transform: uppercase; color: var(--accent);
+            background: var(--accent-glow);
+            border: 1px solid rgba(198, 97, 63, 0.2);
+            padding: 6px 14px; border-radius: 20px;
+            margin: 0 auto 32px;
+            animation: fadeUp 0.6s ease-out both;
+        }
+        .hero-badge::before {
+            content: '';
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--accent);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .hero h1 {
+            font-family: var(--serif);
+            font-size: clamp(40px, 7vw, 62px);
+            font-weight: 400;
+            line-height: 1.12;
+            color: var(--text);
+            margin-bottom: 24px;
+            animation: fadeUp 0.6s ease-out 0.1s both;
+        }
+        .hero h1 em {
+            font-style: italic;
+            color: var(--accent);
+        }
+
+        .hero p {
+            font-size: 17px; line-height: 1.7;
+            color: var(--text-secondary);
+            max-width: 480px; margin: 0 auto 52px;
+            animation: fadeUp 0.6s ease-out 0.2s both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== WAITLIST ===== */
+        .waitlist {
+            animation: fadeUp 0.6s ease-out 0.3s both;
+        }
+
+        .waitlist-methods {
+            max-width: 400px; margin: 0 auto;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+
+        .btn-google {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 14px 20px;
+            background: #fff; color: #1a1a18;
+            border: none; border-radius: 12px;
+            font-size: 14px; font-weight: 600;
+            font-family: var(--sans);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-google:hover { background: #f0f0f0; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+        .btn-google:active { transform: translateY(0); }
+        .btn-google:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-google svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+        .divider-row {
+            display: flex; align-items: center; gap: 14px;
+            margin: 4px 0;
+        }
+        .divider-line { flex: 1; height: 1px; background: var(--border); }
+        .divider-text { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+
+        .waitlist-box {
+            display: flex; gap: 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 5px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .waitlist-box:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow), 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .waitlist-input {
+            flex: 1; min-width: 0;
+            background: none; border: none; outline: none;
+            font-size: 15px; color: var(--text);
+            font-family: var(--sans);
+            padding: 11px 14px;
+        }
+        .waitlist-input::placeholder { color: var(--text-dim); }
+        .waitlist-btn {
+            padding: 11px 24px;
+            background: var(--accent); color: #fff;
+            border: none; border-radius: 9px;
+            font-size: 14px; font-weight: 600;
+            font-family: var(--sans);
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .waitlist-btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        .waitlist-btn:active { transform: translateY(0); }
+        .waitlist-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .waitlist-note {
+            font-size: 12px; color: var(--text-dim);
+            margin-top: 16px;
+        }
+
+        .waitlist-success {
+            display: none;
+            text-align: center; padding: 24px;
+            background: rgba(92, 184, 92, 0.06);
+            border: 1px solid rgba(92, 184, 92, 0.15);
+            border-radius: 14px;
+            max-width: 400px; margin: 0 auto;
+        }
+        .waitlist-success.show { display: block; animation: fadeUp 0.3s ease-out; }
+        .waitlist-success h3 { font-size: 17px; color: #5cb85c; margin-bottom: 6px; font-weight: 500; }
+        .waitlist-success p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+        .waitlist-error {
+            display: none;
+            font-size: 12px; color: #d9534f;
+            margin-top: 10px;
+            text-align: center;
+        }
+        .waitlist-error.show { display: block; }
+
+        /* ===== FOOTER ===== */
+        footer {
+            text-align: center;
+            padding: 32px 24px;
+            border-top: 1px solid var(--border);
+            font-size: 12px; color: var(--text-dim);
+        }
+
+        /* ===== MOBILE ===== */
+        @media (max-width: 640px) {
+            .hero { padding: 100px 20px 48px; }
+            .hero h1 { font-size: 34px; }
+            .hero p { font-size: 15px; margin-bottom: 40px; }
+            .waitlist-box { flex-direction: column; }
+            .waitlist-btn { width: 100%; padding: 14px; }
+            nav { padding: 20px 20px 0; }
+        }
+
+        @media (max-width: 768px) {
+            .waitlist-input { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="glow-orb"></div>
+    <div class="content">
+
+        <nav>
+            <a class="nav-brand" href="/">KRAB</a>
+            <a class="nav-link" href="/app">Login</a>
+        </nav>
+
+        <section class="hero">
+            <div class="hero-badge">Early Access</div>
+            <h1>Grab your knowledge, <em>anytime</em> and <em>anywhere</em> you work</h1>
+            <p>An AI platform that makes your company knowledge instantly accessible — right where you need it.</p>
+
+            <div class="waitlist" id="waitlist-form">
+                <div class="waitlist-methods">
+                    <button class="btn-google" id="google-btn" onclick="signInWithGoogle()">
+                        <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                        Continue with Google
+                    </button>
+
+                    <div class="divider-row">
+                        <div class="divider-line"></div>
+                        <span class="divider-text">or</span>
+                        <div class="divider-line"></div>
+                    </div>
+
+                    <!-- Honeypot: invisible to humans, bots auto-fill it -->
+                    <input type="text" id="waitlist-name" name="name" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;top:-9999px;opacity:0;height:0;width:0;">
+
+                    <div class="waitlist-box">
+                        <input type="email" class="waitlist-input" id="waitlist-email" placeholder="you@company.com" onkeydown="if(event.key==='Enter')joinWithEmail()" maxlength="120">
+                        <button class="waitlist-btn" id="waitlist-btn" onclick="joinWithEmail()">Join waitlist</button>
+                    </div>
+                </div>
+                <p class="waitlist-note">Free early access. No credit card required.</p>
+                <div class="waitlist-error" id="waitlist-error"></div>
+            </div>
+
+            <div class="waitlist-success" id="waitlist-success">
+                <h3>You're on the list!</h3>
+                <p>We'll reach out when KRAB is ready for you.</p>
+            </div>
+        </section>
+
+        <footer>
+            &copy; 2026 KRAB
+        </footer>
+
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+    <script>
+    // =============================================
+    // FIREBASE CONFIG — Replace with your project
+    // =============================================
+    // 1. Go to https://console.firebase.google.com
+    // 2. Create a project (or use existing)
+    // 3. Add a Web App
+    // 4. Copy the config object and paste below
+    // 5. Enable Google sign-in: Authentication > Sign-in method > Google > Enable
+    // 6. Enable Firestore: Firestore Database > Create database > Start in test mode
+    // 7. Add your domain: Authentication > Settings > Authorized domains > Add "krabai.tech"
+    // =============================================
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBOwbkS7l8NBMkPUtqXySAfYEJg1BO2kl0",
+        authDomain: "krab-12587.firebaseapp.com",
+        projectId: "krab-12587",
+        storageBucket: "krab-12587.firebasestorage.app",
+        messagingSenderId: "1007404491350",
+        appId: "1:1007404491350:web:e8df97e6150fc9699691f7",
+        measurementId: "G-JPH6VNHCVD"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // ===== SECURITY: Sanitize input =====
+    function sanitize(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML.trim();
+    }
+
+    // ===== SECURITY: Strict email validation =====
+    function isValidEmail(email) {
+        const re = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+        return re.test(email) && email.length <= 120 && !email.includes('<') && !email.includes('>');
+    }
+
+    // ===== SECURITY: Rate limiting (localStorage) =====
+    function isRateLimited() {
+        try {
+            const last = parseInt(localStorage.getItem('krab_wl_ts') || '0');
+            const count = parseInt(localStorage.getItem('krab_wl_ct') || '0');
+            const now = Date.now();
+
+            if (now - last > 3600000) {
+                localStorage.setItem('krab_wl_ct', '0');
+                localStorage.setItem('krab_wl_ts', String(now));
+                return false;
+            }
+
+            if (count >= 3) return true;
+            return false;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function recordSubmission() {
+        try {
+            const count = parseInt(localStorage.getItem('krab_wl_ct') || '0');
+            localStorage.setItem('krab_wl_ct', String(count + 1));
+            if (!localStorage.getItem('krab_wl_ts')) {
+                localStorage.setItem('krab_wl_ts', String(Date.now()));
+            }
+        } catch (e) {}
+    }
+
+    // ===== SECURITY: Honeypot check =====
+    function isBot() {
+        const honeypot = document.getElementById('waitlist-name');
+        return honeypot && honeypot.value.length > 0;
+    }
+
+    // ===== Google Sign-In =====
+    async function signInWithGoogle() {
+        const btn = document.getElementById('google-btn');
+        btn.disabled = true;
+        btn.textContent = 'Connecting...';
+        hideError();
+
+        if (isRateLimited()) {
+            showError('Too many attempts. Please try again later.');
+            btn.disabled = false;
+            btn.innerHTML = googleBtnHTML;
+            return;
+        }
+
+        try {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            const result = await auth.signInWithPopup(provider);
+            const user = result.user;
+
+            await saveToWaitlist(sanitize(user.email), sanitize(user.displayName || ''), 'google');
+            recordSubmission();
+            showSuccess();
+        } catch (error) {
+            if (error.code !== 'auth/popup-closed-by-user') {
+                showError('Something went wrong. Please try again.');
+            }
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = googleBtnHTML;
+        }
+    }
+
+    // ===== Email Waitlist =====
+    async function joinWithEmail() {
+        const emailInput = document.getElementById('waitlist-email');
+        const btn = document.getElementById('waitlist-btn');
+        const rawEmail = emailInput.value.trim();
+        const email = sanitize(rawEmail).toLowerCase();
+        hideError();
+
+        if (isBot()) {
+            showSuccess();
+            return;
+        }
+
+        if (isRateLimited()) {
+            showError('Too many attempts. Please try again later.');
+            return;
+        }
+
+        if (!isValidEmail(email)) {
+            showError('Please enter a valid email address.');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Joining...';
+
+        try {
+            await saveToWaitlist(email, '', 'email');
+            recordSubmission();
+            showSuccess();
+        } catch (error) {
+            showError('Something went wrong. Please try again.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Join waitlist';
+        }
+    }
+
+    // ===== Save to Firestore =====
+    async function saveToWaitlist(email, name, method) {
+        try {
+            await db.collection('waitlist').doc(email).set({
+                email: email,
+                name: name,
+                method: method,
+                joined_at: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+        } catch (e) {
+            console.error('Firestore error:', e);
+        }
+    }
+
+    // ===== UI Helpers =====
+    const googleBtnHTML = '<svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg> Continue with Google';
+
+    function showSuccess() {
+        document.getElementById('waitlist-form').style.display = 'none';
+        document.getElementById('waitlist-success').classList.add('show');
+    }
+
+    function showError(msg) {
+        const el = document.getElementById('waitlist-error');
+        el.textContent = msg;
+        el.classList.add('show');
+    }
+
+    function hideError() {
+        document.getElementById('waitlist-error').classList.remove('show');
+    }
+    </script>
+</body>
+</html>
