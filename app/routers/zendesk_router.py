@@ -79,11 +79,11 @@ async def zendesk_callback(
             integration.token_expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
 
         db.commit()
-        return RedirectResponse(url="http://localhost:8000/dashboard.html?zendesk=connected")
+        return RedirectResponse(url="https://krabai.tech/dashboard.html?zendesk=connected")
 
     except Exception as e:
         print(f"Zendesk OAuth error: {e}")
-        return RedirectResponse(url="http://localhost:8000/dashboard.html?zendesk=error")
+        return RedirectResponse(url="https://krabai.tech/dashboard.html?zendesk=error")
 
 
 @router.get("/status")
