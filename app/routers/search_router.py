@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from app.database import get_db
 from app import models
@@ -54,6 +55,51 @@ def search(
         return {"results": results}
     except Exception as e:
         print(f"Search error: {e}")
+        return {"results": []}
+
+
+@router.post("/raw-search")
+def raw_search(
+    data: dict,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user)
+):
+    """Literal text search inside stored chunks (no embeddings).
+
+    Splits query into words and matches ANY of them (OR logic).
+    """
+    query = data.get("query")
+    if not query:
+        return {"results": []}
+
+    try:
+        # Split into words and filter out very short/common words
+        words = [w.strip() for w in query.split() if len(w.strip()) > 2]
+
+        if not words:
+            return {"results": []}
+
+        # Build dynamic OR conditions for each word
+        conditions = " OR ".join([f"text ILIKE :w{i}" for i in range(len(words))])
+
+        params = {"user_id": user_id}
+        for i, w in enumerate(words):
+            params[f"w{i}"] = f"%{w}%"
+
+        sql = f"""
+            SELECT id, source_type, text, created_at
+            FROM knowledge_chunks
+            WHERE user_id = :user_id
+            AND ({conditions})
+            ORDER BY created_at DESC
+            LIMIT 20
+        """
+
+        results = db.execute(text(sql), params).mappings().all()
+
+        return {"results": [dict(r) for r in results]}
+    except Exception as e:
+        print(f"Raw search error: {e}")
         return {"results": []}
 
 

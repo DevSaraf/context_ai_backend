@@ -104,19 +104,56 @@ def list_documents(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user)
 ):
-    """List knowledge sources for this user."""
-    sources = db.execute(
+    """Return actual stored chunks (acts like file listing for now)."""
+    docs = db.execute(
         text("""
-            SELECT source_type, COUNT(*) as chunk_count,
-                   MIN(created_at) as first_uploaded,
-                   MAX(created_at) as last_uploaded
+            SELECT id, source_type, text, created_at
             FROM knowledge_chunks
             WHERE user_id = :user_id
-            GROUP BY source_type
-            ORDER BY MAX(created_at) DESC
+            ORDER BY created_at DESC
+            LIMIT 100
         """),
         {"user_id": user_id}
     ).mappings().all()
 
-    total = sum(s["chunk_count"] for s in sources)
-    return {"total_chunks": total, "sources": [dict(s) for s in sources]}
+    return {"documents": [dict(d) for d in docs], "total": len(docs)}
+
+
+@router.delete("/source/{source_type}")
+def delete_knowledge_source(
+    source_type: str,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user)
+):
+    """Delete all knowledge chunks belonging to a given source_type for this user."""
+    deleted = db.query(KnowledgeChunk).filter(
+        KnowledgeChunk.user_id == user_id,
+        KnowledgeChunk.source_type == source_type
+    ).delete(synchronize_session=False)
+    db.commit()
+
+    if deleted == 0:
+        raise HTTPException(status_code=404, detail="No chunks found for that source type.")
+
+    return {"deleted": deleted, "source_type": source_type}
+
+
+@router.delete("/chunk/{chunk_id}")
+def delete_knowledge_chunk(
+    chunk_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user)
+):
+    """Delete a single knowledge chunk by ID."""
+    chunk = db.query(KnowledgeChunk).filter(
+        KnowledgeChunk.id == chunk_id,
+        KnowledgeChunk.user_id == user_id
+    ).first()
+
+    if not chunk:
+        raise HTTPException(status_code=404, detail="Chunk not found.")
+
+    db.delete(chunk)
+    db.commit()
+
+    return {"deleted": True, "chunk_id": chunk_id}

@@ -388,6 +388,58 @@
         .k-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
         .k-conf { font-size: 11px; color: var(--text-dim); flex-shrink: 0; }
 
+        /* ========== RAW SEARCH ========== */
+        .raw-search-box {
+            display: flex; align-items: center; gap: 8px;
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 6px 10px;
+            transition: border-color 0.2s;
+        }
+        .raw-search-box:focus-within { border-color: var(--accent); }
+        .raw-search-input {
+            flex: 1; background: none; border: none; outline: none;
+            font-size: 12px; color: var(--text); font-family: var(--font);
+            padding: 2px 0; min-width: 0;
+        }
+        .raw-search-input::placeholder { color: var(--text-dim); }
+        .raw-search-btn {
+            padding: 4px 10px; background: var(--accent); color: #fff;
+            border: none; border-radius: var(--radius-sm); font-size: 11px;
+            font-weight: 500; cursor: pointer; font-family: var(--font);
+            transition: background 0.2s; white-space: nowrap; flex-shrink: 0;
+        }
+        .raw-search-btn:hover { background: var(--accent-hover); }
+        .raw-clear-btn {
+            background: none; border: none; color: var(--text-muted);
+            cursor: pointer; font-size: 12px; padding: 2px 4px; flex-shrink: 0;
+            transition: color 0.2s;
+        }
+        .raw-clear-btn:hover { color: var(--error); }
+
+        /* ========== EXPANDED K-ITEM with delete ========== */
+        .k-item { position: relative; }
+        .k-item:hover .k-delete { opacity: 1; }
+        .k-delete {
+            opacity: 0; flex-shrink: 0;
+            background: none; border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 4px 8px;
+            font-size: 10px; color: var(--text-muted); cursor: pointer;
+            font-family: var(--font); transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .k-delete:hover { background: rgba(217,83,79,0.1); border-color: var(--error); color: var(--error); }
+        .k-text-preview {
+            font-size: 11px; color: var(--text-muted); line-height: 1.5;
+            margin-top: 4px; display: none; word-break: break-word;
+        }
+        .k-item.expanded .k-text-preview { display: block; }
+        .k-expand-btn {
+            background: none; border: none; color: var(--text-dim);
+            cursor: pointer; font-size: 10px; padding: 0;
+            font-family: var(--font); transition: color 0.2s; flex-shrink: 0;
+        }
+        .k-expand-btn:hover { color: var(--text-secondary); }
+
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-dim); }
         .empty-state svg { width: 36px; height: 36px; margin-bottom: 10px; opacity: 0.3; }
         .empty-state p { font-size: 13px; }
@@ -684,9 +736,9 @@
             </div>
 
             <div class="stats-row">
-                <div class="stat-card"><div class="stat-value" id="stat-chunks">-</div><div class="stat-label">Documents</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-chunks">-</div><div class="stat-label">Chunks</div></div>
                 <div class="stat-card"><div class="stat-value" id="stat-searches">-</div><div class="stat-label">Searches</div></div>
-                <div class="stat-card"><div class="stat-value" id="stat-helpful">-</div><div class="stat-label">Helpful</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-sources">-</div><div class="stat-label">Sources</div></div>
                 <div class="stat-card"><div class="stat-value" id="stat-usage">-</div><div class="stat-label">Usage</div></div>
             </div>
 
@@ -760,16 +812,34 @@
                     </div>
                 </div>
 
-                <!-- RECENT KNOWLEDGE -->
+                <!-- ALL KNOWLEDGE + RAW SEARCH -->
                 <div class="card">
                     <div class="card-head">
-                        <span class="card-title">Recent documents</span>
+                        <span class="card-title">All documents</span>
                         <button class="btn btn-outline btn-sm" onclick="loadKnowledge()">Refresh</button>
+                    </div>
+                    <!-- RAW SEARCH BAR -->
+                    <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-subtle);">
+                        <div class="raw-search-box" id="raw-search-box">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="text" class="raw-search-input" id="raw-search-input" placeholder="Search raw knowledge..." onkeydown="if(event.key==='Enter')rawSearch()" oninput="if(!this.value.trim())clearRawSearch()">
+                            <button class="raw-search-btn" id="raw-search-btn" onclick="rawSearch()">Search</button>
+                            <button class="raw-clear-btn hidden" id="raw-clear-btn" onclick="clearRawSearch()" title="Clear">&#x2715;</button>
+                        </div>
+                        <div id="raw-search-status" style="font-size:11px;color:var(--text-muted);margin-top:6px;min-height:16px;"></div>
                     </div>
                     <div class="knowledge-list" id="knowledge-list">
                         <div class="empty-state">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                             <p>No knowledge uploaded yet</p>
+                        </div>
+                    </div>
+                    <!-- PAGINATION -->
+                    <div id="k-pagination" class="hidden" style="padding:12px 20px;border-top:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                        <span id="k-page-info" style="font-size:11px;color:var(--text-muted);"></span>
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn btn-outline btn-sm" id="k-prev-btn" onclick="kChangePage(-1)">&#8592; Prev</button>
+                            <button class="btn btn-outline btn-sm" id="k-next-btn" onclick="kChangePage(1)">Next &#8594;</button>
                         </div>
                     </div>
                 </div>
@@ -1115,8 +1185,17 @@ async function loadAnalytics() {
         const d = await res.json();
         document.getElementById('stat-chunks').textContent = d.total_chunks || 0;
         document.getElementById('stat-searches').textContent = d.total_searches || 0;
-        document.getElementById('stat-helpful').textContent = d.helpful_rate ? `${(d.helpful_rate * 100).toFixed(0)}%` : '-';
         document.getElementById('stat-usage').textContent = d.usage_rate ? `${(d.usage_rate * 100).toFixed(0)}%` : '-';
+        // sources count: count unique source_types from documents
+        try {
+            const r2 = await fetch(`${API_URL}/knowledge/documents`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+            if (r2.ok) {
+                const d2 = await r2.json();
+                const docs = d2.documents || [];
+                const uniqueTypes = new Set(docs.map(doc => doc.source_type));
+                document.getElementById('stat-sources').textContent = uniqueTypes.size;
+            }
+        } catch(e2) {}
     } catch (e) { console.error('Analytics error:', e); }
 }
 
@@ -1194,30 +1273,164 @@ async function uploadFile() {
 }
 
 // ====== LOAD KNOWLEDGE ======
+let kAllSources = [];       // all source groups from /knowledge/documents
+let kCurrentPage = 0;
+const K_PAGE_SIZE = 8;
+let kRawMode = false;       // true when showing raw search results
+
 async function loadKnowledge() {
+    kRawMode = false;
     const list = document.getElementById('knowledge-list');
+    list.innerHTML = '<div class="empty-state" style="padding:24px 20px;"><span class="loading-spinner"></span></div>';
     try {
-        const res = await fetch(`${API_URL}/search`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-            body: JSON.stringify({ query: '*' })
+        const res = await fetch(`${API_URL}/knowledge/documents`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.status === 401) { logout(); return; }
+        const data = await res.json();
+        kAllSources = data.documents || [];
+        kCurrentPage = 0;
+        renderKnowledgePage();
+        // update sources stat (count of unique source types)
+        const srcEl = document.getElementById('stat-sources');
+        if (srcEl) {
+            const uniqueTypes = new Set(kAllSources.map(d => d.source_type));
+            srcEl.textContent = uniqueTypes.size;
+        }
+    } catch (e) {
+        list.innerHTML = '<div class="empty-state"><p>Failed to load knowledge.</p></div>';
+        console.error('Load knowledge error:', e);
+    }
+}
+
+function renderKnowledgePage() {
+    const list = document.getElementById('knowledge-list');
+    const pag  = document.getElementById('k-pagination');
+    const info = document.getElementById('k-page-info');
+    const prev = document.getElementById('k-prev-btn');
+    const next = document.getElementById('k-next-btn');
+
+    if (!kAllSources.length) {
+        list.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>No knowledge uploaded yet</p></div>';
+        pag.classList.add('hidden');
+        return;
+    }
+
+    const total = kAllSources.length;
+    const start = kCurrentPage * K_PAGE_SIZE;
+    const end   = Math.min(start + K_PAGE_SIZE, total);
+    const page  = kAllSources.slice(start, end);
+
+    list.innerHTML = page.map(item => {
+        const srcType = item.source_type || 'document';
+        const chunkId = item.id;
+        const textPreview = (item.text || '').substring(0, 150);
+        const wordCount = item.text ? item.text.split(' ').length : 0;
+        const uploaded = item.created_at ? new Date(item.created_at).toLocaleDateString() : '';
+        return `<div class="k-item" id="ki-${chunkId}">
+            <div class="k-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+            <div class="k-info" style="cursor:pointer;" onclick="this.closest('.k-item').classList.toggle('expanded')">
+                <div class="k-name">${esc(srcType)}</div>
+                <div class="k-meta">${wordCount} words · ${uploaded}</div>
+                <div class="k-text-preview">${esc(textPreview)}${(item.text||'').length > 150 ? '…' : ''}</div>
+            </div>
+            <button class="k-delete" onclick="deleteKnowledgeChunk(${chunkId})" title="Delete this chunk">Delete</button>
+        </div>`;
+    }).join('');
+
+    // pagination
+    if (total > K_PAGE_SIZE) {
+        pag.style.display = 'flex';
+        pag.classList.remove('hidden');
+        info.textContent = `${start + 1}–${end} of ${total}`;
+        prev.disabled = kCurrentPage === 0;
+        next.disabled = end >= total;
+    } else {
+        pag.classList.add('hidden');
+    }
+}
+
+function kChangePage(dir) {
+    kCurrentPage += dir;
+    renderKnowledgePage();
+}
+
+// ====== DELETE KNOWLEDGE CHUNK ======
+async function deleteKnowledgeChunk(chunkId) {
+    if (!confirm(`Delete this knowledge chunk? This cannot be undone.`)) return;
+    try {
+        const res = await fetch(`${API_URL}/knowledge/chunk/${chunkId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.status === 401) { logout(); return; }
+        if (res.ok) {
+            kAllSources = kAllSources.filter(s => s.id !== chunkId);
+            if (kCurrentPage > 0 && kCurrentPage * K_PAGE_SIZE >= kAllSources.length) kCurrentPage--;
+            renderKnowledgePage();
+            loadAnalytics();
+        } else {
+            const d = await res.json();
+            alert(d.detail || 'Failed to delete.');
+        }
+    } catch (e) { alert('Connection error while deleting.'); }
+}
+
+// ====== RAW SEARCH ======
+async function rawSearch() {
+    const q = document.getElementById('raw-search-input').value.trim();
+    if (!q) return;
+    kRawMode = true;
+    const list   = document.getElementById('knowledge-list');
+    const status = document.getElementById('raw-search-status');
+    const btn    = document.getElementById('raw-search-btn');
+    const clearB = document.getElementById('raw-clear-btn');
+    btn.textContent = '…';
+    btn.disabled = true;
+    list.innerHTML = '<div class="empty-state" style="padding:20px;"><span class="loading-spinner"></span></div>';
+    clearB.classList.remove('hidden');
+    document.getElementById('k-pagination').classList.add('hidden');
+    try {
+        const res = await fetch(`${API_URL}/raw-search`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ query: q })
         });
         const data = await res.json();
         const results = data.results || [];
+        status.textContent = results.length ? `${results.length} result${results.length!==1?'s':''} for "${q}"` : `No results for "${q}"`;
         if (!results.length) {
-            list.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>No knowledge uploaded yet</p></div>';
+            list.innerHTML = '<div class="empty-state"><p>No matching knowledge found.</p></div>';
             return;
         }
-        list.innerHTML = results.map(item => `
+        list.innerHTML = results.map((item, idx) => `
             <div class="k-item">
-                <div class="k-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-                <div class="k-info">
-                    <div class="k-name">${esc(item.source_type || 'Document')}</div>
-                    <div class="k-meta">#${item.source_id || ''} · ${item.text ? item.text.split(' ').length + ' words' : ''}</div>
+                <div class="k-icon" style="background:rgba(198,97,63,0.08);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </div>
-                ${item.confidence ? `<span class="k-conf">${(item.confidence * 100).toFixed(0)}%</span>` : ''}
+                <div class="k-info" style="cursor:pointer;" onclick="this.closest('.k-item').classList.toggle('expanded')">
+                    <div class="k-name">${esc(item.source_type || 'Document')}</div>
+                    <div class="k-meta">${item.text ? item.text.split(' ').length + ' words' : ''} · click to preview</div>
+                    <div class="k-text-preview">${esc((item.text||'').substring(0, 300))}${(item.text||'').length > 300 ? '…' : ''}</div>
+                </div>
+                <button class="k-delete" onclick="deleteKnowledgeChunk(${item.id})" title="Delete this chunk">Delete</button>
             </div>
         `).join('');
-    } catch (e) { console.error('Load knowledge error:', e); }
+    } catch (e) {
+        status.textContent = 'Search failed.';
+        list.innerHTML = '<div class="empty-state"><p>Error running search.</p></div>';
+    } finally {
+        btn.textContent = 'Search';
+        btn.disabled = false;
+    }
+}
+
+function clearRawSearch() {
+    kRawMode = false;
+    document.getElementById('raw-search-input').value = '';
+    document.getElementById('raw-search-status').textContent = '';
+    document.getElementById('raw-clear-btn').classList.add('hidden');
+    renderKnowledgePage();
 }
 
 // ====== ASK AI ======
