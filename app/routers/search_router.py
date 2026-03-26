@@ -109,10 +109,10 @@ async def get_context(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user)
 ):
-    """Extension context endpoint — returns raw chunks for the sidebar."""
+    """Extension context endpoint — returns raw chunks + AI answer for the sidebar."""
     prompt = data.get("prompt")
     if not prompt:
-        return {"context": "", "sources": []}
+        return {"context": "", "sources": [], "answer": "", "confidence": 0, "has_answer": False}
 
     user = _get_user_info(db, user_id)
 
@@ -124,13 +124,29 @@ async def get_context(
 
         context = build_context(results)
 
+        # Also generate AI answer from the retrieved chunks
+        answer = ""
+        confidence = 0
+        has_answer = False
+        try:
+            if results:
+                rag_response = await generate_answer(prompt, results, mode="qa")
+                answer = rag_response.answer or ""
+                confidence = rag_response.confidence or 0
+                has_answer = rag_response.has_answer
+        except Exception as ai_err:
+            print(f"AI answer generation error (non-fatal): {ai_err}")
+
         return {
             "context": context,
             "sources": results,
+            "answer": answer,
+            "confidence": confidence,
+            "has_answer": has_answer,
         }
     except Exception as e:
         print(f"Context error: {e}")
-        return {"context": "", "sources": []}
+        return {"context": "", "sources": [], "answer": "", "confidence": 0, "has_answer": False}
 
 
 @router.post("/ask")
