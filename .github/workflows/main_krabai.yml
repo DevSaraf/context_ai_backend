@@ -21,7 +21,7 @@ jobs:
 
       - name: Zip artifact for deployment
         run: |
-          zip -r release.zip app/ dashboard.html landing.html requirements.txt -x '__pycache__/*' '*.pyc' '.git/*' 'venv/*' 'antenv/*' '.env'
+          zip -r release.zip app/ dashboard.html landing.html widget.html requirements.txt -x '__pycache__/*' '*.pyc' '.git/*' 'venv/*' 'antenv/*' '.env'
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

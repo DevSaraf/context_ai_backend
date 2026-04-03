@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KRAB Support Widget</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --brand: #c6613f;
+            --brand-hover: #d4734f;
+            --bg: #262624;
+            --bg-card: #1e1e1c;
+            --bg-input: #1a1a18;
+            --border: #3a3a38;
+            --text: #e8e6e1;
+            --text-sec: #9a9890;
+            --text-dim: #6a6960;
+            --success: #5cb85c;
+            --radius: 10px;
+            --font: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            font-family: var(--font);
+            background: transparent;
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+        }
+
+        /* ========= FLOATING BUTTON ========= */
+        .krab-fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            background: var(--brand);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            z-index: 99999;
+        }
+        .krab-fab:hover { background: var(--brand-hover); transform: scale(1.08); }
+        .krab-fab svg { width: 26px; height: 26px; }
+        .krab-fab.open { transform: rotate(45deg); }
+        .krab-fab.open:hover { transform: rotate(45deg) scale(1.08); }
+
+        /* ========= CHAT PANEL ========= */
+        .krab-panel {
+            position: fixed;
+            bottom: 96px;
+            right: 24px;
+            width: 380px;
+            max-height: 560px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            z-index: 99998;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            pointer-events: none;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        .krab-panel.open {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        /* Header */
+        .krab-panel-header {
+            padding: 16px 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .krab-panel-logo {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--brand);
+            letter-spacing: 2px;
+        }
+        .krab-panel-title {
+            font-size: 13px;
+            color: var(--text-sec);
+            margin-left: auto;
+        }
+
+        /* Body */
+        .krab-panel-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .krab-panel-body::-webkit-scrollbar { width: 5px; }
+        .krab-panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        .krab-welcome {
+            text-align: center;
+            padding: 16px 0 20px;
+        }
+        .krab-welcome-icon {
+            width: 48px; height: 48px;
+            background: rgba(198,97,63,0.12);
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 12px;
+        }
+        .krab-welcome-icon svg { width: 24px; height: 24px; color: var(--brand); }
+        .krab-welcome h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+        .krab-welcome p { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+
+        /* Form */
+        .krab-form { display: flex; flex-direction: column; gap: 12px; }
+        .krab-field label {
+            display: block; font-size: 10px; font-weight: 600;
+            color: var(--text-dim); text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 5px;
+        }
+        .krab-field input, .krab-field textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 13px;
+            font-family: var(--font);
+            transition: border-color 0.2s;
+        }
+        .krab-field input:focus, .krab-field textarea:focus {
+            outline: none;
+            border-color: var(--brand);
+        }
+        .krab-field input::placeholder, .krab-field textarea::placeholder {
+            color: var(--text-dim);
+        }
+        .krab-field textarea { resize: vertical; min-height: 80px; }
+
+        .krab-submit {
+            width: 100%;
+            padding: 12px;
+            background: var(--brand);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--font);
+            transition: all 0.2s;
+        }
+        .krab-submit:hover { background: var(--brand-hover); }
+        .krab-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Response */
+        .krab-response {
+            margin-top: 16px;
+            padding: 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            animation: krabFade 0.3s ease;
+        }
+        @keyframes krabFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .krab-response-badge {
+            font-size: 10px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--success);
+            background: rgba(92,184,92,0.1); padding: 3px 8px;
+            border-radius: 4px; display: inline-block; margin-bottom: 10px;
+        }
+        .krab-response-pending {
+            color: var(--brand);
+            background: rgba(198,97,63,0.1);
+        }
+        .krab-response-text {
+            font-size: 13px; line-height: 1.7; color: var(--text);
+            white-space: pre-wrap; word-break: break-word;
+        }
+        .krab-response-footer {
+            margin-top: 12px; display: flex; gap: 8px; align-items: center;
+        }
+        .krab-new-btn {
+            padding: 6px 14px; background: none; border: 1px solid var(--border);
+            border-radius: 6px; color: var(--text-sec); font-size: 11px;
+            cursor: pointer; font-family: var(--font); transition: all 0.2s;
+        }
+        .krab-new-btn:hover { border-color: var(--text-dim); color: var(--text); }
+
+        /* Loading */
+        .krab-loading {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 30px 20px; text-align: center;
+        }
+        .krab-spinner {
+            width: 28px; height: 28px;
+            border: 3px solid var(--border);
+            border-top-color: var(--brand);
+            border-radius: 50%;
+            animation: krabSpin 0.7s linear infinite;
+        }
+        @keyframes krabSpin { to { transform: rotate(360deg); } }
+        .krab-loading-text { margin-top: 10px; font-size: 12px; color: var(--text-sec); }
+
+        /* Powered by */
+        .krab-powered {
+            padding: 10px 20px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+        .krab-powered a { color: var(--brand); text-decoration: none; font-weight: 600; }
+        .krab-powered a:hover { text-decoration: underline; }
+
+        /* Mobile */
+        @media (max-width: 440px) {
+            .krab-panel {
+                right: 12px; left: 12px; bottom: 84px;
+                width: auto; max-height: 70vh;
+            }
+            .krab-fab { bottom: 16px; right: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- FAB Button -->
+<button class="krab-fab" id="krab-fab" title="Get support">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+</button>
+
+<!-- Chat Panel -->
+<div class="krab-panel" id="krab-panel">
+    <div class="krab-panel-header">
+        <span class="krab-panel-logo">KRAB</span>
+        <span class="krab-panel-title">Support</span>
+    </div>
+    <div class="krab-panel-body" id="krab-body">
+        <div class="krab-welcome">
+            <div class="krab-welcome-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+            </div>
+            <h3 id="krab-welcome-msg">How can we help you?</h3>
+            <p>Describe your issue and our AI will find a solution from our knowledge base.</p>
+        </div>
+        <div class="krab-form" id="krab-form">
+            <div class="krab-field">
+                <label>Your name</label>
+                <input type="text" id="krab-name" placeholder="John Doe">
+            </div>
+            <div class="krab-field">
+                <label>Your email</label>
+                <input type="email" id="krab-email" placeholder="john@example.com">
+            </div>
+            <div class="krab-field">
+                <label>Subject</label>
+                <input type="text" id="krab-subject" placeholder="Brief description of your issue">
+            </div>
+            <div class="krab-field">
+                <label>Message</label>
+                <textarea id="krab-message" placeholder="Tell us what's happening..."></textarea>
+            </div>
+            <button class="krab-submit" id="krab-submit">Send message</button>
+        </div>
+    </div>
+    <div class="krab-powered">Powered by <a href="https://krabai.tech" target="_blank">KRAB</a></div>
+</div>
+
+<script>
+(function() {
+    // ====== CONFIG ======
+    // The API key is set when embedding: <script src="widget.html?key=YOUR_API_KEY">
+    // Or injected by the embed snippet
+    const KRAB_API_URL = window.KRAB_API_URL || 'https://krabai.tech';
+    const KRAB_API_KEY = window.KRAB_API_KEY || new URLSearchParams(window.location.search).get('key') || '';
+
+    const fab = document.getElementById('krab-fab');
+    const panel = document.getElementById('krab-panel');
+    const body = document.getElementById('krab-body');
+    const form = document.getElementById('krab-form');
+    const submitBtn = document.getElementById('krab-submit');
+
+    // Toggle panel
+    fab.addEventListener('click', () => {
+        const isOpen = panel.classList.contains('open');
+        panel.classList.toggle('open');
+        fab.classList.toggle('open');
+        // Notify parent iframe about state change
+        if (window.parent !== window) {
+            window.parent.postMessage(isOpen ? 'krab-minimize' : 'krab-resize', '*');
+        }
+    });
+
+    // Submit
+    submitBtn.addEventListener('click', async () => {
+        const name = document.getElementById('krab-name').value.trim();
+        const email = document.getElementById('krab-email').value.trim();
+        const subject = document.getElementById('krab-subject').value.trim();
+        const message = document.getElementById('krab-message').value.trim();
+
+        if (!subject && !message) {
+            alert('Please enter a subject or message.');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Sending...';
+
+        // Show loading
+        form.style.display = 'none';
+        body.querySelector('.krab-welcome').style.display = 'none';
+
+        const loadingEl = document.createElement('div');
+        loadingEl.className = 'krab-loading';
+        loadingEl.innerHTML = '<div class="krab-spinner"></div><div class="krab-loading-text">Finding a solution...</div>';
+        body.appendChild(loadingEl);
+
+        try {
+            const res = await fetch(`${KRAB_API_URL}/widget/submit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    api_key: KRAB_API_KEY,
+                    name, email, subject, message
+                })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.detail || 'Something went wrong');
+            }
+
+            // Remove loading
+            loadingEl.remove();
+
+            // Show response
+            const responseEl = document.createElement('div');
+            responseEl.className = 'krab-response';
+
+            const badge = data.has_answer
+                ? '<span class="krab-response-badge">AI Response</span>'
+                : '<span class="krab-response-badge krab-response-pending">Received</span>';
+
+            responseEl.innerHTML = `
+                ${badge}
+                <div class="krab-response-text">${escapeHtml(data.response)}</div>
+                <div class="krab-response-footer">
+                    <button class="krab-new-btn" id="krab-new-ticket">New question</button>
+                </div>
+            `;
+            body.appendChild(responseEl);
+
+            // New ticket button
+            responseEl.querySelector('#krab-new-ticket').addEventListener('click', () => {
+                responseEl.remove();
+                form.style.display = 'flex';
+                body.querySelector('.krab-welcome').style.display = '';
+                document.getElementById('krab-subject').value = '';
+                document.getElementById('krab-message').value = '';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send message';
+            });
+
+        } catch (err) {
+            loadingEl.remove();
+            form.style.display = 'flex';
+            body.querySelector('.krab-welcome').style.display = '';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Send message';
+            alert('Error: ' + err.message);
+        }
+    });
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Load config if API key is set
+    if (KRAB_API_KEY) {
+        fetch(`${KRAB_API_URL}/widget/config/${KRAB_API_KEY}`)
+            .then(r => r.json())
+            .then(config => {
+                if (config.welcome_message) {
+                    document.getElementById('krab-welcome-msg').textContent = config.welcome_message;
+                }
+                if (config.brand_color) {
+                    document.documentElement.style.setProperty('--brand', config.brand_color);
+                }
+            })
+            .catch(() => {});
+    }
+})();
+</script>
+
+</body>
+</html>

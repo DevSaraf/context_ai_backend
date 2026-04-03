@@ -49,19 +49,27 @@ RESPONSE FORMAT:
 - End with source citations used"""
 
 
+TICKET_TONE_INSTRUCTIONS = {
+    "professional": "Use a professional, polished tone. Be clear and structured. Address the customer respectfully.",
+    "friendly": "Use a warm, friendly tone. Be conversational and approachable. Use casual but respectful language.",
+    "concise": "Be extremely brief and to-the-point. No filler words. Just the solution and next steps in as few words as possible.",
+    "empathetic": "Lead with empathy. Acknowledge the customer's frustration or difficulty first. Show you understand their situation before offering the solution.",
+}
+
 TICKET_RESOLUTION_PROMPT = """You are a customer support assistant. Your job is to help draft responses to support tickets using proven resolutions from past tickets.
 
 RULES:
-1. Draft a professional, helpful customer response based on what worked before.
+1. Draft a helpful customer response based on what worked before.
 2. Use the resolution approaches from similar past tickets.
-3. Adapt the tone to be friendly and empathetic — this goes directly to a customer.
+3. {tone_instruction}
 4. If past tickets show a clear solution, state it confidently.
 5. If the issue is ambiguous, suggest the most common resolution and offer alternatives.
 6. Never reference internal systems, past ticket IDs, or CSAT scores to the customer.
 7. Keep the response concise — under 200 words unless the issue is complex.
+8. Do NOT include a greeting or sign-off — those will be added separately.
 
 RESPONSE FORMAT:
-- Greeting acknowledging the issue
+- Acknowledge the issue briefly
 - Clear solution or next steps
 - Offer for further help"""
 
@@ -112,7 +120,7 @@ async def generate_answer(
         text = chunk.get("text", "")
         source_type = chunk.get("source_type", "document")
         source_id = chunk.get("source_id", "")
-        confidence = chunk.get("confidence", chunk.get("similarity", 0))
+        confidence = chunk.get("confidence", chunk.get("similarity", 0)) or 0
 
         context_parts.append(f"[Source {i}] ({source_type} #{source_id}, confidence: {confidence:.0%})\n{text}")
 
@@ -131,7 +139,7 @@ async def generate_answer(
     system_prompts = {
         "qa": KNOWLEDGE_QA_PROMPT,
         "extension": EXTENSION_CONTEXT_PROMPT,
-        "ticket": TICKET_RESOLUTION_PROMPT,
+        "ticket": TICKET_RESOLUTION_PROMPT.format(tone_instruction=TICKET_TONE_INSTRUCTIONS["professional"]),
     }
     system_prompt = system_prompts.get(mode, KNOWLEDGE_QA_PROMPT)
 
@@ -165,15 +173,17 @@ Provide your answer based on the context above."""
 async def generate_ticket_response(
     ticket_subject: str,
     ticket_body: str,
-    similar_tickets: List[Dict]
+    similar_tickets: List[Dict],
+    tone: str = "professional"
 ) -> RAGResponse:
     """
     Generate a suggested response for a support ticket.
 
     Args:
-        ticket_subject: The new ticket's subject line
-        ticket_body:    The customer's message
+        ticket_subject:  The new ticket's subject line
+        ticket_body:     The customer's message
         similar_tickets: Retrieved similar past tickets with resolutions
+        tone:            Response tone — "professional", "friendly", "concise", or "empathetic"
     """
     if not similar_tickets:
         return RAGResponse(
@@ -191,8 +201,8 @@ async def generate_ticket_response(
 
     for i, ticket in enumerate(similar_tickets, 1):
         text = ticket.get("text", "")
-        confidence = ticket.get("confidence", ticket.get("similarity", 0))
-        resolution_score = ticket.get("resolution_score", 0.5)
+        confidence = ticket.get("confidence", ticket.get("similarity", 0)) or 0
+        resolution_score = ticket.get("resolution_score", 0.5) or 0.5
 
         context_parts.append(
             f"[Past Ticket {i}] (match: {confidence:.0%}, customer satisfaction: {resolution_score:.0%})\n{text}"
@@ -210,6 +220,10 @@ async def generate_ticket_response(
 
     context_block = "\n\n---\n\n".join(context_parts)
 
+    # Get tone instruction (fallback to professional)
+    tone_instruction = TICKET_TONE_INSTRUCTIONS.get(tone, TICKET_TONE_INSTRUCTIONS["professional"])
+    system_prompt = TICKET_RESOLUTION_PROMPT.format(tone_instruction=tone_instruction)
+
     user_prompt = f"""SIMILAR PAST TICKETS AND THEIR RESOLUTIONS:
 {context_block}
 
@@ -219,9 +233,9 @@ NEW TICKET TO RESPOND TO:
 Subject: {ticket_subject}
 Customer Message: {ticket_body}
 
-Draft a professional response to this customer based on what worked in similar past tickets."""
+Draft a response to this customer based on what worked in similar past tickets. Use a {tone} tone."""
 
-    answer_text = await llm.generate(TICKET_RESOLUTION_PROMPT, user_prompt, max_tokens=600)
+    answer_text = await llm.generate(system_prompt, user_prompt, max_tokens=600)
 
     avg_confidence = sum(c["confidence"] for c in citations) / len(citations) if citations else 0
 

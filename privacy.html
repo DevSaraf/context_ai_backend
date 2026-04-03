@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy — KRAB</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #262624;
+            color: #e8e6e1;
+            line-height: 1.8;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #c6613f;
+            font-size: 28px;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+        .updated {
+            color: #6a6960;
+            font-size: 14px;
+            margin-bottom: 40px;
+        }
+        h2 {
+            color: #c6613f;
+            font-size: 18px;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+        p {
+            color: #c2c0b6;
+            font-size: 15px;
+            margin-bottom: 16px;
+        }
+        ul {
+            margin: 0 0 16px 24px;
+            color: #c2c0b6;
+            font-size: 15px;
+        }
+        li { margin-bottom: 8px; }
+        a { color: #c6613f; }
+        .footer {
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid #333331;
+            color: #6a6960;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>KRAB — Privacy Policy</h1>
+        <p class="updated">Last updated: April 3, 2026</p>
+
+        <h2>Overview</h2>
+        <p>KRAB ("we", "our", "us") is a browser extension that surfaces relevant company knowledge inside AI chat platforms. We are committed to protecting your privacy and being transparent about what data we collect and how we use it.</p>
+
+        <h2>Data we collect</h2>
+        <p>When you use the KRAB extension, we collect and process the following:</p>
+        <ul>
+            <li><strong>Account information:</strong> Email address and company identifier, provided during registration.</li>
+            <li><strong>Authentication token:</strong> A session token stored locally in your browser (via Chrome storage API) to keep you logged in. This token is never shared with third parties.</li>
+            <li><strong>Prompts:</strong> When you type in a supported chat platform (ChatGPT, Claude, or Gemini), your prompt text is sent to the KRAB backend API to search your company's knowledge base for relevant context. Prompts are used only for real-time retrieval and are not stored permanently.</li>
+            <li><strong>Feedback:</strong> If you use the inject or feedback features, we record which knowledge chunks were used or rated, along with the associated query, to improve search relevance.</li>
+        </ul>
+
+        <h2>Data we do NOT collect</h2>
+        <ul>
+            <li>We do not collect or store your passwords in plain text. Passwords are hashed before storage.</li>
+            <li>We do not read, store, or transmit your chat history or AI responses from ChatGPT, Claude, or Gemini.</li>
+            <li>We do not collect browsing history, cookies, or any data from websites other than the supported chat platforms.</li>
+            <li>We do not serve ads or share data with advertisers.</li>
+            <li>We do not sell your data to any third party.</li>
+        </ul>
+
+        <h2>How data is stored</h2>
+        <p>Your authentication token, email, and company ID are stored locally in your browser using the Chrome storage API. Server-side data (account information, uploaded knowledge base documents, and feedback) is stored on secured servers.</p>
+
+        <h2>Permissions used</h2>
+        <ul>
+            <li><strong>storage:</strong> Stores your authentication token, email, and preferences locally in the browser.</li>
+            <li><strong>activeTab:</strong> Detects the currently active chat platform to inject the KRAB knowledge sidebar.</li>
+            <li><strong>tabs:</strong> Notifies all open chat platform tabs when you log in or out, so the sidebar updates across all tabs.</li>
+            <li><strong>Host permissions (chat.openai.com, chatgpt.com, claude.ai, gemini.google.com):</strong> Required to inject the sidebar content script into supported chat platforms.</li>
+            <li><strong>Host permissions (krabai.tech):</strong> Required to communicate with the KRAB backend API for authentication, knowledge retrieval, and feedback.</li>
+        </ul>
+
+        <h2>Third-party services</h2>
+        <p>The KRAB backend uses Google Gemini's embedding and language models to generate embeddings and AI-powered answers from your company's knowledge base. Your prompt text is processed through these models solely for the purpose of retrieval and answer generation. No data is retained by Google beyond the API request lifecycle.</p>
+
+        <h2>Data retention and deletion</h2>
+        <p>You can delete your account and all associated data by contacting us. When you log out of the extension, your local authentication data is immediately removed from your browser. Uploaded knowledge base content can be deleted at any time through the KRAB dashboard.</p>
+
+        <h2>Children's privacy</h2>
+        <p>KRAB is not intended for use by children under 13 years of age. We do not knowingly collect personal information from children.</p>
+
+        <h2>Changes to this policy</h2>
+        <p>We may update this privacy policy from time to time. Changes will be reflected on this page with an updated date. Continued use of the extension after changes constitutes acceptance of the updated policy.</p>
+
+        <h2>Contact</h2>
+        <p>If you have questions about this privacy policy or your data, contact us at <a href="mailto:saraf.dev.a@gmail.com">support@krabai.tech</a>.</p>
+
+        <!-- <div class="footer">
+            &copy; 2026 KRAB. All rights reserved.
+        </div> -->
+    </div>
+</body>
+</html>
