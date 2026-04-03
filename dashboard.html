@@ -446,6 +446,51 @@
 
         /* ========== TICKET SECTION ========== */
         .ticket-section { margin-bottom: 24px; }
+        .tone-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+        .tone-pill {
+            padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border);
+            background: none; color: var(--text-muted); font-size: 11px; font-weight: 500;
+            cursor: pointer; font-family: var(--font); transition: all 0.2s;
+        }
+        .tone-pill:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+        .tone-pill.active { border-color: var(--accent); color: var(--accent); background: var(--accent-muted); }
+
+        .similar-tickets { margin-top: 12px; }
+        .similar-ticket-item {
+            padding: 10px 12px; background: var(--bg-input); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm); margin-bottom: 6px; font-size: 12px;
+            line-height: 1.5; color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+        }
+        .similar-ticket-item:hover { border-color: var(--accent); background: var(--accent-muted); }
+        .similar-ticket-meta { font-size: 10px; color: var(--text-dim); margin-top: 3px; display: flex; gap: 8px; }
+        .similar-ticket-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        .ticket-response-box {
+            background: var(--bg); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius); padding: 16px; margin-top: 8px;
+        }
+        .ticket-response-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+        .ticket-feedback-btn {
+            background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 5px 10px; cursor: pointer; font-family: var(--font); font-size: 11px;
+            color: var(--text-muted); transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px;
+        }
+        .ticket-feedback-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+        .ticket-feedback-btn.voted { border-color: var(--accent); color: var(--accent); background: var(--accent-muted); pointer-events: none; }
+        .ticket-feedback-btn svg { width: 13px; height: 13px; }
+
+        .ticket-history { margin-top: 20px; }
+        .ticket-history-item {
+            padding: 12px 14px; border-bottom: 1px solid var(--border-subtle);
+            cursor: pointer; transition: background 0.15s;
+        }
+        .ticket-history-item:last-child { border-bottom: none; }
+        .ticket-history-item:hover { background: rgba(255,255,255,0.02); }
+        .ticket-history-subject { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+        .ticket-history-preview { font-size: 11px; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+        .ticket-history-meta { font-size: 10px; color: var(--text-dim); margin-top: 4px; display: flex; gap: 10px; align-items: center; }
+        .ticket-history-feedback { display: inline-flex; align-items: center; gap: 3px; }
+        .ticket-history-feedback svg { width: 11px; height: 11px; }
 
         /* ========== INTEGRATIONS ========== */
         .integration-row {
@@ -551,6 +596,11 @@
             /* Danger zone row */
             #settings-view .card:last-child .card-body > div {
                 flex-direction: column; align-items: flex-start; gap: 12px;
+            }
+
+            /* Tickets: stack columns */
+            #tickets-view div[style*="grid-template-columns: 1fr 1fr"] {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -853,18 +903,62 @@
             <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Ticket resolution</h2>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">AI-powered support response generation</p>
 
-            <div class="card" style="max-width: 680px;">
-                <div class="card-body">
-                    <div class="form-group">
-                        <label class="field-label">Ticket subject</label>
-                        <input type="text" id="ticket-subject" placeholder="e.g. API keeps timing out">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 900px;">
+                <!-- LEFT: Input + Generate -->
+                <div class="card">
+                    <div class="card-head"><span class="card-title">New ticket</span></div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="field-label">Ticket subject</label>
+                            <input type="text" id="ticket-subject" placeholder="e.g. API keeps timing out">
+                        </div>
+                        <div class="form-group">
+                            <label class="field-label">Customer message</label>
+                            <textarea id="ticket-body" placeholder="Paste the customer's message here..." style="min-height:120px;"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="field-label">Response tone</label>
+                            <div class="tone-pills" id="tone-pills">
+                                <button class="tone-pill active" data-tone="professional">Professional</button>
+                                <button class="tone-pill" data-tone="friendly">Friendly</button>
+                                <button class="tone-pill" data-tone="concise">Concise</button>
+                                <button class="tone-pill" data-tone="empathetic">Empathetic</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="field-label">Email signature (optional)</label>
+                            <input type="text" id="ticket-signature" placeholder="e.g. Best regards, Support Team">
+                        </div>
+                        <button class="btn btn-accent btn-full" id="ticket-btn" onclick="resolveTicket()">Generate response</button>
+                        <div id="ticket-result" style="margin-top: 14px;"></div>
                     </div>
-                    <div class="form-group">
-                        <label class="field-label">Customer message</label>
-                        <textarea id="ticket-body" placeholder="Paste the customer's message here..."></textarea>
+                </div>
+
+                <!-- RIGHT: Similar tickets + History -->
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <!-- Similar tickets (populated after search) -->
+                    <div class="card" id="similar-tickets-card" style="display:none;">
+                        <div class="card-head"><span class="card-title">Similar past tickets</span></div>
+                        <div class="card-body" style="padding:0;">
+                            <div id="similar-tickets-list" style="max-height:240px;overflow-y:auto;"></div>
+                        </div>
                     </div>
-                    <button class="btn btn-accent btn-full" id="ticket-btn" onclick="resolveTicket()">Generate response</button>
-                    <div id="ticket-result" style="margin-top: 14px;"></div>
+
+                    <!-- Ticket history -->
+                    <div class="card">
+                        <div class="card-head">
+                            <span class="card-title">History</span>
+                            <span style="font-size:11px;color:var(--text-dim);" id="ticket-history-count"></span>
+                        </div>
+                        <div class="card-body" style="padding:0;">
+                            <div id="ticket-history-list" style="max-height:360px;overflow-y:auto;">
+                                <div class="empty-state" style="padding:30px 20px;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+                                    <p>No tickets resolved yet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -876,7 +970,73 @@
             <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Integrations</h2>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">Connect your tools</p>
 
-            <div class="card" style="max-width: 680px;">
+            <!-- SUPPORT WIDGET -->
+            <div class="card" style="max-width: 780px; margin-bottom: 16px;">
+                <div class="card-body">
+                    <div class="integration-row">
+                        <div class="integration-icon" style="background: rgba(198,97,63,0.15);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c6613f" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        </div>
+                        <div class="integration-info">
+                            <div class="integration-name">Support Widget</div>
+                            <p class="integration-desc">Embed an AI-powered support form on your website. Customers submit questions, KRAB resolves them using your knowledge base.</p>
+                        </div>
+                        <button class="btn btn-outline btn-sm" onclick="document.getElementById('widget-setup').classList.toggle('hidden')" id="widget-toggle-btn">Setup</button>
+                    </div>
+
+                    <div id="widget-setup" class="hidden" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
+                        <!-- Embed snippet -->
+                        <div class="form-group">
+                            <label class="field-label">Embed snippet</label>
+                            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Paste this into your website's HTML, just before the closing <code style="color:var(--accent);background:var(--accent-muted);padding:1px 5px;border-radius:3px;font-size:11px;">&lt;/body&gt;</code> tag.</p>
+                            <div style="position:relative;">
+                                <textarea id="widget-snippet" readonly style="font-family: var(--font-mono); font-size: 11px; min-height: 80px; background: var(--bg); line-height: 1.6; padding: 12px;"></textarea>
+                                <button class="btn btn-accent btn-sm" onclick="copyWidgetSnippet()" style="position:absolute;top:8px;right:8px;">Copy</button>
+                            </div>
+                        </div>
+
+                        <!-- Preview link -->
+                        <div class="form-group">
+                            <label class="field-label">Preview</label>
+                            <p style="font-size: 12px; color: var(--text-secondary);">
+                                <a id="widget-preview-link" href="#" target="_blank" style="color: var(--accent); text-decoration: none;">Open widget preview ↗</a>
+                            </p>
+                        </div>
+
+                        <!-- Auto-respond toggle -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; background: var(--bg); border-radius: var(--radius); margin-bottom: 12px;">
+                            <div>
+                                <div style="font-size: 13px; font-weight: 500;">Auto-respond to customers</div>
+                                <div style="font-size: 11px; color: var(--text-muted);">When enabled, KRAB sends AI responses directly. When off, tickets go to your inbox for review.</div>
+                            </div>
+                            <div class="tabs" style="margin:0;flex-shrink:0;">
+                                <button class="tab-btn" id="widget-auto-off" onclick="setWidgetAutoRespond(false)">Review first</button>
+                                <button class="tab-btn active" id="widget-auto-on" onclick="setWidgetAutoRespond(true)">Auto-respond</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WIDGET TICKET INBOX -->
+            <div class="card" style="max-width: 780px; margin-bottom: 16px;">
+                <div class="card-head">
+                    <span class="card-title">Widget inbox</span>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <span style="font-size:11px;color:var(--text-dim);" id="widget-inbox-count"></span>
+                        <button class="btn btn-outline btn-sm" onclick="loadWidgetTickets()">Refresh</button>
+                    </div>
+                </div>
+                <div style="max-height:400px;overflow-y:auto;" id="widget-inbox-list">
+                    <div class="empty-state" style="padding:30px 20px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:36px;height:36px;margin-bottom:10px;opacity:0.3;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        <p>No customer tickets yet. Embed the widget on your site to start receiving tickets.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ZENDESK -->
+            <div class="card" style="max-width: 780px;">
                 <div class="card-body">
                     <div class="integration-row">
                         <div class="integration-icon" style="background: #03363D;">
@@ -1471,42 +1631,188 @@ async function askQuestion() {
 function toggleSources(btn) { btn.classList.toggle('open'); document.getElementById('ask-sources').classList.toggle('open'); }
 
 // ====== TICKET RESOLUTION ======
+let ticketHistory = JSON.parse(localStorage.getItem('krab_ticket_history') || '[]');
+let selectedTone = 'professional';
+
+// Tone pill selection
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('tone-pills')?.addEventListener('click', (e) => {
+        const pill = e.target.closest('.tone-pill');
+        if (!pill) return;
+        document.querySelectorAll('.tone-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        selectedTone = pill.dataset.tone;
+    });
+    renderTicketHistory();
+});
+
 async function resolveTicket() {
     const subject = document.getElementById('ticket-subject').value.trim();
     const body = document.getElementById('ticket-body').value.trim();
+    const signature = document.getElementById('ticket-signature').value.trim();
     const btn = document.getElementById('ticket-btn');
     const result = document.getElementById('ticket-result');
     if (!subject && !body) { result.innerHTML = mkAlert('error', 'Provide a subject or message'); return; }
     btn.disabled = true; btn.innerHTML = '<span class="loading-spinner"></span> Generating...';
     result.innerHTML = '';
+    document.getElementById('similar-tickets-card').style.display = 'none';
     try {
         const res = await fetch(`${API_URL}/tickets/match`, {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-            body: JSON.stringify({ subject, body })
+            body: JSON.stringify({ subject, body, tone: selectedTone })
         });
         if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Failed'); }
         const data = await res.json();
+
+        // Show similar tickets in the right panel
+        const similarTickets = data.similar_tickets || [];
+        if (similarTickets.length > 0) {
+            document.getElementById('similar-tickets-card').style.display = '';
+            document.getElementById('similar-tickets-list').innerHTML = similarTickets.map((t, i) => `
+                <div class="similar-ticket-item" onclick="this.querySelector('.similar-ticket-text').style.webkitLineClamp = this.querySelector('.similar-ticket-text').style.webkitLineClamp === 'unset' ? '2' : 'unset'">
+                    <div class="similar-ticket-text">${esc((t.text || '').substring(0, 300))}</div>
+                    <div class="similar-ticket-meta">
+                        <span>${t.source_type || 'doc'}</span>
+                        <span>${Math.round((t.confidence || t.similarity || 0) * 100)}% match</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         if (!data.has_answer) { result.innerHTML = mkAlert('warning', 'No similar past tickets found.'); return; }
+
         const cp = Math.round((data.confidence || 0) * 100);
-        result.innerHTML = `<div style="background:var(--bg);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:16px;margin-top:8px;">
+        const responseText = data.suggested_response || '';
+
+        // Build email-ready version
+        const greeting = 'Hi there,';
+        const sig = signature || 'Best regards,\nSupport Team';
+        const emailReady = `${greeting}\n\n${responseText}\n\n${sig}`;
+
+        window._lastTicketResponse = responseText;
+        window._lastTicketEmail = emailReady;
+
+        const historyId = Date.now();
+
+        result.innerHTML = `<div class="ticket-response-box">
             <div style="display:flex;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
                 <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--success);background:rgba(92,184,92,0.1);padding:3px 8px;border-radius:4px;">Suggested response</span>
-                <span style="font-size:11px;color:var(--text-dim);">${cp}% confidence</span>
+                <span style="font-size:11px;color:var(--text-dim);">${cp}% · ${esc(selectedTone)}</span>
             </div>
-            <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;padding:14px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border-subtle);margin-bottom:12px;word-break:break-word;">${esc(data.suggested_response)}</div>
-            <button class="btn btn-accent btn-sm" onclick="copyTicket()">Copy response</button>
+            <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;padding:14px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border-subtle);margin-bottom:12px;word-break:break-word;">${esc(emailReady)}</div>
+            <div class="ticket-response-actions">
+                <button class="btn btn-accent btn-sm" onclick="copyTicketEmail()">Copy as Email</button>
+                <button class="btn btn-outline btn-sm" onclick="copyTicketRaw()">Copy Raw</button>
+                <div style="margin-left:auto;display:flex;gap:6px;" id="ticket-feedback-${historyId}">
+                    <button class="ticket-feedback-btn" onclick="ticketFeedback(${historyId},'helpful',this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                    </button>
+                    <button class="ticket-feedback-btn" onclick="ticketFeedback(${historyId},'not_helpful',this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+                    </button>
+                </div>
+            </div>
         </div>`;
-        window._lastTicketResponse = data.suggested_response;
+
+        // Save to history
+        ticketHistory.unshift({
+            id: historyId,
+            subject: subject || '(no subject)',
+            body: body.substring(0, 100),
+            response: responseText,
+            emailResponse: emailReady,
+            tone: selectedTone,
+            confidence: cp,
+            feedback: null,
+            timestamp: new Date().toISOString()
+        });
+        if (ticketHistory.length > 50) ticketHistory = ticketHistory.slice(0, 50);
+        localStorage.setItem('krab_ticket_history', JSON.stringify(ticketHistory));
+        renderTicketHistory();
+
     } catch (e) { result.innerHTML = mkAlert('error', e.message); }
     finally { btn.disabled = false; btn.textContent = 'Generate response'; }
 }
 
-function copyTicket() {
+function copyTicketEmail() {
+    if (window._lastTicketEmail) {
+        navigator.clipboard.writeText(window._lastTicketEmail);
+        event.target.textContent = 'Copied!';
+        setTimeout(() => { event.target.textContent = 'Copy as Email'; }, 2000);
+    }
+}
+
+function copyTicketRaw() {
     if (window._lastTicketResponse) {
         navigator.clipboard.writeText(window._lastTicketResponse);
         event.target.textContent = 'Copied!';
-        setTimeout(() => { event.target.textContent = 'Copy response'; }, 2000);
+        setTimeout(() => { event.target.textContent = 'Copy Raw'; }, 2000);
     }
+}
+
+function ticketFeedback(historyId, type, btn) {
+    const container = document.getElementById(`ticket-feedback-${historyId}`);
+    if (!container) return;
+    container.querySelectorAll('.ticket-feedback-btn').forEach(b => b.classList.remove('voted'));
+    btn.classList.add('voted');
+    // Update history
+    const item = ticketHistory.find(t => t.id === historyId);
+    if (item) {
+        item.feedback = type;
+        localStorage.setItem('krab_ticket_history', JSON.stringify(ticketHistory));
+        renderTicketHistory();
+    }
+}
+
+function renderTicketHistory() {
+    const list = document.getElementById('ticket-history-list');
+    const count = document.getElementById('ticket-history-count');
+    if (!list) return;
+    if (!ticketHistory.length) {
+        list.innerHTML = '<div class="empty-state" style="padding:30px 20px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><p>No tickets resolved yet</p></div>';
+        if (count) count.textContent = '';
+        return;
+    }
+    if (count) count.textContent = `${ticketHistory.length} resolved`;
+    list.innerHTML = ticketHistory.map(t => {
+        const date = new Date(t.timestamp).toLocaleDateString();
+        const fbIcon = t.feedback === 'helpful'
+            ? '<span class="ticket-history-feedback" style="color:var(--success);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></span>'
+            : t.feedback === 'not_helpful'
+            ? '<span class="ticket-history-feedback" style="color:var(--error);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></span>'
+            : '';
+        return `<div class="ticket-history-item" onclick="loadTicketFromHistory(${t.id})">
+            <div class="ticket-history-subject">${esc(t.subject)}</div>
+            <div class="ticket-history-preview">${esc(t.response.substring(0, 80))}</div>
+            <div class="ticket-history-meta">
+                <span>${date}</span>
+                <span>${t.tone}</span>
+                <span>${t.confidence}%</span>
+                ${fbIcon}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function loadTicketFromHistory(id) {
+    const item = ticketHistory.find(t => t.id === id);
+    if (!item) return;
+    const result = document.getElementById('ticket-result');
+    const sig = document.getElementById('ticket-signature').value.trim() || 'Best regards,\nSupport Team';
+    const emailReady = `Hi there,\n\n${item.response}\n\n${sig}`;
+    window._lastTicketResponse = item.response;
+    window._lastTicketEmail = emailReady;
+    result.innerHTML = `<div class="ticket-response-box">
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+            <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--accent);background:var(--accent-muted);padding:3px 8px;border-radius:4px;">From history</span>
+            <span style="font-size:11px;color:var(--text-dim);">${item.confidence}% · ${esc(item.tone)}</span>
+        </div>
+        <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;padding:14px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border-subtle);margin-bottom:12px;word-break:break-word;">${esc(emailReady)}</div>
+        <div class="ticket-response-actions">
+            <button class="btn btn-accent btn-sm" onclick="copyTicketEmail()">Copy as Email</button>
+            <button class="btn btn-outline btn-sm" onclick="copyTicketRaw()">Copy Raw</button>
+        </div>
+    </div>`;
 }
 
 // ====== ZENDESK ======
@@ -1563,6 +1869,93 @@ async function disconnectZendesk() {
     catch (e) { console.error(e); }
 }
 
+// ====== SUPPORT WIDGET ======
+let widgetAutoRespond = true;
+
+function initWidgetSetup() {
+    // Get API key from settings and build embed snippet
+    const apiKeyEl = document.getElementById('settings-apikey');
+    const apiKey = apiKeyEl ? apiKeyEl.value : '';
+    const baseUrl = API_URL || window.location.origin;
+
+    const snippet = `<!-- KRAB Support Widget -->\n<script>\n(function(){\n  var d=document,s=d.createElement('iframe');\n  s.src="${baseUrl}/widget?key=${apiKey}";\n  s.style.cssText="position:fixed;bottom:0;right:0;width:440px;height:640px;border:none;z-index:99999;background:transparent;pointer-events:none;";\n  s.setAttribute('allow','clipboard-write');\n  s.id='krab-widget-frame';\n  d.body.appendChild(s);\n  window.addEventListener('message',function(e){\n    if(e.data==='krab-resize')s.style.pointerEvents='auto';\n    if(e.data==='krab-minimize')s.style.pointerEvents='none';\n  });\n})();\n<\/script>`;
+
+    const snippetEl = document.getElementById('widget-snippet');
+    if (snippetEl) snippetEl.value = snippet;
+
+    const previewLink = document.getElementById('widget-preview-link');
+    if (previewLink) previewLink.href = `${baseUrl}/widget?key=${apiKey}`;
+
+    loadWidgetTickets();
+}
+
+function copyWidgetSnippet() {
+    const el = document.getElementById('widget-snippet');
+    if (el) {
+        navigator.clipboard.writeText(el.value);
+        event.target.textContent = 'Copied!';
+        setTimeout(() => { event.target.textContent = 'Copy'; }, 2000);
+    }
+}
+
+function setWidgetAutoRespond(on) {
+    widgetAutoRespond = on;
+    document.getElementById('widget-auto-on').classList.toggle('active', on);
+    document.getElementById('widget-auto-off').classList.toggle('active', !on);
+    localStorage.setItem('krab_widget_auto', on ? '1' : '0');
+}
+
+async function loadWidgetTickets() {
+    const list = document.getElementById('widget-inbox-list');
+    const countEl = document.getElementById('widget-inbox-count');
+    if (!list) return;
+
+    const apiKeyEl = document.getElementById('settings-apikey');
+    const apiKey = apiKeyEl ? apiKeyEl.value : '';
+    if (!apiKey) {
+        list.innerHTML = '<div class="empty-state" style="padding:24px 20px;"><p>Load your profile first (go to Settings, then come back).</p></div>';
+        return;
+    }
+
+    list.innerHTML = '<div class="empty-state" style="padding:20px;"><span class="loading-spinner"></span></div>';
+
+    try {
+        const res = await fetch(`${API_URL}/widget/tickets?api_key=${encodeURIComponent(apiKey)}`);
+        if (!res.ok) { list.innerHTML = '<div class="empty-state" style="padding:20px;"><p>Failed to load tickets.</p></div>'; return; }
+        const data = await res.json();
+        const tickets = data.tickets || [];
+        if (countEl) countEl.textContent = tickets.length ? `${tickets.length} ticket${tickets.length !== 1 ? 's' : ''}` : '';
+
+        if (!tickets.length) {
+            list.innerHTML = '<div class="empty-state" style="padding:30px 20px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:36px;height:36px;margin-bottom:10px;opacity:0.3;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><p>No customer tickets yet.</p></div>';
+            return;
+        }
+
+        list.innerHTML = tickets.map(t => {
+            const date = t.created_at ? new Date(t.created_at).toLocaleString() : '';
+            const statusColor = t.status === 'auto_responded' ? 'var(--success)' : t.status === 'pending' ? 'var(--warning)' : 'var(--text-dim)';
+            const statusLabel = t.status === 'auto_responded' ? 'Auto-responded' : t.status === 'pending' ? 'Pending review' : t.status;
+            return `<div style="padding:14px 20px;border-bottom:1px solid var(--border-subtle);">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">
+                    <div style="font-size:13px;font-weight:500;color:var(--text);">${esc(t.subject || '(no subject)')}</div>
+                    <span style="font-size:10px;color:${statusColor};background:rgba(255,255,255,0.05);padding:2px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0;">${statusLabel}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${esc(t.message || '')}</div>
+                <div style="display:flex;gap:10px;font-size:10px;color:var(--text-dim);align-items:center;">
+                    ${t.customer_name ? '<span>' + esc(t.customer_name) + '</span>' : ''}
+                    ${t.customer_email ? '<span>' + esc(t.customer_email) + '</span>' : ''}
+                    <span>${date}</span>
+                    ${t.confidence ? '<span>' + Math.round(t.confidence * 100) + '% conf</span>' : ''}
+                </div>
+                ${t.ai_response ? '<details style="margin-top:8px;"><summary style="font-size:11px;color:var(--accent);cursor:pointer;">View AI response</summary><div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-top:6px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);white-space:pre-wrap;">' + esc(t.ai_response) + '</div></details>' : ''}
+            </div>`;
+        }).join('');
+    } catch (e) {
+        console.error('Widget tickets error:', e);
+        list.innerHTML = '<div class="empty-state" style="padding:20px;"><p>Error loading tickets.</p></div>';
+    }
+}
+
 // ====== HELPERS ======
 function esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
@@ -1608,6 +2001,8 @@ async function loadProfile() {
             document.getElementById('settings-helpful').textContent = d2.helpful_rate ? `${(d2.helpful_rate * 100).toFixed(0)}%` : '-';
         }
     } catch (e) {}
+    // Init widget setup after API key is loaded
+    initWidgetSetup();
 }
 
 async function saveProfile() {

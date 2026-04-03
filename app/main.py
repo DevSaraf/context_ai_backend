@@ -57,6 +57,16 @@ async def serve_upload_test():
     return FileResponse(os.path.join(os.path.dirname(os.path.dirname(__file__)), "upload_test.html"))
 
 
+@app.get("/widget")
+async def serve_widget():
+    return FileResponse(os.path.join(os.path.dirname(os.path.dirname(__file__)), "widget.html"))
+
+
+@app.get("/privacy")
+async def privacy():
+    return FileResponse(os.path.join(os.path.dirname(os.path.dirname(__file__)), "privacy.html"))
+
+
 # ============== REGISTER ROUTERS ==============
 
 from app.routers.auth_router import router as auth_router
@@ -64,9 +74,11 @@ from app.routers.knowledge_router import router as knowledge_router
 from app.routers.search_router import router as search_router
 from app.routers.feedback_router import router as feedback_router
 from app.routers.zendesk_router import router as zendesk_router
+from app.routers.widget_router import router as widget_router
 
 app.include_router(auth_router)
 app.include_router(knowledge_router)
 app.include_router(search_router)
 app.include_router(feedback_router)
 app.include_router(zendesk_router)
+app.include_router(widget_router)

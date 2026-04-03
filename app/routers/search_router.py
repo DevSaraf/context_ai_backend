@@ -194,6 +194,7 @@ async def match_ticket(
     """Match a support ticket against past resolutions, generate suggested reply."""
     subject = data.get("subject", "")
     body = data.get("body", "")
+    tone = data.get("tone", "professional")
 
     if not subject and not body:
         raise HTTPException(status_code=400, detail="Provide at least a subject or body")
@@ -205,7 +206,7 @@ async def match_ticket(
         query_embedding = create_embedding(search_text)
         similar_tickets = hybrid_search(db, user_id, search_text, query_embedding, limit=5, filter_by="user_id")
 
-        rag_response = await generate_ticket_response(subject, body, similar_tickets)
+        rag_response = await generate_ticket_response(subject, body, similar_tickets, tone=tone)
 
         _log_search(db, user_id, user.company_id, f"[TICKET] {search_text}", len(similar_tickets))
 
