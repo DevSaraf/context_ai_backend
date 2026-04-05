@@ -1169,7 +1169,7 @@
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><circle cx="12" cy="12" r="6"/></svg>
                         <span style="font-size: 12px; font-weight: 600; color: var(--accent); text-transform: uppercase;">AI Suggestion</span>
-                        <span id="ai-confidence" style="margin-left: auto; font-size: 11px; color: var(--text-muted);"></span>
+
                     </div>
                     <div id="ai-suggested-response" style="font-size: 13px; line-height: 1.6; color: var(--text);"></div>
                     <div style="display: flex; gap: 8px; margin-top: 12px;">
@@ -2194,17 +2194,14 @@ async function askQuestion() {
         if (!res.ok) { let msg='Failed'; try { const e=await res.json(); msg=e.detail||msg; } catch(_){} throw new Error(msg); }
         const data = await res.json();
         if (!data.has_answer || !data.answer) { area.innerHTML = '<div class="no-answer">No relevant information found. Try rephrasing or upload more content.</div>'; return; }
-        const cp = Math.round((data.confidence || 0) * 100);
-        const cl = cp >= 70 ? 'high' : cp >= 40 ? 'medium' : 'low';
         const sources = data.sources || [];
         let sh = ''; sources.forEach((s, i) => {
-            const sc = Math.round((s.confidence || s.similarity || 0) * 100);
-            sh += `<div class="source-item"><div class="source-meta"><span class="source-label">[${i+1}] ${s.source_type || 'Doc'} #${s.source_id || ''}</span><span class="source-conf">${sc}%</span></div>${esc(s.text || '').substring(0, 250)}${(s.text||'').length > 250 ? '...' : ''}</div>`;
+            sh += `<div class="source-item"><div class="source-meta"><span class="source-label">[${i+1}] ${s.source_type || 'Doc'} #${s.source_id || ''}</span></div>${esc(s.text || '').substring(0, 250)}${(s.text||'').length > 250 ? '...' : ''}</div>`;
         });
         area.innerHTML = `<div class="answer-content">
             <div class="answer-badge">AI Answer</div>
             <div class="answer-text">${esc(data.answer)}</div>
-            <div class="answer-confidence"><span>Confidence:</span><div class="conf-bar"><div class="conf-fill ${cl}" style="width:${cp}%"></div></div><span>${cp}%</span><span style="margin-left:6px;">· ${data.chunks_used || 0} sources</span></div>
+            <div class="answer-confidence"><span>${data.chunks_used || 0} sources used</span></div>
             ${sources.length ? `<button class="sources-toggle" onclick="toggleSources(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>${sources.length} source${sources.length!==1?'s':''}</button><div class="sources-list" id="ask-sources">${sh}</div>` : ''}
         </div>`;
     } catch (e) { area.innerHTML = `<div class="no-answer" style="color:var(--error);">Error: ${esc(e.message)}</div>`; }
@@ -2256,7 +2253,7 @@ async function resolveTicket() {
                     <div class="similar-ticket-text">${esc((t.text || '').substring(0, 300))}</div>
                     <div class="similar-ticket-meta">
                         <span>${t.source_type || 'doc'}</span>
-                        <span>${Math.round((t.confidence || t.similarity || 0) * 100)}% match</span>
+
                     </div>
                 </div>
             `).join('');
@@ -2264,7 +2261,6 @@ async function resolveTicket() {
 
         if (!data.has_answer) { result.innerHTML = mkAlert('warning', 'No similar past tickets found.'); return; }
 
-        const cp = Math.round((data.confidence || 0) * 100);
         const responseText = data.suggested_response || '';
 
         // Build email-ready version
@@ -2280,7 +2276,7 @@ async function resolveTicket() {
         result.innerHTML = `<div class="ticket-response-box">
             <div style="display:flex;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
                 <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--success);background:rgba(92,184,92,0.1);padding:3px 8px;border-radius:4px;">Suggested response</span>
-                <span style="font-size:11px;color:var(--text-dim);">${cp}% · ${esc(selectedTone)}</span>
+                <span style="font-size:11px;color:var(--text-dim);">${esc(selectedTone)}</span>
             </div>
             <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;padding:14px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border-subtle);margin-bottom:12px;word-break:break-word;">${esc(emailReady)}</div>
             <div class="ticket-response-actions">
@@ -2305,7 +2301,7 @@ async function resolveTicket() {
             response: responseText,
             emailResponse: emailReady,
             tone: selectedTone,
-            confidence: cp,
+
             feedback: null,
             timestamp: new Date().toISOString()
         });
@@ -2370,7 +2366,7 @@ function renderTicketHistory() {
             <div class="ticket-history-meta">
                 <span>${date}</span>
                 <span>${t.tone}</span>
-                <span>${t.confidence}%</span>
+
                 ${fbIcon}
             </div>
         </div>`;
@@ -2388,7 +2384,7 @@ function loadTicketFromHistory(id) {
     result.innerHTML = `<div class="ticket-response-box">
         <div style="display:flex;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
             <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--accent);background:var(--accent-muted);padding:3px 8px;border-radius:4px;">From history</span>
-            <span style="font-size:11px;color:var(--text-dim);">${item.confidence}% · ${esc(item.tone)}</span>
+            <span style="font-size:11px;color:var(--text-dim);">${esc(item.tone)}</span>
         </div>
         <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;padding:14px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border-subtle);margin-bottom:12px;word-break:break-word;">${esc(emailReady)}</div>
         <div class="ticket-response-actions">
@@ -2528,7 +2524,7 @@ async function loadWidgetTickets() {
                     ${t.customer_name ? '<span>' + esc(t.customer_name) + '</span>' : ''}
                     ${t.customer_email ? '<span>' + esc(t.customer_email) + '</span>' : ''}
                     <span>${date}</span>
-                    ${t.confidence ? '<span>' + Math.round(t.confidence * 100) + '% conf</span>' : ''}
+
                 </div>
                 ${t.ai_response ? '<details style="margin-top:8px;"><summary style="font-size:11px;color:var(--accent);cursor:pointer;">View AI response</summary><div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-top:6px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);white-space:pre-wrap;">' + esc(t.ai_response) + '</div></details>' : ''}
             </div>`;
@@ -2898,7 +2894,7 @@ async function getAISuggestion(ticketId) {
             const data = await res.json();
             if (data.suggested_response) {
                 document.getElementById('ai-suggested-response').textContent = data.suggested_response;
-                document.getElementById('ai-confidence').textContent = data.confidence ? `${(data.confidence * 100).toFixed(0)}% confidence` : '';
+
                 suggestionDiv.classList.remove('hidden');
             }
         }
