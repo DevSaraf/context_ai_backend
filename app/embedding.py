@@ -7,8 +7,9 @@ load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # Primary and fallback embedding models
-# Google has been changing model availability — try multiple
+# Google renamed models — gemini-embedding-001 replaces text-embedding-004
 EMBEDDING_MODELS = [
+    "gemini-embedding-001",
     "text-embedding-004",
     "embedding-001",
 ]
@@ -47,7 +48,8 @@ def create_embedding(text: str) -> list:
                     json={
                         "content": {
                             "parts": [{"text": text[:2000]}]
-                        }
+                        },
+                        "outputDimensionality": 768,
                     }
                 )
 

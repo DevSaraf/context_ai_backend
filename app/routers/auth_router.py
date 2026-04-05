@@ -11,6 +11,7 @@ from app.database import get_db
 from app import models, schemas, auth
 from app.dependencies import get_current_user
 from app.jwt_handler import create_access_token
+from app.models import User
 
 router = APIRouter(tags=["auth"])
 
@@ -90,7 +91,7 @@ def login(user: schemas.UserLogin, request: Request, db: Session = Depends(get_d
         _record_attempt(email, _email_attempts)
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    if not auth.verify_password(user.password, db_user.password):
+    if not auth.verify_password(user.password, db_user.password_hash or db_user.password):
         _record_attempt(client_ip, _ip_attempts)
         _record_attempt(email, _email_attempts)
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -151,6 +152,7 @@ def register(user: schemas.UserCreate, request: Request, db: Session = Depends(g
     new_user = models.User(
         email=email,
         password=hashed_password,
+        password_hash=hashed_password,
         company_id=company_id,
         api_key=api_key
     )
@@ -164,10 +166,7 @@ def register(user: schemas.UserCreate, request: Request, db: Session = Depends(g
 
 # ===== GET USER DATA =====
 @router.get("/me")
-def get_user_data(db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+def get_user_data(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     return {
         "user_id": user.id,
         "email": user.email,
@@ -183,12 +182,8 @@ def get_user_data(db: Session = Depends(get_db), user_id: int = Depends(get_curr
 def update_profile(
     data: schemas.ProfileUpdate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user)
+    user: User = Depends(get_current_user)
 ):
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     if data.email:
         clean_email = auth.sanitize(data.email).lower().strip()
         if not auth.is_valid_email(clean_email):
@@ -213,12 +208,8 @@ def update_profile(
 def change_password(
     data: schemas.ChangePassword,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user)
+    user: User = Depends(get_current_user)
 ):
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     # Validate lengths
     if not data.current_password or len(data.current_password) > auth.MAX_PASSWORD_LENGTH:
         raise HTTPException(status_code=400, detail="Invalid current password")
@@ -229,11 +220,13 @@ def change_password(
     if len(data.new_password) > auth.MAX_PASSWORD_LENGTH:
         raise HTTPException(status_code=400, detail="Password too long")
 
-    if not auth.verify_password(data.current_password, user.password):
+    if not auth.verify_password(data.current_password, user.password_hash or user.password):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
 
     try:
-        user.password = auth.hash_password(data.new_password)
+        new_hash = auth.hash_password(data.new_password)
+        user.password = new_hash
+        user.password_hash = new_hash
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -245,12 +238,12 @@ def change_password(
 @router.delete("/account")
 def delete_account(
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user)
+    user: User = Depends(get_current_user)
 ):
     from sqlalchemy import text
-    db.execute(text("DELETE FROM feedback WHERE user_id = :uid"), {"uid": user_id})
-    db.execute(text("DELETE FROM search_logs WHERE user_id = :uid"), {"uid": user_id})
-    db.execute(text("DELETE FROM knowledge_chunks WHERE user_id = :uid"), {"uid": user_id})
-    db.execute(text("DELETE FROM users WHERE id = :uid"), {"uid": user_id})
+    db.execute(text("DELETE FROM feedback WHERE user_id = :uid"), {"uid": user.id})
+    db.execute(text("DELETE FROM search_logs WHERE user_id = :uid"), {"uid": user.id})
+    db.execute(text("DELETE FROM knowledge_chunks WHERE user_id = :uid"), {"uid": user.id})
+    db.execute(text("DELETE FROM users WHERE id = :uid"), {"uid": user.id})
     db.commit()
     return {"success": True, "message": "Account deleted"}

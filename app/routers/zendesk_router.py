@@ -10,7 +10,7 @@ from app.database import get_db
 from app import models
 from app.dependencies import get_current_user
 from app.embedding import create_embedding
-from app.models import KnowledgeChunk, ZendeskIntegration, ZendeskTicket
+from app.models import KnowledgeChunk, ZendeskIntegration, ZendeskTicket, User
 from app.integrations.zendesk import (
     ZendeskClient, get_oauth_url, exchange_code_for_token,
     calculate_resolution_score, format_ticket_for_embedding
@@ -23,13 +23,9 @@ router = APIRouter(prefix="/integrations/zendesk", tags=["zendesk"])
 def zendesk_connect(
     request: dict,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user)
+    user: User = Depends(get_current_user)
 ):
     """Start Zendesk OAuth flow — returns URL to redirect user to."""
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     subdomain = request.get("subdomain", "")
     if not subdomain:
         raise HTTPException(status_code=400, detail="Subdomain required")
@@ -89,13 +85,9 @@ async def zendesk_callback(
 @router.get("/status")
 def zendesk_status(
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user)
+    user: User = Depends(get_current_user)
 ):
     """Check Zendesk connection status."""
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        return {"connected": False}
-
     integration = db.query(ZendeskIntegration).filter(ZendeskIntegration.company_id == user.company_id).first()
 
     if not integration or not integration.access_token:
@@ -112,13 +104,9 @@ def zendesk_status(
 @router.post("/sync")
 async def zendesk_sync(
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user)
+    user: User = Depends(get_current_user)
 ):
     """Sync tickets from Zendesk."""
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        return {"success": False, "message": "User not found"}
-
     integration = db.query(ZendeskIntegration).filter(ZendeskIntegration.company_id == user.company_id).first()
     if not integration or not integration.access_token:
         return {"success": False, "message": "Zendesk not connected"}
@@ -185,7 +173,7 @@ async def zendesk_sync(
                     chunk = KnowledgeChunk(
                         company_id=user.company_id,
                         source_type="zendesk_ticket",
-                        source_id=ticket_id,
+                        source_id=str(ticket_id),
                         text=ticket_text,
                         embedding=embedding,
                         resolution_score=resolution_score
@@ -233,13 +221,9 @@ async def zendesk_sync(
 @router.delete("/disconnect")
 def zendesk_disconnect(
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user)
+    user: User = Depends(get_current_user)
 ):
     """Disconnect Zendesk integration."""
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        return {"success": False, "message": "User not found"}
-
     integration = db.query(ZendeskIntegration).filter(ZendeskIntegration.company_id == user.company_id).first()
     if integration:
         db.delete(integration)
@@ -251,13 +235,9 @@ def zendesk_disconnect(
 @router.get("/tickets")
 def get_zendesk_tickets(
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user)
+    user: User = Depends(get_current_user)
 ):
     """Get list of imported Zendesk tickets."""
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        return {"tickets": []}
-
     tickets = db.query(ZendeskTicket).filter(
         ZendeskTicket.company_id == user.company_id
     ).order_by(ZendeskTicket.imported_at.desc()).limit(100).all()

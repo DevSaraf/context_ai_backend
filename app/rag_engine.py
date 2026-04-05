@@ -120,7 +120,7 @@ async def generate_answer(
         text = chunk.get("text", "")
         source_type = chunk.get("source_type", "document")
         source_id = chunk.get("source_id", "")
-        confidence = chunk.get("confidence", chunk.get("similarity", 0)) or 0
+        confidence = chunk.get("confidence") or chunk.get("similarity") or 0
 
         context_parts.append(f"[Source {i}] ({source_type} #{source_id}, confidence: {confidence:.0%})\n{text}")
 
