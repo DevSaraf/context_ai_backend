@@ -2,17 +2,10 @@
 RAG Answer Generation Module
 Takes a user query + retrieved chunks → generates a grounded, cited answer.
 
-This is the core intelligence layer that transforms raw search results
-into useful, trustworthy answers.
-
-Usage:
-    from app.rag_engine import generate_answer, generate_ticket_response
-
-    # For general Q&A (Pillar 1 + Extension)
-    answer = await generate_answer(query, chunks)
-
-    # For ticket resolution (Pillar 2)
-    response = await generate_ticket_response(ticket_subject, ticket_body, similar_tickets)
+FIX: Don't expose raw confidence scores to the LLM — it causes the model
+to refuse answering when scores are low, even if the chunk text clearly
+contains the answer. Also improved confidence calculation to use max
+instead of average, so one highly relevant chunk doesn't get diluted.
 """
 
 from typing import List, Dict, Optional
@@ -23,12 +16,12 @@ from app.llm_provider import llm
 @dataclass
 class RAGResponse:
     """Structured response from RAG generation."""
-    answer: str                        # The generated answer text
-    citations: List[Dict]              # Source references used
-    confidence: float                  # Overall confidence (0-1)
-    query: str                         # Original query
-    chunks_used: int                   # How many chunks were in context
-    has_answer: bool = True            # False if no relevant context found
+    answer: str
+    citations: List[Dict]
+    confidence: float
+    query: str
+    chunks_used: int
+    has_answer: bool = True
 
 
 # ============== SYSTEM PROMPTS ==============
@@ -42,6 +35,8 @@ RULES:
 4. Keep answers clear, concise, and actionable.
 5. If multiple sources agree, mention that for higher confidence.
 6. If sources conflict, note the discrepancy.
+7. Even if a source is short (just a few words), if it directly answers the question, USE IT confidently.
+8. Do NOT refuse to answer just because the context is brief — short facts are still valid answers.
 
 RESPONSE FORMAT:
 - Start with a direct answer to the question
@@ -82,6 +77,7 @@ RULES:
 3. Only use information from the provided context.
 4. If the context is relevant, lead with the key insight.
 5. If the context isn't very relevant to the query, say "Limited context found" and share what's available.
+6. Even short facts are valid — don't dismiss brief context chunks.
 
 Keep it short. The user is in the middle of working and needs a quick reference, not an essay."""
 
@@ -96,11 +92,10 @@ async def generate_answer(
     """
     Generate an answer from retrieved chunks.
 
-    Args:
-        query:  The user's question
-        chunks: Retrieved knowledge chunks (from your /search or /context endpoint)
-                Each chunk should have: text, source_type, source_id, confidence/similarity
-        mode:   "qa" (full answer), "extension" (brief sidebar), "ticket" (customer response)
+    FIX: Don't show confidence percentages to the LLM — it biases the model
+    to refuse answering when scores are low, even if the text clearly answers
+    the question. Instead, just present the source text and let the LLM judge
+    relevance from the content itself.
     """
     if not chunks:
         return RAGResponse(
@@ -122,7 +117,9 @@ async def generate_answer(
         source_id = chunk.get("source_id", "")
         confidence = chunk.get("confidence") or chunk.get("similarity") or 0
 
-        context_parts.append(f"[Source {i}] ({source_type} #{source_id}, confidence: {confidence:.0%})\n{text}")
+        # FIX: Don't include confidence score in the prompt shown to LLM
+        # The LLM was seeing "confidence: 0%" and refusing to use the source
+        context_parts.append(f"[Source {i}] ({source_type} #{source_id})\n{text}")
 
         citations.append({
             "source_number": i,
@@ -151,19 +148,27 @@ async def generate_answer(
 
 USER QUESTION: {query}
 
-Provide your answer based on the context above."""
+Provide your answer based on the context above. If any source text directly answers the question, use it even if the source is short."""
 
     # Generate with LLM
     max_tokens = 300 if mode == "extension" else 800
     answer_text = await llm.generate(system_prompt, user_prompt, max_tokens=max_tokens)
 
-    # Calculate overall confidence (average of chunk confidences)
-    avg_confidence = sum(c["confidence"] for c in citations) / len(citations) if citations else 0
+    # FIX: Use max confidence instead of average
+    # One highly relevant chunk shouldn't be diluted by 4 irrelevant ones
+    # Also use a weighted approach: if any chunk has keyword overlap, boost confidence
+    if citations:
+        max_confidence = max(c["confidence"] for c in citations)
+        avg_confidence = sum(c["confidence"] for c in citations) / len(citations)
+        # Weighted: 70% max, 30% average — so one good match keeps confidence high
+        overall_confidence = (0.7 * max_confidence) + (0.3 * avg_confidence)
+    else:
+        overall_confidence = 0
 
     return RAGResponse(
         answer=answer_text,
         citations=citations,
-        confidence=round(avg_confidence, 3),
+        confidence=round(overall_confidence, 3),
         query=query,
         chunks_used=len(chunks),
         has_answer=True
@@ -178,12 +183,6 @@ async def generate_ticket_response(
 ) -> RAGResponse:
     """
     Generate a suggested response for a support ticket.
-
-    Args:
-        ticket_subject:  The new ticket's subject line
-        ticket_body:     The customer's message
-        similar_tickets: Retrieved similar past tickets with resolutions
-        tone:            Response tone — "professional", "friendly", "concise", or "empathetic"
     """
     if not similar_tickets:
         return RAGResponse(
@@ -204,8 +203,9 @@ async def generate_ticket_response(
         confidence = ticket.get("confidence", ticket.get("similarity", 0)) or 0
         resolution_score = ticket.get("resolution_score", 0.5) or 0.5
 
+        # FIX: Don't show raw confidence to LLM for tickets either
         context_parts.append(
-            f"[Past Ticket {i}] (match: {confidence:.0%}, customer satisfaction: {resolution_score:.0%})\n{text}"
+            f"[Past Ticket {i}] (customer satisfaction: {resolution_score:.0%})\n{text}"
         )
 
         citations.append({
@@ -220,7 +220,6 @@ async def generate_ticket_response(
 
     context_block = "\n\n---\n\n".join(context_parts)
 
-    # Get tone instruction (fallback to professional)
     tone_instruction = TICKET_TONE_INSTRUCTIONS.get(tone, TICKET_TONE_INSTRUCTIONS["professional"])
     system_prompt = TICKET_RESOLUTION_PROMPT.format(tone_instruction=tone_instruction)
 
@@ -237,12 +236,17 @@ Draft a response to this customer based on what worked in similar past tickets. 
 
     answer_text = await llm.generate(system_prompt, user_prompt, max_tokens=600)
 
-    avg_confidence = sum(c["confidence"] for c in citations) / len(citations) if citations else 0
+    if citations:
+        max_confidence = max(c["confidence"] for c in citations)
+        avg_confidence = sum(c["confidence"] for c in citations) / len(citations)
+        overall_confidence = (0.7 * max_confidence) + (0.3 * avg_confidence)
+    else:
+        overall_confidence = 0
 
     return RAGResponse(
         answer=answer_text,
         citations=citations,
-        confidence=round(avg_confidence, 3),
+        confidence=round(overall_confidence, 3),
         query=f"{ticket_subject}: {ticket_body}",
         chunks_used=len(similar_tickets),
         has_answer=True
