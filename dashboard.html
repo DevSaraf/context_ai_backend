@@ -789,7 +789,6 @@
                 <div class="stat-card"><div class="stat-value" id="stat-chunks">-</div><div class="stat-label">Chunks</div></div>
                 <div class="stat-card"><div class="stat-value" id="stat-searches">-</div><div class="stat-label">Searches</div></div>
                 <div class="stat-card"><div class="stat-value" id="stat-sources">-</div><div class="stat-label">Sources</div></div>
-                <div class="stat-card"><div class="stat-value" id="stat-usage">-</div><div class="stat-label">Usage</div></div>
             </div>
 
             <div class="answer-area hidden" id="ask-answer-area"></div>
@@ -1345,7 +1344,6 @@ async function loadAnalytics() {
         const d = await res.json();
         document.getElementById('stat-chunks').textContent = d.total_chunks || 0;
         document.getElementById('stat-searches').textContent = d.total_searches || 0;
-        document.getElementById('stat-usage').textContent = d.usage_rate ? `${(d.usage_rate * 100).toFixed(0)}%` : '-';
         // sources count: count unique source_types from documents
         try {
             const r2 = await fetch(`${API_URL}/knowledge/documents`, { headers: { 'Authorization': `Bearer ${authToken}` } });
@@ -1621,7 +1619,6 @@ async function askQuestion() {
         area.innerHTML = `<div class="answer-content">
             <div class="answer-badge">AI Answer</div>
             <div class="answer-text">${esc(data.answer)}</div>
-            <div class="answer-confidence"><span>Confidence:</span><div class="conf-bar"><div class="conf-fill ${cl}" style="width:${cp}%"></div></div><span>${cp}%</span><span style="margin-left:6px;">· ${data.chunks_used || 0} sources</span></div>
             ${sources.length ? `<button class="sources-toggle" onclick="toggleSources(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>${sources.length} source${sources.length!==1?'s':''}</button><div class="sources-list" id="ask-sources">${sh}</div>` : ''}
         </div>`;
     } catch (e) { area.innerHTML = `<div class="no-answer" style="color:var(--error);">Error: ${esc(e.message)}</div>`; }
