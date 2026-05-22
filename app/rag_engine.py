@@ -31,7 +31,7 @@ class RAGResponse:
     has_answer: bool = True            # False if no relevant context found
 
 
-# ============== SYSTEM PROMPTS ==============
+
 
 KNOWLEDGE_QA_PROMPT = """You are a helpful company knowledge assistant. Your job is to answer questions using ONLY the provided company knowledge context.
 
@@ -86,8 +86,8 @@ RULES:
 Keep it short. The user is in the middle of working and needs a quick reference, not an essay."""
 
 
-# ============== CORE RAG FUNCTIONS ==============
-
+# This is the core Retrieval-Augmented Generation function.
+# Why it's important: It builds a strict prompt that forces the LLM to obey the rules. It maps over the 5 database chunks and formats them into a single string: [Source 1]... [Source 2].... It then explicitly instructs the LLM: "Answer ONLY from the provided context. Never make up information".
 async def generate_answer(
     query: str,
     chunks: List[Dict],

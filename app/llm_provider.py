@@ -22,7 +22,7 @@ from abc import ABC, abstractmethod
 
 load_dotenv()
 
-# ============== CONFIGURATION ==============
+
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini").lower()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
@@ -31,7 +31,7 @@ OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 
 
-# ============== BASE INTERFACE ==============
+
 
 class LLMProvider(ABC):
     """Base class for LLM providers."""
@@ -47,7 +47,7 @@ class LLMProvider(ABC):
         pass
 
 
-# ============== GEMINI PROVIDER ==============
+
 
 class GeminiProvider(LLMProvider):
     """Google Gemini API (free tier: 15 RPM on Flash)."""
@@ -107,7 +107,7 @@ class GeminiProvider(LLMProvider):
             return f"Error generating answer: {str(e)}"
 
 
-# ============== CLAUDE PROVIDER ==============
+
 
 class ClaudeProvider(LLMProvider):
     """Anthropic Claude API."""

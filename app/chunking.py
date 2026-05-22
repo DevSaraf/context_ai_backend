@@ -45,7 +45,8 @@ def chunk_text(
     chunks = chunk_text_with_metadata(text, chunk_size, overlap, min_chunk_size)
     return [c.text for c in chunks]
 
-
+# LLMs have token limits; you can't feed them a 100-page manual at once. This function intelligently chops the parsed text into ~400-word blocks.
+# It uses a sliding window technique called overlap (default 80 words). The end of Chunk 1 is duplicated at the beginning of Chunk 2. This ensures that if the answer to a question spans across a chunk boundary, the context isn't lost.
 def chunk_text_with_metadata(
     text: str,
     chunk_size: int = 400,
@@ -187,7 +188,7 @@ def chunk_text_with_metadata(
     return chunks
 
 
-# ============== HELPER FUNCTIONS ==============
+
 
 def _split_into_paragraphs(text: str) -> List[str]:
     """Split on double newlines, preserving paragraph boundaries."""

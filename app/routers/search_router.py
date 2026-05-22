@@ -148,7 +148,7 @@ async def get_context(
         print(f"Context error: {e}")
         return {"context": "", "sources": [], "answer": "", "confidence": 0, "has_answer": False}
 
-
+#This is the main "Ask AI" button on your dashboard. It takes the user's prompt, calls hybrid_search() to find the 5 best chunks, and then calls generate_answer() from your RAG engine to write the response.
 @router.post("/ask")
 async def ask_question(
     data: dict,

@@ -15,8 +15,9 @@ from app.jwt_handler import create_access_token
 router = APIRouter(tags=["auth"])
 
 
-# ===== RATE LIMITING (in-memory, resets on server restart) =====
+#RATE LIMITING (in-memory, resets on server restart)
 # Tracks failed attempts per IP and per email
+#If a bot tries to guess passwords 1,000 times a second, your database won't crash. The in-memory tracker instantly blocks them with a 429 Too Many Requests error, triggering a 10-minute lockout.
 _ip_attempts = defaultdict(list)       # {ip: [timestamp, timestamp, ...]}
 _email_attempts = defaultdict(list)    # {email: [timestamp, timestamp, ...]}
 
@@ -56,7 +57,7 @@ def _get_client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
-# ===== LOGIN =====
+
 @router.post("/login")
 def login(user: schemas.UserLogin, request: Request, db: Session = Depends(get_db)):
     client_ip = _get_client_ip(request)
@@ -109,7 +110,8 @@ def login(user: schemas.UserLogin, request: Request, db: Session = Depends(get_d
     }
 
 
-# ===== REGISTER =====
+#When a new user signs up, it securely hashes their password. But more importantly, it calls secrets.token_hex(32).
+# Why it's important: This generates the unique API_KEY that is used to authenticate the Support Widget on external websites. Without this line, the widget integration wouldn't work.
 @router.post("/register")
 def register(user: schemas.UserCreate, request: Request, db: Session = Depends(get_db)):
     client_ip = _get_client_ip(request)
@@ -241,7 +243,7 @@ def change_password(
     return {"success": True, "message": "Password updated"}
 
 
-# ===== DELETE ACCOUNT =====
+#It doesn't just delete the user. It runs raw SQL DELETE commands to wipe out their feedback, their search logs, and all their embedded
 @router.delete("/account")
 def delete_account(
     db: Session = Depends(get_db),

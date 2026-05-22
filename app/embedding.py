@@ -18,7 +18,8 @@ EMBEDDING_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 # Cache which model works so we don't retry on every call
 _working_model = None
 
-
+# Takes a text chunk and converts it into an array of 768 floating-point numbers using Google's API.
+#This is how the database understands "meaning." Words with similar meanings will have similar mathematical vectors.
 def create_embedding(text: str) -> list:
     """
     Create embedding using Google's free embedding API.

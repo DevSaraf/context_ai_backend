@@ -2,6 +2,7 @@
 Context AI Backend — Main Application
 All route logic lives in app/routers/. This file just wires them together.
 """
+import warnings
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse
@@ -52,9 +53,7 @@ async def serve_dashboard():
     return FileResponse(os.path.join(os.path.dirname(os.path.dirname(__file__)), "dashboard.html"))
 
 
-@app.get("/upload_test.html")
-async def serve_upload_test():
-    return FileResponse(os.path.join(os.path.dirname(os.path.dirname(__file__)), "upload_test.html"))
+# /upload_test.html route removed — dev-only, not included in deployment artifact
 
 
 @app.get("/widget")
@@ -122,7 +121,21 @@ async def privacy():
 </html>"""
 
 
-# ============== REGISTER ROUTERS ==============
+# ============== STARTUP CHECKS ==============
+
+@app.on_event("startup")
+def startup_checks():
+    from app.jwt_handler import SECRET_KEY
+    if SECRET_KEY in ("supersecretkey", "supersecretkey-change-this-in-production"):
+        warnings.warn(
+            "\n⚠️  SECRET_KEY is still the default placeholder!\n"
+            "   Set a real SECRET_KEY in your environment variables.\n"
+            "   Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\"\n",
+            stacklevel=1
+        )
+
+
+# ============== REGISTER ROUTERS =============="
 
 from app.routers.auth_router import router as auth_router
 from app.routers.knowledge_router import router as knowledge_router
