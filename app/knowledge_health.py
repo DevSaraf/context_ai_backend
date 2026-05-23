@@ -9,7 +9,7 @@ from typing import Dict, Any, List
 from datetime import datetime, timedelta
 import logging
 
-from .models import KnowledgeChunk, KnowledgeHealthReport, Ticket
+from .models import KnowledgeChunk, KnowledgeHealthReport
 
 logger = logging.getLogger(__name__)
 
@@ -59,26 +59,8 @@ class KnowledgeHealthService:
 
         source_score = min(100, len(sources) * 20)  # 5 sources = 100
 
-        # 3. Coverage gaps - find frequently asked questions with low confidence
+        # 3. Coverage gaps (placeholder — ticket system removed)
         coverage_gaps = []
-        recent_tickets = (
-            self.db.query(Ticket)
-            .filter(
-                Ticket.company_id == self.company_id,
-                Ticket.created_at >= three_months_ago,
-                Ticket.ai_confidence != None,
-                Ticket.ai_confidence < 0.5,
-            )
-            .limit(20)
-            .all()
-        )
-
-        for ticket in recent_tickets:
-            coverage_gaps.append({
-                "query": ticket.subject,
-                "confidence": ticket.ai_confidence or 0,
-                "ticket_number": ticket.ticket_number,
-            })
 
         # 4. Unused documents (never appeared in search results)
         unused = sum(1 for c in chunks if (c.confidence or 0) == 0 and c.created_at and c.created_at < three_months_ago)

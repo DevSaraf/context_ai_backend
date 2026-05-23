@@ -19,7 +19,7 @@ Base.metadata.create_all(bind=engine)
 # Initialize app
 app = FastAPI(
     title="KRAB - AI Knowledge Platform",
-    description="AI-powered company knowledge platform with connectors, tickets, and help center",
+    description="AI-powered company knowledge platform with connectors and help center",
     version="2.0.0"
 )
 
@@ -134,7 +134,7 @@ from app.routers.feedback_router import router as feedback_router
 from app.routers.zendesk_router import router as zendesk_router
 from app.routers.widget_router import router as widget_router
 from app.routers.connector_router import router as connector_router
-from app.routers.ticket_router import router as ticket_router
+
 from app.routers.helpcenter_router import help_router, public_help_router, health_router
 
 app.include_router(auth_router)
@@ -144,7 +144,7 @@ app.include_router(feedback_router)
 app.include_router(zendesk_router)
 app.include_router(widget_router)
 app.include_router(connector_router)
-app.include_router(ticket_router)
+
 app.include_router(help_router)
 app.include_router(public_help_router)
 app.include_router(health_router)

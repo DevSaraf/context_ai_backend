@@ -2,7 +2,7 @@
 KRAB — Pydantic Schemas for API requests/responses
 """
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -198,242 +198,10 @@ class ConnectorOAuthCallback(BaseModel):
     state: Optional[str] = None
 
 
-# ============================================================
-# TICKETS
-# ============================================================
-
-class TicketStatusEnum(str, Enum):
-    NEW = "new"
-    OPEN = "open"
-    PENDING = "pending"
-    SOLVED = "solved"
-    CLOSED = "closed"
 
 
-class TicketPriorityEnum(str, Enum):
-    LOW = "low"
-    NORMAL = "normal"
-    HIGH = "high"
-    URGENT = "urgent"
 
 
-class TicketChannelEnum(str, Enum):
-    EMAIL = "email"
-    WIDGET = "widget"
-    API = "api"
-    MANUAL = "manual"
-    SLACK = "slack"
-
-
-class TicketCreate(BaseModel):
-    subject: str
-    description: Optional[str] = None
-    priority: TicketPriorityEnum = TicketPriorityEnum.NORMAL
-    channel: TicketChannelEnum = TicketChannelEnum.MANUAL
-    requester_email: Optional[str] = None
-    requester_name: Optional[str] = None
-    tags: List[str] = []
-    assigned_agent_id: Optional[int] = None
-    category: Optional[str] = None
-
-
-class TicketUpdate(BaseModel):
-    subject: Optional[str] = None
-    status: Optional[TicketStatusEnum] = None
-    priority: Optional[TicketPriorityEnum] = None
-    assigned_agent_id: Optional[int] = None
-    assigned_group: Optional[str] = None
-    tags: Optional[List[str]] = None
-    category: Optional[str] = None
-
-
-class TicketCommentCreate(BaseModel):
-    body: str
-    is_internal: bool = False
-    author_type: str = "agent"
-    author_name: Optional[str] = None
-    author_email: Optional[str] = None
-
-
-class TicketCommentResponse(BaseModel):
-    id: int
-    ticket_id: int
-    author_type: str
-    author_name: Optional[str]
-    author_email: Optional[str]
-    body: str
-    is_internal: bool
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-class TicketEventResponse(BaseModel):
-    id: int
-    ticket_id: int
-    event_type: str
-    field_name: Optional[str]
-    old_value: Optional[str]
-    new_value: Optional[str]
-    actor_type: str
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-class TicketResponse(BaseModel):
-    id: int
-    ticket_number: str
-    subject: str
-    description: Optional[str]
-    status: str
-    priority: str
-    channel: str
-    requester_email: Optional[str]
-    requester_name: Optional[str]
-    assigned_agent_id: Optional[int]
-    assigned_group: Optional[str]
-    tags: List[str] = []
-    category: Optional[str]
-    ai_intent: Optional[str]
-    ai_sentiment: Optional[str]
-    ai_confidence: Optional[float]
-    ai_suggested_response: Optional[str]
-    sla_breach: bool = False
-    first_response_due_at: Optional[datetime]
-    resolution_due_at: Optional[datetime]
-    csat_rating: Optional[int]
-    created_at: Optional[datetime]
-    updated_at: Optional[datetime]
-    solved_at: Optional[datetime]
-    comments: List[TicketCommentResponse] = []
-    events: List[TicketEventResponse] = []
-
-    class Config:
-        from_attributes = True
-
-
-class TicketListResponse(BaseModel):
-    tickets: List[TicketResponse]
-    total: int
-    page: int
-    page_size: int
-
-
-class TicketListParams(BaseModel):
-    status: Optional[TicketStatusEnum] = None
-    priority: Optional[TicketPriorityEnum] = None
-    assigned_agent_id: Optional[int] = None
-    requester_email: Optional[str] = None
-    channel: Optional[TicketChannelEnum] = None
-    tag: Optional[str] = None
-    search: Optional[str] = None
-    page: int = 1
-    page_size: int = 20
-    sort_by: str = "created_at"
-    sort_order: str = "desc"
-
-
-class TicketAISuggest(BaseModel):
-    """AI copilot suggestion for a ticket"""
-    summary: str
-    intent: str
-    sentiment: str
-    suggested_response: str
-    confidence: float
-    similar_tickets: List[Dict[str, Any]] = []
-    relevant_articles: List[Dict[str, Any]] = []
-    suggested_macros: List[Dict[str, Any]] = []
-
-
-class TicketCSATRequest(BaseModel):
-    rating: int = Field(ge=1, le=5)
-    comment: Optional[str] = None
-
-
-class TicketBulkUpdate(BaseModel):
-    ticket_ids: List[int]
-    status: Optional[TicketStatusEnum] = None
-    priority: Optional[TicketPriorityEnum] = None
-    assigned_agent_id: Optional[int] = None
-    tags_add: List[str] = []
-    tags_remove: List[str] = []
-
-
-# ============================================================
-# SLA
-# ============================================================
-
-class SLAPolicyCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    is_default: bool = False
-    targets: Dict[str, Dict[str, int]]  # {"urgent": {"first_response": 30, "resolution": 240}}
-    business_hours: Optional[Dict[str, Any]] = None
-
-
-class SLAPolicyResponse(BaseModel):
-    id: int
-    name: str
-    description: Optional[str]
-    is_default: bool
-    targets: Dict[str, Dict[str, int]]
-    business_hours: Optional[Dict[str, Any]]
-    is_active: bool
-
-    class Config:
-        from_attributes = True
-
-
-# ============================================================
-# TRIGGERS & MACROS
-# ============================================================
-
-class TriggerCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    event: str  # ticket_created, ticket_updated
-    conditions: Dict[str, Any]
-    actions: List[Dict[str, Any]]
-
-
-class TriggerResponse(BaseModel):
-    id: int
-    name: str
-    description: Optional[str]
-    event: str
-    conditions: Dict[str, Any]
-    actions: List[Dict[str, Any]]
-    is_active: bool
-    position: int
-
-    class Config:
-        from_attributes = True
-
-
-class MacroCreate(BaseModel):
-    title: str
-    description: Optional[str] = None
-    actions: List[Dict[str, Any]]
-
-
-class MacroResponse(BaseModel):
-    id: int
-    title: str
-    description: Optional[str]
-    actions: List[Dict[str, Any]]
-    usage_count: int
-    is_active: bool
-
-    class Config:
-        from_attributes = True
-
-
-class MacroApply(BaseModel):
-    ticket_id: int
-    macro_id: int
 
 
 # ============================================================
@@ -493,23 +261,7 @@ class KnowledgeHealthResponse(BaseModel):
     generated_at: datetime
 
 
-# ============================================================
-# ANALYTICS (enhanced)
-# ============================================================
 
-class TicketStatsResponse(BaseModel):
-    total_tickets: int
-    open_tickets: int
-    pending_tickets: int
-    solved_tickets: int
-    avg_first_response_minutes: Optional[float]
-    avg_resolution_minutes: Optional[float]
-    sla_compliance_rate: Optional[float]
-    csat_average: Optional[float]
-    tickets_by_channel: Dict[str, int]
-    tickets_by_priority: Dict[str, int]
-    tickets_by_category: Dict[str, int]
-    daily_volume: List[Dict[str, Any]]  # last 30 days
 
 
 # ============================================================
@@ -532,4 +284,3 @@ class ExtensionContextResponse(BaseModel):
     confidence: float = 0.0
     chunks: List[Dict[str, Any]] = []
     suggested_actions: List[Dict[str, Any]] = []  # context-specific actions
-    related_tickets: List[Dict[str, Any]] = []
