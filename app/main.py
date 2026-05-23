@@ -13,8 +13,45 @@ import os
 
 from app.database import Base, engine
 
+from sqlalchemy import text
+
 # Create tables
 Base.metadata.create_all(bind=engine)
+
+# Ensure missing columns exist (handles environment mismatches like Azure/Local differences)
+with engine.begin() as conn:
+    try:
+        # Users table updates
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255) NULL"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'agent' NULL"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(255) NULL"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE NULL"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NULL"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE NULL"))
+        
+        # Knowledge chunks table updates
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS user_id INTEGER NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS source_type VARCHAR(50) DEFAULT 'document' NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS source_app VARCHAR(50) DEFAULT 'upload' NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS source_url TEXT NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS source_id VARCHAR(255) NULL"))
+        
+        # If source_id already existed as an INTEGER, we need to alter its type to VARCHAR
+        try:
+            conn.execute(text("ALTER TABLE knowledge_chunks ALTER COLUMN source_id TYPE VARCHAR(255)"))
+        except Exception:
+            pass # ignore if it fails or is already varchar
+            
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS source_title VARCHAR(500) NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS connector_id INTEGER NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS metadata JSON NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS confidence FLOAT DEFAULT 0.0 NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS last_synced_at TIMESTAMP WITH TIME ZONE NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS is_stale BOOLEAN DEFAULT FALSE NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS resolution_score FLOAT NULL"))
+        
+    except Exception as e:
+        print(f"Schema update notice: {e}")
 
 # Initialize app
 app = FastAPI(

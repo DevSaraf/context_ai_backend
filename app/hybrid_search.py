@@ -73,8 +73,8 @@ def hybrid_search(
             params[f"kw{i}"] = w
 
     # FIX: Use GREATEST to set a minimum similarity floor of 0.01
-    # This prevents NaN or negative cosine distances from zeroing out
-    # chunks that have strong keyword matches
+    # Handle NaN distances (which happen if embeddings are zero vectors)
+    # so they don't corrupt the keyword boost scoring.
     sql = f"""
         SELECT 
             id,
@@ -88,7 +88,10 @@ def hybrid_search(
             confidence,
             created_at,
             (
-                GREATEST(1 - (embedding <=> CAST(:query_embedding AS vector)), 0.01)
+                CASE 
+                    WHEN (embedding <=> CAST(:query_embedding AS vector))::text = 'NaN' THEN 0.01
+                    ELSE GREATEST(1 - (embedding <=> CAST(:query_embedding AS vector)), 0.01)
+                END
                 {keyword_boost}
             ) AS similarity
         FROM knowledge_chunks
