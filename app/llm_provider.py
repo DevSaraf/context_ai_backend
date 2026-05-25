@@ -63,11 +63,12 @@ class GeminiProvider(LLMProvider):
     async def generate(self, system_prompt: str, user_prompt: str, max_tokens: int = 1024) -> str:
         """Call Gemini API using REST (no SDK dependency issues)."""
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(
                     f"{self.api_url}?key={self.api_key}",
                     json={
-                        "system_instruction": {
+                        # "system_instruction": {
+                        "systemInstruction": {
                             "parts": [{"text": system_prompt}]
                         },
                         "contents": [
@@ -98,7 +99,9 @@ class GeminiProvider(LLMProvider):
                 if not parts:
                     return "Empty response from AI. Please try rephrasing your question."
 
-                return parts[0].get("text", "").strip()
+                # Skip thinking parts (gemini-2.5+ models) — return last text part
+                text_parts = [p.get("text", "") for p in parts if not p.get("thought")]
+                return (text_parts[-1] if text_parts else "").strip()
 
         except httpx.TimeoutException:
             return "AI response timed out. Please try again with a shorter query."

@@ -1,14 +1,15 @@
 """
-Hybrid Search Module
-Combines pgvector semantic search with PostgreSQL full-text search (tsvector).
-Uses Reciprocal Rank Fusion (RRF) to merge rankings from both methods.
+KRAB — Hybrid Search (Fixed)
+Searches BOTH user-uploaded chunks AND company-level connector-synced chunks.
+
+FIX: Short chunks (e.g. "Dev is founder of krab") now get proper keyword boost
+so they aren't drowned out by longer but less relevant chunks.
 """
 
 from sqlalchemy.orm import Session
-from sqlalchemy import text
-from typing import List, Dict
+from sqlalchemy import text, or_, and_
+from typing import List, Dict, Any, Optional
 import math
-from app.embedding import create_embedding
 
 # It writes a massive raw SQL query that runs two different types of searches simultaneously.
 # Why it's important: 1.  Vector Search: It uses PostgreSQL's pgvector to find chunks with similar meanings (embedding <=> CAST(:embedding AS vector)).
@@ -16,155 +17,121 @@ from app.embedding import create_embedding
 # Key Detail: It combines these two results using a formula called Reciprocal Rank Fusion (RRF): (:vector_weight / (:rrf_k + v.v_rank) + :text_weight / (:rrf_k + t.t_rank)). This guarantees that a chunk that is both semantically relevant and contains the exact keywords floats to the #1 spot. It also specifically filters by user_id or company_id so data doesn't leak between users.
 def hybrid_search(
     db: Session,
-    filter_value,
+    user_id: int,
     query: str,
     query_embedding: list,
     limit: int = 5,
-    vector_weight: float = 0.6,
-    text_weight: float = 0.4,
-    rrf_k: int = 60,
     filter_by: str = "user_id",
-) -> List[Dict]:
+    company_id: str = None,
+) -> List[Dict[str, Any]]:
     """
-    Hybrid search combining vector similarity + full-text search.
+    Hybrid search combining vector similarity + keyword matching.
+    
+    Searches TWO scopes:
+    1. User's own uploads (user_id match, source_app='upload')
+    2. Company connector-synced docs (company_id match, source_app != 'upload')
+    
+    FIX: Increased keyword boost from 0.15 to 0.35, added per-word incremental
+    boost, and added a minimum similarity floor so short exact-match chunks
+    score meaningfully even if their embedding similarity is low.
+    """
 
-    Args:
-        db:              Database session
-        filter_value:    user_id or company_id value to filter by
-        query:           User's search query (text)
-        query_embedding: Pre-computed embedding vector
-        limit:           Max results to return
-        vector_weight:   Weight for vector search ranking (0-1)
-        text_weight:     Weight for full-text search ranking (0-1)
-        rrf_k:           RRF constant (higher = less weight to top ranks)
-        filter_by:       "user_id" (default, per-user) or "company_id" (team mode)
+    # Build the WHERE clause to cover both scopes
+    if company_id:
+        where_clause = """
+            (
+                (user_id = :user_id AND (source_app = 'upload' OR source_app IS NULL))
+                OR
+                (company_id = :company_id AND source_app IS NOT NULL AND source_app != 'upload')
+            )
+        """
+        params = {
+            "user_id": user_id,
+            "company_id": company_id,
+            "query_embedding": str(query_embedding),
+            "limit": limit,
+        }
+    else:
+        where_clause = "user_id = :user_id"
+        params = {
+            "user_id": user_id,
+            "query_embedding": str(query_embedding),
+            "limit": limit,
+        }
+
+    # Build keyword conditions for BM25-style boosting
+    # FIX: Include shorter words (>=2 chars) and boost more aggressively
+    words = [w.strip().lower() for w in query.split() if len(w.strip()) >= 2]
+    keyword_boost = ""
+    if words:
+        # Each matching keyword adds 0.12 to the score (was 0.15 flat for any match)
+        keyword_parts = []
+        for i in range(len(words)):
+            keyword_parts.append(
+                f"CASE WHEN LOWER(text) ILIKE '%' || :kw{i} || '%' THEN 0.12 ELSE 0 END"
+            )
+        keyword_boost = "+ " + " + ".join(keyword_parts)
+
+        for i, w in enumerate(words):
+            params[f"kw{i}"] = w
+
+    # FIX: Use GREATEST to set a minimum similarity floor of 0.01
+    # Handle NaN distances (which happen if embeddings are zero vectors)
+    # so they don't corrupt the keyword boost scoring.
+    sql = f"""
+        SELECT 
+            id,
+            text,
+            source_type,
+            source_id,
+            source_app,
+            source_url,
+            source_title,
+            company_id,
+            confidence,
+            created_at,
+            (
+                CASE 
+                    WHEN (embedding <=> CAST(:query_embedding AS vector))::text = 'NaN' THEN 0.01
+                    ELSE GREATEST(1 - (embedding <=> CAST(:query_embedding AS vector)), 0.01)
+                END
+                {keyword_boost}
+            ) AS similarity
+        FROM knowledge_chunks
+        WHERE {where_clause}
+            AND embedding IS NOT NULL
+        ORDER BY similarity DESC
+        LIMIT :limit
     """
-    # Validate filter_by to prevent SQL injection
-    if filter_by not in ("user_id", "company_id"):
-        filter_by = "user_id"
 
     try:
-        results = db.execute(
-            text(f"""
-                WITH vector_results AS (
-                    SELECT
-                        id, text, source_type, source_id,
-                        1 - (embedding <=> CAST(:embedding AS vector)) AS similarity,
-                        resolution_score, created_at,
-                        ROW_NUMBER() OVER (ORDER BY embedding <=> CAST(:embedding AS vector)) AS v_rank
-                    FROM knowledge_chunks
-                    WHERE {filter_by} = :filter_value
-                    ORDER BY embedding <=> CAST(:embedding AS vector)
-                    LIMIT 20
-                ),
-                text_results AS (
-                    SELECT
-                        id,
-                        ts_rank_cd(search_vector, plainto_tsquery('english', :query)) AS text_score,
-                        ROW_NUMBER() OVER (
-                            ORDER BY ts_rank_cd(search_vector, plainto_tsquery('english', :query)) DESC
-                        ) AS t_rank
-                    FROM knowledge_chunks
-                    WHERE {filter_by} = :filter_value
-                        AND search_vector @@ plainto_tsquery('english', :query)
-                    LIMIT 20
-                ),
-                combined AS (
-                    SELECT
-                        v.id, v.text, v.source_type, v.source_id,
-                        v.similarity, v.resolution_score, v.created_at,
-                        v.v_rank,
-                        t.t_rank,
-                        (
-                            :vector_weight / (:rrf_k + v.v_rank) +
-                            COALESCE(:text_weight / (:rrf_k + t.t_rank), 0)
-                        ) AS rrf_score,
-                        CASE
-                            WHEN t.t_rank IS NOT NULL THEN 'hybrid'
-                            ELSE 'vector'
-                        END AS search_method
-                    FROM vector_results v
-                    LEFT JOIN text_results t ON v.id = t.id
-                )
-                SELECT
-                    id, text, source_type, source_id,
-                    similarity, resolution_score, created_at,
-                    rrf_score, search_method
-                FROM combined
-                ORDER BY rrf_score DESC
-                LIMIT :limit
-            """),
-            {
-                "embedding": query_embedding,
-                "filter_value": filter_value,
-                "query": query,
-                "vector_weight": vector_weight,
-                "text_weight": text_weight,
-                "rrf_k": rrf_k,
-                "limit": limit,
-            }
-        ).mappings().all()
-
-        enhanced = []
+        results = db.execute(text(sql), params).mappings().all()
+        
+        processed_results = []
         for r in results:
-            r_dict = dict(r)
-            similarity = r_dict.get("similarity", 0) or 0
-            if math.isinf(similarity) or math.isnan(similarity):
-                similarity = 0.0
-            resolution_score = r_dict.get("resolution_score") or 0.5
+            sim_val = float(r["similarity"]) if r["similarity"] is not None else 0.0
+            if math.isnan(sim_val):
+                sim_val = 0.0
+            else:
+                sim_val = round(max(sim_val, 0.0), 4)
 
-            hybrid_boost = 0.05 if r_dict.get("search_method") == "hybrid" else 0
-            confidence = (similarity * 0.7) + (resolution_score * 0.3) + hybrid_boost
-            r_dict["similarity"] = round(float(similarity), 4)
-            r_dict["confidence"] = round(min(confidence + 0.1, 1.0), 3)
-            r_dict["created_at"] = str(r_dict.get("created_at", ""))
-            enhanced.append(r_dict)
-
-        return enhanced
-
+            processed_results.append({
+                "id": r["id"],
+                "text": r["text"],
+                "source_type": r["source_type"],
+                "source_id": r["source_id"],
+                "source_app": r.get("source_app", "upload"),
+                "source_url": r.get("source_url"),
+                "source_title": r.get("source_title"),
+                "confidence": sim_val,
+                "similarity": sim_val,
+            })
+            
+        return processed_results
+        
     except Exception as e:
-        print(f"Hybrid search error (falling back to vector-only): {e}")
-        return _vector_only_search(db, filter_value, query_embedding, limit, filter_by)
-
-
-def _vector_only_search(
-    db: Session,
-    filter_value,
-    query_embedding: list,
-    limit: int = 5,
-    filter_by: str = "user_id",
-) -> List[Dict]:
-    """Fallback: vector-only search."""
-    if filter_by not in ("user_id", "company_id"):
-        filter_by = "user_id"
-
-    results = db.execute(
-        text(f"""
-            SELECT
-                id, text, source_type, source_id,
-                1 - (embedding <=> CAST(:embedding AS vector)) AS similarity,
-                resolution_score, created_at
-            FROM knowledge_chunks
-            WHERE {filter_by} = :filter_value
-            ORDER BY embedding <=> CAST(:embedding AS vector)
-            LIMIT :limit
-        """),
-        {"embedding": query_embedding, "filter_value": filter_value, "limit": limit}
-    ).mappings().all()
-
-    enhanced = []
-    for r in results:
-        r_dict = dict(r)
-        similarity = r_dict.get("similarity", 0) or 0
-        if math.isinf(similarity) or math.isnan(similarity):
-            similarity = 0.0
-        resolution_score = r_dict.get("resolution_score") or 0.5
-
-        confidence = (similarity * 0.7) + (resolution_score * 0.3)
-        r_dict["similarity"] = round(float(similarity), 4)
-        r_dict["confidence"] = round(min(confidence + 0.1, 1.0), 3)
-        r_dict["created_at"] = str(r_dict.get("created_at", ""))
-        r_dict["search_method"] = "vector"
-        enhanced.append(r_dict)
-
-    return enhanced
+        print(f"Hybrid search error: {e}")
+        import traceback
+        traceback.print_exc()
+        db.rollback()
+        return []

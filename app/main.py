@@ -4,21 +4,63 @@ All route logic lives in app/routers/. This file just wires them together.
 """
 import warnings
 
+from dotenv import load_dotenv
+load_dotenv()  # Load .env before any other imports
+
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
 from app.database import Base, engine
+import app.models
+import app.procedure_models
+
+from sqlalchemy import text
 
 # Create tables
 Base.metadata.create_all(bind=engine)
 
+# Ensure missing columns exist (handles environment mismatches like Azure/Local differences)
+with engine.begin() as conn:
+    try:
+        # Users table updates
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255) NULL"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'agent' NULL"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(255) NULL"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE NULL"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NULL"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE NULL"))
+        
+        # Knowledge chunks table updates
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS user_id INTEGER NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS source_type VARCHAR(50) DEFAULT 'document' NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS source_app VARCHAR(50) DEFAULT 'upload' NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS source_url TEXT NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS source_id VARCHAR(255) NULL"))
+        
+        # If source_id already existed as an INTEGER, we need to alter its type to VARCHAR
+        try:
+            conn.execute(text("ALTER TABLE knowledge_chunks ALTER COLUMN source_id TYPE VARCHAR(255)"))
+        except Exception:
+            pass # ignore if it fails or is already varchar
+            
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS source_title VARCHAR(500) NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS connector_id INTEGER NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS metadata JSON NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS confidence FLOAT DEFAULT 0.0 NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS last_synced_at TIMESTAMP WITH TIME ZONE NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS is_stale BOOLEAN DEFAULT FALSE NULL"))
+        conn.execute(text("ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS resolution_score FLOAT NULL"))
+        
+    except Exception as e:
+        print(f"Schema update notice: {e}")
+
 # Initialize app
 app = FastAPI(
-    title="Context AI",
-    description="AI-powered company knowledge platform",
-    version="1.0.0"
+    title="KRAB - AI Knowledge Platform",
+    description="AI-powered company knowledge platform with connectors and help center",
+    version="2.0.0"
 )
 
 # CORS
@@ -143,6 +185,10 @@ from app.routers.search_router import router as search_router
 from app.routers.feedback_router import router as feedback_router
 from app.routers.zendesk_router import router as zendesk_router
 from app.routers.widget_router import router as widget_router
+from app.routers.connector_router import router as connector_router
+
+from app.routers.helpcenter_router import help_router, public_help_router, health_router
+from app.routers.synthesis_router import router as synthesis_router
 
 app.include_router(auth_router)
 app.include_router(knowledge_router)
@@ -150,3 +196,16 @@ app.include_router(search_router)
 app.include_router(feedback_router)
 app.include_router(zendesk_router)
 app.include_router(widget_router)
+app.include_router(connector_router)
+
+app.include_router(help_router)
+app.include_router(public_help_router)
+app.include_router(health_router)
+app.include_router(synthesis_router)
+
+# Mount the MCP server
+try:
+    from app.mcp_server import _build_http_app
+    app.mount("/mcp", _build_http_app())
+except Exception as _mcp_err:
+    print(f"Warning: MCP server failed to mount ({_mcp_err}). /mcp will be unavailable.")
