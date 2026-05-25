@@ -10,7 +10,10 @@ from typing import List, Dict
 import math
 from app.embedding import create_embedding
 
-
+# It writes a massive raw SQL query that runs two different types of searches simultaneously.
+# Why it's important: 1.  Vector Search: It uses PostgreSQL's pgvector to find chunks with similar meanings (embedding <=> CAST(:embedding AS vector)).
+# 2.  Full-Text Search: It uses PostgreSQL's tsvector to find exact keyword matches (search_vector @@ plainto_tsquery).
+# Key Detail: It combines these two results using a formula called Reciprocal Rank Fusion (RRF): (:vector_weight / (:rrf_k + v.v_rank) + :text_weight / (:rrf_k + t.t_rank)). This guarantees that a chunk that is both semantically relevant and contains the exact keywords floats to the #1 spot. It also specifically filters by user_id or company_id so data doesn't leak between users.
 def hybrid_search(
     db: Session,
     filter_value,

@@ -14,7 +14,10 @@ from app.file_parser import parse_uploaded_file, parse_raw_text
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])
 
-
+# It passes the file to parse_uploaded_file() (to get raw text).
+# It passes that text to chunk_text() (to slice it up).
+# It loops through the slices, passing each to create_embedding() (to get the math vector).
+# It saves the KnowledgeChunk to the database and runs db.commit().
 @router.post("/upload")
 def upload_knowledge(
     data: dict,

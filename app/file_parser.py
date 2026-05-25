@@ -12,6 +12,7 @@ Dependencies to add to requirements.txt:
 Install:
     pip install pymupdf python-docx
 """
+#It acts as the "reader." It looks at the file type (PDF, DOCX, CSV, etc.) and extracts all the raw text and metadata (like the author or title) while throwing away the formatting and images.
 
 import os
 import re
@@ -39,8 +40,7 @@ class ParsedDocument:
         return self.error is None and len(self.text.strip()) > 0
 
 
-# ============== MAIN ENTRY POINT ==============
-
+# It prevents the system from crashing on bad files. It checks for a 20MB file size limit immediately. Then, it routes to specialized helper functions like _parse_pdf() (which uses fitz/PyMuPDF to iterate through pages) or _parse_docx() (which uses python-docx to extract paragraphs and tables).
 async def parse_uploaded_file(file) -> ParsedDocument:
     """
     Parse an uploaded file (FastAPI UploadFile object).
@@ -108,7 +108,7 @@ def parse_raw_text(text: str, source_name: str = "pasted_text") -> ParsedDocumen
     )
 
 
-# ============== FILE TYPE PARSERS ==============
+
 
 def _parse_pdf(content: bytes, filename: str) -> ParsedDocument:
     """Extract text from PDF using PyMuPDF (fitz)."""

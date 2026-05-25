@@ -184,6 +184,7 @@ async def zendesk_sync(
 
                     chunk = KnowledgeChunk(
                         company_id=user.company_id,
+                        user_id=user_id,
                         source_type="zendesk_ticket",
                         source_id=ticket_id,
                         text=ticket_text,
