@@ -12,6 +12,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 
 from app.database import Base, engine
+import app.models
+import app.procedure_models
 
 from sqlalchemy import text
 
@@ -173,6 +175,7 @@ from app.routers.widget_router import router as widget_router
 from app.routers.connector_router import router as connector_router
 
 from app.routers.helpcenter_router import help_router, public_help_router, health_router
+from app.routers.synthesis_router import router as synthesis_router
 
 app.include_router(auth_router)
 app.include_router(knowledge_router)
@@ -185,3 +188,11 @@ app.include_router(connector_router)
 app.include_router(help_router)
 app.include_router(public_help_router)
 app.include_router(health_router)
+app.include_router(synthesis_router)
+
+# Mount the MCP server
+try:
+    from app.mcp_server import _build_http_app
+    app.mount("/mcp", _build_http_app())
+except Exception as _mcp_err:
+    print(f"Warning: MCP server failed to mount ({_mcp_err}). /mcp will be unavailable.")
