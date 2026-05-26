@@ -3449,6 +3449,7 @@ function pollRun(runId) {
                 <span class="brain-run-stat"><strong>${run.clusters_found}</strong> clusters</span>
                 <span class="brain-run-stat"><strong>${run.procedures_created}</strong> created</span>
                 <span class="brain-run-stat"><strong>${run.procedures_updated}</strong> updated</span>
+                <span class="brain-run-stat"><strong>${run.procedures_unchanged || 0}</strong> unchanged</span>
                 <span class="brain-run-stat"><strong>${run.conflicts_found}</strong> conflicts</span>
                 <span class="brain-run-stat"><strong>${run.llm_calls}</strong> LLM calls</span>
                 <br>Status: <strong>${run.status}</strong>${run.error ? ` — <span style="color:var(--error);">${esc(run.error)}</span>` : ''}
@@ -3456,10 +3457,13 @@ function pollRun(runId) {
             if (run.status === 'completed' || run.status === 'failed') {
                 clearInterval(brainPollTimer);
                 brainPollTimer = null;
+                
+                // Always reload in case of partial success
+                loadProcedures();
+                loadConflicts();
+                
                 if (run.status === 'completed') {
                     document.getElementById('brain-run-alert').innerHTML = mkAlert('success', `Synthesis complete! ${run.procedures_created} new, ${run.procedures_updated} updated.`);
-                    loadProcedures();
-                    loadConflicts();
                 } else {
                     document.getElementById('brain-run-alert').innerHTML = mkAlert('error', `Synthesis failed: ${run.error || 'unknown error'}`);
                 }

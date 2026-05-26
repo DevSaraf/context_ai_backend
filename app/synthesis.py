@@ -65,7 +65,7 @@ from app.synthesis_prompts import (
 logger = logging.getLogger("krab.brain.synthesis")
 
 # --- tunables (override via env in production) ----------------------------- #
-MAX_CONCURRENT_LLM = int(os.getenv("BRAIN_LLM_CONCURRENCY", "4"))
+MAX_CONCURRENT_LLM = 1
 MAX_CHUNKS_PER_CLUSTER = int(os.getenv("BRAIN_MAX_CHUNKS_PER_CLUSTER", "12"))
 LLM_MAX_RETRIES = int(os.getenv("BRAIN_LLM_RETRIES", "3"))
 COVERAGE_TARGET = int(os.getenv("BRAIN_COVERAGE_TARGET", "5"))  # chunks for full coverage
@@ -86,7 +86,7 @@ SUGGEST_MIN_CONF = 0.55
 # --------------------------------------------------------------------------- #
 # LLM adapter
 # --------------------------------------------------------------------------- #
-from app.llm_provider import llm
+from app.llm_provider import llm, GroqProvider
 
 async def llm_complete(
     system_prompt: str,
@@ -94,8 +94,20 @@ async def llm_complete(
     *,
     max_tokens: int = 1500,
     temperature: float = 0.2,
+    use_fallback: bool = False,
 ) -> str:
     """Return the model's text completion."""
+    if use_fallback:
+        fallback_llm = GroqProvider()
+        if fallback_llm.is_available():
+            return await fallback_llm.generate(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                max_tokens=max_tokens
+            )
+        else:
+            raise Exception("Fallback provider (Groq) is not configured")
+
     return await llm.generate(
         system_prompt=system_prompt,
         user_prompt=user_prompt,
@@ -275,13 +287,16 @@ async def _extract_cluster(
     user_prompt = build_extraction_user_prompt(texts)
     async with semaphore:
         raw = await _with_retries(
-            lambda: llm_complete(EXTRACTION_SYSTEM_PROMPT, user_prompt, max_tokens=1800)
+            lambda fallback: llm_complete(EXTRACTION_SYSTEM_PROMPT, user_prompt, max_tokens=1800, use_fallback=fallback)
         )
+        await asyncio.sleep(2.0)
+    logger.info("RAW LLM RESPONSE:\n%s", raw)
     try:
         data = _parse_json(raw)
+        logger.info("PARSED OBJECT (after json.loads):\n%r", data)
     except Exception as exc:
-        logger.warning("extraction JSON parse failed: %s", exc)
-        return None
+        logger.error("real JSON parse failure. raw response was: %r", raw)
+        return exc
 
     if not data.get("is_procedure"):
         return None
@@ -298,15 +313,21 @@ async def _extract_cluster(
 async def _with_retries(coro_factory):
     delay = 1.0
     last: Optional[Exception] = None
+    use_fallback = False
     for attempt in range(LLM_MAX_RETRIES):
         try:
-            return await coro_factory()
+            return await coro_factory(use_fallback)
         except Exception as exc:  # noqa: BLE001 - retry any transient failure
             last = exc
             error_str = str(exc).lower()
-            if "429" in error_str or "quota" in error_str:
-                logger.warning("LLM Quota/429 hit (attempt %d). Backing off for 65s...", attempt + 1)
-                await asyncio.sleep(65)
+            if "429" in error_str or "quota" in error_str or "503" in error_str:
+                if not use_fallback:
+                    logger.warning("LLM Quota/429 hit (attempt %d). Switching to fallback provider...", attempt + 1)
+                    use_fallback = True
+                    continue # Try again immediately with fallback
+                else:
+                    logger.warning("Fallback LLM Quota/429 hit (attempt %d). Backing off for 65s...", attempt + 1)
+                    await asyncio.sleep(65)
             else:
                 logger.warning("LLM call failed (attempt %d): %s", attempt + 1, exc)
                 await asyncio.sleep(delay)
@@ -426,7 +447,13 @@ def _persist_procedure(
     proc.status = status
     proc.last_verified_at = None  # re-synthesis requires fresh human verify
 
-    db.flush()  # assign proc.id
+    try:
+        logger.info("about to save procedure %s", slug)
+        db.flush()  # assign proc.id
+        logger.info("saved procedure %s, id=%s", slug, proc.id)
+    except Exception as exc:
+        logger.error("Exception during save for %s: %s", slug, exc, exc_info=True)
+        raise
 
     for i, step in enumerate(data.get("steps") or []):
         db.add(
@@ -466,9 +493,13 @@ def _persist_procedure(
         db.add(cr)
     run.conflicts_found += len(conflict_rows)
 
-    db.flush()
-    _snapshot(db, proc, company_id, signature)
-    db.commit()
+    try:
+        db.flush()
+        _snapshot(db, proc, company_id, signature)
+        db.commit()
+    except Exception as exc:
+        logger.error("Exception during child save for %s: %s", slug, exc, exc_info=True)
+        raise
 
 
 def _rule_row(proc_id: int, rtype: RuleType, rule: Any, index_map: Dict[int, int]) -> ProcedureRule:
