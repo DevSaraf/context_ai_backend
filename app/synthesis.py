@@ -154,8 +154,8 @@ def _load_chunks(
     doc (id, user_id, company_id, text, embedding, resolution_score,
     source_type).
     """
-    params: Dict[str, Any] = {"user_id": user_id}
-    where = "user_id = :user_id"
+    params: Dict[str, Any] = {"company_id": company_id}
+    where = "company_id = :company_id"
     if domain:
         # If you tag chunks by domain, filter here. Otherwise this is a no-op
         # because source_type is matched loosely.
@@ -303,9 +303,14 @@ async def _with_retries(coro_factory):
             return await coro_factory()
         except Exception as exc:  # noqa: BLE001 - retry any transient failure
             last = exc
-            logger.warning("LLM call failed (attempt %d): %s", attempt + 1, exc)
-            await asyncio.sleep(delay)
-            delay *= 2
+            error_str = str(exc).lower()
+            if "429" in error_str or "quota" in error_str:
+                logger.warning("LLM Quota/429 hit (attempt %d). Backing off for 65s...", attempt + 1)
+                await asyncio.sleep(65)
+            else:
+                logger.warning("LLM call failed (attempt %d): %s", attempt + 1, exc)
+                await asyncio.sleep(delay)
+                delay *= 2
     raise last  # type: ignore[misc]
 
 
