@@ -51,6 +51,10 @@ from app.procedure_models import (
 from app.synthesis import record_execution_feedback, run_synthesis
 from app.skill_compiler import upsert_compiled_skill
 
+from fastapi.responses import StreamingResponse
+import io
+from app.skill_docx import skill_md_to_docx
+
 router = APIRouter(prefix="/brain", tags=["company-brain"])
 
 
@@ -372,6 +376,35 @@ def get_skill_rest(
         "compiled_at": s.compiled_at.isoformat() if s.compiled_at else None,
         "skill_md": s.skill_md,
     }
+
+
+@router.get("/skills/{name}/download")
+def download_skill_rest(
+    name: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Download a compiled skill as a Word .docx."""
+    s = (
+        db.query(CompiledSkill)
+        .filter(
+            CompiledSkill.company_id == user.company_id,
+            CompiledSkill.slug == name,
+        )
+        .first()
+    )
+    if not s:
+        raise HTTPException(status_code=404, detail="Skill not found")
+    if not s.skill_md:
+        raise HTTPException(status_code=409, detail="Skill has no compiled content yet.")
+
+    data = skill_md_to_docx(s.skill_md, slug=s.slug)
+    filename = f"{s.slug}-SKILL.docx"
+    return StreamingResponse(
+        io.BytesIO(data),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.post("/skills/{name}/recompile")

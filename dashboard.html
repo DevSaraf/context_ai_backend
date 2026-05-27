@@ -1688,7 +1688,8 @@
         <div class="modal" style="max-width:680px;">
             <div class="modal-header">
                 <h3 id="skill-modal-title" style="font-family:var(--font-mono);font-size:14px;">SKILL.md</h3>
-                <div style="display:flex;gap:8px;align-items:center;">
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-accent btn-sm" id="btn-download-skill">Download .docx</button>
                     <button class="btn btn-accent btn-sm" onclick="copySkillMd()">Copy</button>
                     <button class="modal-close" onclick="document.getElementById('skill-modal').classList.add('hidden')">&times;</button>
                 </div>
@@ -3806,13 +3807,33 @@ async function loadSkills(){
                 <div class="k-info"><div class="k-name" style="font-family:var(--font-mono);">${esc(s.name)}</div>
                     <div class="k-meta">${esc(s.description||'')}</div></div>
                 <span class="autonomy-badge ${cls(s.autonomy_level)}">${lbl(s.autonomy_level)}</span>
-                <button class="btn btn-outline btn-sm" onclick="viewSkill('${esc(s.name)}')">View</button>
+                <div class="row-actions" style="margin-top:12px;">
+                    <button class="btn btn-outline btn-sm" onclick="downloadSkill('${esc(s.name)}')">Download .docx</button>
+                    <button class="btn btn-outline btn-sm" onclick="viewSkill('${esc(s.name)}')">View</button>
+                </div>
             </div>`).join('');
     }catch(e){ list.innerHTML = '<div class="empty-state"><p>Failed to load skills.</p></div>'; }
 }
 
+async function downloadSkill(slug) {
+  const res = await fetch(`${API_URL}/brain/skills/${slug}/download`, {
+    headers: { Authorization: `Bearer ${authToken}` }
+  });
+  if (!res.ok) { alert("Download failed"); return; }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${slug}-SKILL.docx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 async function viewSkill(name){
     document.getElementById('skill-modal-title').textContent = name + ' / SKILL.md';
+    document.getElementById('btn-download-skill').onclick = () => downloadSkill(name);
     document.getElementById('skill-md').textContent = 'Loading…';
     document.getElementById('skill-modal').classList.remove('hidden');
     try{
