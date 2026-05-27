@@ -33,6 +33,7 @@ from app.models import User  # type: ignore
 
 from app.procedure_models import (
     AutonomyLevel,
+    CompiledSkill,
     ConflictOut,
     ConflictStatus,
     ExecutionFeedback,
@@ -48,6 +49,7 @@ from app.procedure_models import (
     VerifyRequest,
 )
 from app.synthesis import record_execution_feedback, run_synthesis
+from app.skill_compiler import upsert_compiled_skill
 
 router = APIRouter(prefix="/brain", tags=["company-brain"])
 
@@ -231,13 +233,31 @@ def verify_procedure(
     if req.approve:
         proc.status = ProcedureStatus.verified
         proc.last_verified_at = datetime.now(timezone.utc)
-        # A verified, conflict-free procedure is at least suggest-ready.
         if proc.autonomy_level == AutonomyLevel.human_required:
             proc.autonomy_level = AutonomyLevel.suggest_only
+        db.commit()
+        db.refresh(proc)
+
+        # Compile the verified procedure into a CompiledSkill row.
+        # A compile failure must NOT undo the verification.
+        try:
+            upsert_compiled_skill(
+                db,
+                procedure=proc,
+                company_id=user.company_id,
+                user_id=user.id,
+            )
+        except Exception:
+            import logging
+            logging.getLogger("krab.brain").exception(
+                "skill compile failed for procedure %s", proc.id
+            )
+            db.rollback()
     else:
         proc.status = ProcedureStatus.needs_review
-    db.commit()
-    db.refresh(proc)
+        db.commit()
+        db.refresh(proc)
+
     return _serialize(proc)
 
 
@@ -302,22 +322,28 @@ def resolve_conflict(
     return ConflictOut.model_validate(c)
 
 # --------------------------------------------------------------------------- #
-# Skills (Addons)
+# Skills (compiled, verified-only)
 # --------------------------------------------------------------------------- #
 @router.get("/skills")
 def list_skills_rest(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    q = db.query(Procedure).filter(Procedure.company_id == user.company_id)
+    rows = (
+        db.query(CompiledSkill)
+        .filter(CompiledSkill.company_id == user.company_id)
+        .order_by(CompiledSkill.compiled_at.desc())
+        .all()
+    )
     return {"skills": [
         {
-            "name": p.slug,
-            "description": p.intent,
-            "autonomy_level": p.autonomy_level.value if hasattr(p.autonomy_level, "value") else p.autonomy_level,
-            "success_rate": p.success_rate,
-            "execution_count": p.execution_count,
-        } for p in q.all()
+            "name": s.slug,
+            "title": s.title,
+            "description": s.description,
+            "autonomy_level": s.autonomy_level,
+            "version": s.version,
+            "compiled_at": s.compiled_at.isoformat() if s.compiled_at else None,
+        } for s in rows
     ]}
 
 
@@ -327,17 +353,96 @@ def get_skill_rest(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    p = db.query(Procedure).filter(
-        Procedure.company_id == user.company_id, Procedure.slug == name
-    ).first()
-    if not p:
+    s = (
+        db.query(CompiledSkill)
+        .filter(
+            CompiledSkill.company_id == user.company_id,
+            CompiledSkill.slug == name,
+        )
+        .first()
+    )
+    if not s:
         raise HTTPException(status_code=404, detail="Skill not found")
     return {
-        "name": p.slug,
-        "description": p.intent,
-        "autonomy_level": p.autonomy_level.value if hasattr(p.autonomy_level, "value") else p.autonomy_level,
-        "success_rate": p.success_rate,
-        "execution_count": p.execution_count,
-        "steps": [s.instruction for s in sorted(p.steps, key=lambda x: x.step_order)],
-        "rules": [r.content for r in p.rules]
+        "name": s.slug,
+        "title": s.title,
+        "description": s.description,
+        "autonomy_level": s.autonomy_level,
+        "version": s.version,
+        "compiled_at": s.compiled_at.isoformat() if s.compiled_at else None,
+        "skill_md": s.skill_md,
+    }
+
+
+@router.post("/skills/{name}/recompile")
+def recompile_skill_rest(
+    name: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Manual rebuild — recompile a verified procedure's skill on demand."""
+    proc = (
+        db.query(Procedure)
+        .filter(
+            Procedure.company_id == user.company_id,
+            Procedure.slug == name,
+            Procedure.status == ProcedureStatus.verified,
+        )
+        .first()
+    )
+    if not proc:
+        raise HTTPException(
+            status_code=404,
+            detail="No verified procedure with that slug to compile.",
+        )
+    skill = upsert_compiled_skill(
+        db, procedure=proc, company_id=user.company_id, user_id=user.id
+    )
+    return {
+        "name": skill.slug,
+        "version": skill.version,
+        "compiled_at": skill.compiled_at.isoformat() if skill.compiled_at else None,
+        "skill_md": skill.skill_md,
+    }
+
+
+@router.post("/skills/_backfill")
+def backfill_skills_rest(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Compile every verified procedure for this company that doesn't yet have
+    a compiled_skills row (or whose source procedure version has advanced).
+    Safe to call repeatedly — upserts, never duplicates.
+    """
+    verified = (
+        db.query(Procedure)
+        .filter(
+            Procedure.company_id == user.company_id,
+            Procedure.status == ProcedureStatus.verified,
+        )
+        .all()
+    )
+
+    results = []
+    errors = []
+    for proc in verified:
+        try:
+            skill = upsert_compiled_skill(
+                db, procedure=proc, company_id=user.company_id, user_id=user.id
+            )
+            results.append({"slug": skill.slug, "version": skill.version})
+        except Exception as exc:
+            import logging
+            logging.getLogger("krab.brain").exception(
+                "backfill compile failed for procedure %s", proc.id
+            )
+            db.rollback()
+            errors.append({"slug": proc.slug, "error": str(exc)})
+
+    return {
+        "compiled": len(results),
+        "errors": len(errors),
+        "skills": results,
+        "failures": errors,
     }

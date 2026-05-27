@@ -19,7 +19,7 @@ Format rules enforced (per the Agent Skill spec):
     anything that hasn't earned `autonomous`.
 
 Pure module: no DB/network. Callers pass an ORM `Procedure` (with .steps,
-.rules, .sources loaded) and get back a CompiledSkill.
+.rules, .sources loaded) and get back a CompiledSkillResult.
 """
 
 from __future__ import annotations
@@ -35,7 +35,8 @@ DESC_MAX = 1024
 
 
 @dataclass
-class CompiledSkill:
+class CompiledSkillResult:
+    """In-memory render result. Not persisted; callers decide what to do with it."""
     name: str                       # kebab-case skill id (== procedure slug)
     description: str                # frontmatter description (<=1024)
     markdown: str                   # full SKILL.md text (frontmatter + body)
@@ -98,8 +99,8 @@ def _provenance(ids: Optional[List[int]]) -> str:
 
 def compile_procedure_to_skill(
     proc, *, include_provenance: bool = True
-) -> CompiledSkill:
-    """Render one Procedure ORM object to a CompiledSkill."""
+) -> CompiledSkillResult:
+    """Render one Procedure ORM object to a CompiledSkillResult."""
     name = _kebab(proc.slug or proc.title)
     description, warnings = _build_description(proc)
 
@@ -198,7 +199,7 @@ def compile_procedure_to_skill(
         body.append("")
 
     markdown = "\n".join(fm_lines) + "\n\n" + "\n".join(body).rstrip() + "\n"
-    return CompiledSkill(
+    return CompiledSkillResult(
         name=name,
         description=description,
         markdown=markdown,
@@ -242,6 +243,61 @@ def _yaml_scalar(s: str) -> str:
     if any(ch in s for ch in (":", "#", "\n", '"')) or s.strip() != s:
         return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
     return s
+
+
+# --------------------------------------------------------------------------- #
+# DB persistence — upsert a CompiledSkill ORM row
+# --------------------------------------------------------------------------- #
+def upsert_compiled_skill(
+    db,
+    *,
+    procedure,
+    company_id: str,
+    user_id: int,
+    commit: bool = True,
+):
+    """Compile `procedure` and upsert its CompiledSkill DB row.
+
+    Uses compile_procedure_to_skill() for rendering so the DB row and any
+    filesystem export always use the same logic. Caller must ensure the
+    procedure is verified.
+    """
+    from app.procedure_models import CompiledSkill as CompiledSkillRow
+
+    result = compile_procedure_to_skill(procedure)
+
+    skill = (
+        db.query(CompiledSkillRow)
+        .filter(
+            CompiledSkillRow.company_id == company_id,
+            CompiledSkillRow.slug == procedure.slug,
+        )
+        .first()
+    )
+
+    if skill is None:
+        skill = CompiledSkillRow(
+            company_id=company_id,
+            user_id=user_id,
+            procedure_id=procedure.id,
+            slug=procedure.slug,
+            version=1,
+        )
+        db.add(skill)
+    else:
+        skill.version += 1
+        skill.procedure_id = procedure.id
+
+    skill.title = procedure.title or procedure.slug
+    skill.description = result.description
+    skill.skill_md = result.markdown
+    skill.autonomy_level = result.metadata.get("autonomy_level", "suggest_only")
+    skill.source_procedure_version = getattr(procedure, "version", None)
+
+    if commit:
+        db.commit()
+        db.refresh(skill)
+    return skill
 
 
 # --------------------------------------------------------------------------- #
