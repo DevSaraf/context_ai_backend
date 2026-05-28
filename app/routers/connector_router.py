@@ -2,18 +2,22 @@
 KRAB — Connector Routes (FIXED: injects OAuth creds from env vars)
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel
+from typing import List
+from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 import secrets
 import logging
 import os
 
-from ..database import get_db
+from ..database import get_db, SessionLocal
 from ..dependencies import get_current_user
 from ..models import ConnectorConfig, User, ConnectorStatus, SyncLog, KnowledgeChunk
 from ..integrations import create_connector, get_all_connector_types
-from ..integrations.connector_settings import get_oauth_creds
+from ..oauth_credentials import credential_provider
+from .. import crypto
 from ..connector_sync import ConnectorSyncService
 from ..embedding import create_embedding
 
@@ -24,14 +28,14 @@ router = APIRouter(prefix="/connectors", tags=["connectors"])
 
 def _make_connector(connector_type: str, config: ConnectorConfig = None):
     """Create a connector instance with OAuth creds from env vars."""
-    creds = get_oauth_creds(connector_type)
+    creds = credential_provider.get(connector_type)
     return create_connector(
         connector_type,
         config=(config.config if config else {}) or {},
         access_token=config.access_token if config else None,
         refresh_token=config.refresh_token if config else None,
-        client_id=creds["client_id"],
-        client_secret=creds["client_secret"],
+        client_id=creds.client_id,
+        client_secret=creds.client_secret,
     )
 
 
@@ -74,8 +78,8 @@ async def list_connector_types():
     """List all connector types and whether they have credentials configured."""
     types = get_all_connector_types()
     for t in types:
-        creds = get_oauth_creds(t["type"])
-        t["configured"] = bool(creds.get("client_id"))
+        creds = credential_provider.get(t["type"])
+        t["configured"] = creds.is_configured
     return {"connectors": types}
 
 
@@ -159,8 +163,8 @@ async def get_oauth_url(
     db: Session = Depends(get_db),
 ):
     # Check if OAuth credentials are configured
-    creds = get_oauth_creds(connector_type)
-    if not creds.get("client_id"):
+    creds = credential_provider.get(connector_type)
+    if not creds.is_configured:
         return {
             "url": None,
             "error": f"OAuth not configured for {connector_type}. Set {connector_type.upper().replace('_','')}_CLIENT_ID and _CLIENT_SECRET in your .env file."
@@ -219,8 +223,14 @@ async def oauth_callback(
         config.access_token = tokens["access_token"]
         config.refresh_token = tokens.get("refresh_token", "")
         if tokens.get("expires_at"):
-            from datetime import datetime
-            config.token_expires_at = datetime.fromtimestamp(float(tokens["expires_at"]))
+            exp = tokens["expires_at"]
+            if isinstance(exp, (int, float)):
+                from datetime import datetime, timezone
+                exp = datetime.fromtimestamp(exp, tz=timezone.utc)
+            elif isinstance(exp, str) and exp.isdigit():
+                from datetime import datetime, timezone
+                exp = datetime.fromtimestamp(float(exp), tz=timezone.utc)
+            config.token_expires_at = exp
         config.status = ConnectorStatus.CONNECTED
 
         # Store extra config (workspace_id, cloud_id, team_name, etc.)
@@ -322,3 +332,120 @@ async def test_connection(
     connector = _make_connector(connector_type, config)
     success, message = await connector.test_connection()
     return {"success": success, "message": message}
+
+
+# ============================================================
+# PICKER ENDPOINTS
+# ============================================================
+
+# --------------------------------------------------------------------------- #
+# 1. Picker config — everything the browser needs to open the Picker
+# --------------------------------------------------------------------------- #
+@router.get("/google_drive/picker-config")
+async def picker_config(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    cfg = db.query(ConnectorConfig).filter_by(company_id=user.company_id, connector_type="google_drive").first()
+    if not cfg:
+        raise HTTPException(status_code=404, detail="Connector not connected.")
+
+    # Decrypt the stored access token and refresh it if needed, so the Picker
+    # always opens with a live token. We reuse the connector's refresh logic.
+    access = crypto.decrypt(cfg.access_token or "")
+    refresh = crypto.decrypt(cfg.refresh_token or "")
+    creds = credential_provider.get("google_drive")
+
+    from ..integrations.google_drive import GoogleDriveConnector
+    connector = GoogleDriveConnector(
+        config={}, access_token=access, refresh_token=refresh,
+        client_id=creds.client_id, client_secret=creds.client_secret,
+    )
+
+    # Cheap liveness check; refresh on failure.
+    ok, _ = await connector.test_connection()
+    if not ok and refresh:
+        try:
+            new = await connector.refresh_access_token()
+            access = new["access_token"]
+            cfg.access_token = crypto.encrypt(access)
+            if new.get("refresh_token"):
+                cfg.refresh_token = crypto.encrypt(new["refresh_token"])
+            cfg.token_expires_at = new.get("expires_at")
+            db.commit()
+        except Exception as e:
+            logger.warning("Picker token refresh failed: %s", e)
+            raise HTTPException(status_code=401, detail="Google session expired. Please reconnect Google Drive.")
+
+    api_key = os.environ.get("GOOGLE_PICKER_API_KEY", "")
+    app_id = os.environ.get("GOOGLE_PROJECT_NUMBER", "")  # numeric project id
+    if not api_key or not app_id:
+        raise HTTPException(
+            status_code=503,
+            detail="Picker not configured on this deployment (missing GOOGLE_PICKER_API_KEY / GOOGLE_PROJECT_NUMBER).",
+        )
+
+    # Return the IDs already selected so the UI can show current state.
+    selected = (cfg.config or {}).get("selected_file_ids", []) if hasattr(cfg, "config") else []
+
+    return {
+        "oauth_token": access,
+        "api_key": api_key,
+        "app_id": app_id,
+        "selected_file_ids": selected,
+    }
+
+
+# --------------------------------------------------------------------------- #
+# 2. Save the user's selection + trigger a sync of just those files
+# --------------------------------------------------------------------------- #
+class SelectionBody(BaseModel):
+    file_ids: List[str]
+
+
+@router.post("/google_drive/selection")
+def save_selection(
+    body: SelectionBody,
+    background: BackgroundTasks,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    cfg = db.query(ConnectorConfig).filter_by(company_id=user.company_id, connector_type="google_drive").first()
+    if not cfg:
+        raise HTTPException(status_code=404, detail="Connector not connected.")
+
+    # Persist on the integration. We store inside the JSON `config` column.
+    config_dict = dict(cfg.config or {}) if hasattr(cfg, "config") else {}
+    
+    # MERGE with existing selection, don't replace.
+    existing_ids = config_dict.get("selected_file_ids", []) or []
+    merged = list(dict.fromkeys([*existing_ids, *body.file_ids]))  # union, preserve order
+    config_dict["selected_file_ids"] = merged
+    
+    cfg.config = config_dict
+    flag_modified(cfg, "config")
+    db.commit()
+
+    # Kick off a background sync of the selected files (fresh session inside).
+    background.add_task(_sync_selected, cfg.id)
+    return {"saved": True, "count": len(merged), "added_now": len(body.file_ids)}
+
+
+def _sync_selected(config_id: int):
+    """Background worker — opens its OWN session, never reuses the request's."""
+    db = SessionLocal()
+    try:
+        cfg = db.query(ConnectorConfig).get(config_id)
+        if not cfg:
+            return
+        
+        from ..connector_sync import ConnectorSyncService
+        from ..embedding import create_embedding
+        sync_service = ConnectorSyncService(db, embedding_fn=create_embedding)
+        
+        import asyncio
+        asyncio.run(sync_service.sync_connector(cfg, force_full=True))
+    except Exception:
+        logger.exception("Selected-file sync failed for config %s", config_id)
+    finally:
+        db.close()

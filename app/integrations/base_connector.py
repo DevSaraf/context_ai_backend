@@ -57,8 +57,8 @@ class BaseConnector(ABC):
         self.access_token = access_token
         self.refresh_token = refresh_token
         # OAuth creds: prefer explicit params, then config dict, then empty
-        self.client_id = client_id or self.config.get("client_id", "")
-        self.client_secret = client_secret or self.config.get("client_secret", "")
+        self.client_id = client_id or ""
+        self.client_secret = client_secret or ""
 
     # ---- OAuth Flow ----
 

@@ -5,11 +5,13 @@ Orchestrates background syncing of connected data sources.
 
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 
 from .models import ConnectorConfig, KnowledgeChunk, SyncLog, ConnectorStatus
 from .integrations import create_connector, Document
+from .oauth_credentials import credential_provider
+from . import crypto
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +28,7 @@ class ConnectorSyncService:
         self.chunk_text = chunking_fn
         self.embed_text = embedding_fn
 
-    async def sync_connector(self, connector_config: ConnectorConfig) -> Dict[str, Any]:
+    async def sync_connector(self, connector_config: ConnectorConfig, force_full: bool = False) -> Dict[str, Any]:
         """
         Run a full or incremental sync for a connector.
         Returns sync stats.
@@ -46,29 +48,32 @@ class ConnectorSyncService:
         self.db.commit()
 
         try:
-            # Instantiate connector
+            # Instantiate connector with decrypted tokens and OAuth creds from env.
+            _creds = credential_provider.get(connector_type)
             connector = create_connector(
                 connector_type,
                 config=connector_config.config or {},
-                access_token=connector_config.access_token,
-                refresh_token=connector_config.refresh_token,
+                access_token=crypto.decrypt(connector_config.access_token or ""),
+                refresh_token=crypto.decrypt(connector_config.refresh_token or ""),
+                client_id=_creds.client_id,
+                client_secret=_creds.client_secret,
             )
 
             # Check if token needs refresh
-            if connector_config.token_expires_at and connector_config.token_expires_at < datetime.utcnow():
+            if connector_config.token_expires_at and connector_config.token_expires_at < datetime.now(timezone.utc):
                 try:
                     new_tokens = await connector.refresh_access_token()
-                    connector_config.access_token = new_tokens.get("access_token")
+                    connector_config.access_token = crypto.encrypt(new_tokens.get("access_token"))
                     if new_tokens.get("refresh_token"):
-                        connector_config.refresh_token = new_tokens["refresh_token"]
-                    connector.access_token = connector_config.access_token
+                        connector_config.refresh_token = crypto.encrypt(new_tokens["refresh_token"])
+                    connector.access_token = new_tokens.get("access_token")
                     self.db.commit()
                 except Exception as e:
                     logger.error(f"Token refresh failed for connector {connector_id}: {e}")
                     raise
 
             # Fetch documents (incremental if not first sync)
-            since = connector_config.last_sync_at if connector_config.last_sync_at else None
+            since = None if force_full else (connector_config.last_sync_at if connector_config.last_sync_at else None)
             documents = await connector.fetch_documents(since=since)
 
             # Process documents
@@ -85,7 +90,7 @@ class ConnectorSyncService:
 
             # Update connector status
             connector_config.status = ConnectorStatus.CONNECTED
-            connector_config.last_sync_at = datetime.utcnow()
+            connector_config.last_sync_at = datetime.now(timezone.utc)
             connector_config.last_sync_status = "success"
             connector_config.last_sync_message = f"Synced {added} new, {updated} updated documents"
             connector_config.documents_indexed = (
@@ -99,7 +104,7 @@ class ConnectorSyncService:
             sync_log.documents_added = added
             sync_log.documents_updated = updated
             sync_log.documents_deleted = deleted
-            sync_log.completed_at = datetime.utcnow()
+            sync_log.completed_at = datetime.now(timezone.utc)
 
             self.db.commit()
 
@@ -127,7 +132,7 @@ class ConnectorSyncService:
 
             sync_log.status = "failed"
             sync_log.error_message = str(e)[:1000]
-            sync_log.completed_at = datetime.utcnow()
+            sync_log.completed_at = datetime.now(timezone.utc)
 
             self.db.commit()
 
@@ -156,8 +161,14 @@ class ConnectorSyncService:
         # If exists and not updated, skip
         if existing and doc.updated_at:
             latest_sync = max((c.last_synced_at for c in existing if c.last_synced_at), default=None)
-            if latest_sync and doc.updated_at <= latest_sync:
-                return "skipped"
+            if latest_sync:
+                du = doc.updated_at
+                if du.tzinfo is None:
+                    du = du.replace(tzinfo=timezone.utc)
+                if latest_sync.tzinfo is None:
+                    latest_sync = latest_sync.replace(tzinfo=timezone.utc)
+                if du <= latest_sync:
+                    return "skipped"
 
         # Delete old chunks for this document (will re-create)
         if existing:
@@ -180,6 +191,7 @@ class ConnectorSyncService:
 
             chunk = KnowledgeChunk(
                 company_id=company_id,
+                user_id=connector_config.created_by,
                 text=chunk_text,
                 embedding=embedding,
                 source_type=doc.source_type,
@@ -189,7 +201,7 @@ class ConnectorSyncService:
                 source_title=doc.title,
                 connector_id=connector_id,
                 metadata_=doc.metadata,
-                last_synced_at=datetime.utcnow(),
+                last_synced_at=datetime.now(timezone.utc),
             )
             self.db.add(chunk)
 
@@ -236,7 +248,7 @@ class ConnectorSyncService:
 
     async def sync_all_due(self):
         """Find all connectors that are due for sync and run them."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         connectors = (
             self.db.query(ConnectorConfig)
             .filter(

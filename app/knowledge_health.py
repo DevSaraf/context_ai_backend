@@ -6,7 +6,7 @@ Scores knowledge base quality: freshness, gaps, contradictions, usage.
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Dict, Any, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 
 from .models import KnowledgeChunk, KnowledgeHealthReport
@@ -36,7 +36,7 @@ class KnowledgeHealthService:
                 "details": {},
             }
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         six_months_ago = now - timedelta(days=180)
         three_months_ago = now - timedelta(days=90)
 
@@ -128,7 +128,7 @@ class KnowledgeHealthService:
         self.db.add(report)
         self.db.commit()
 
-        report_data["generated_at"] = datetime.utcnow().isoformat()
+        report_data["generated_at"] = datetime.now(timezone.utc).isoformat()
         return report_data
 
     def get_latest_report(self) -> Dict[str, Any]:
