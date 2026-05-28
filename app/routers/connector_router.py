@@ -303,7 +303,10 @@ async def disconnect_by_type(
     if not config:
         raise HTTPException(404, f"Connector {connector_type} not found")
 
-    db.query(KnowledgeChunk).filter_by(connector_id=config.id).delete()
+    # Detach knowledge chunks instead of deleting them to preserve imported data
+    db.query(KnowledgeChunk).filter_by(connector_id=config.id).update(
+        {"connector_id": None}, synchronize_session=False
+    )
     db.query(SyncLog).filter_by(connector_id=config.id).delete()
     db.delete(config)
     db.commit()
