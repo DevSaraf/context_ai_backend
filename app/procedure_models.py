@@ -331,6 +331,53 @@ class SynthesisRun(Base):
     finished_at = Column(DateTime(timezone=True), nullable=True)
 
 
+class CompiledSkill(Base):
+    """A verified procedure compiled into an executable SKILL.md body.
+
+    One row per (company, slug). Recompiled in place each time the source
+    procedure is re-verified or manually recompiled; `version` tracks how
+    many times this skill has been (re)built.
+
+    autonomy_level is stored as a plain String — it is a snapshot of the
+    procedure's autonomy at compile time, not a live lifecycle field, so it
+    intentionally does not use the Enum column type (avoids duplicate-type
+    errors on Postgres create_all).
+    """
+
+    __tablename__ = "compiled_skills"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    company_id = Column(String, index=True, nullable=False)
+    user_id = Column(Integer, index=True, nullable=False)
+
+    procedure_id = Column(
+        Integer, ForeignKey("procedures.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    procedure = relationship("Procedure")
+
+    slug = Column(String, nullable=False, index=True)
+    title = Column(String, nullable=False, default="")
+    description = Column(Text, nullable=False, default="")
+
+    skill_md = Column(Text, nullable=False, default="")
+
+    autonomy_level = Column(String, nullable=False, default="suggest_only")
+
+    version = Column(Integer, default=1, nullable=False)
+    source_procedure_version = Column(Integer, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    compiled_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    __table_args__ = (
+        UniqueConstraint("company_id", "slug", name="uq_compiled_skill_company_slug"),
+        Index("ix_compiled_skill_company", "company_id"),
+    )
+
+
 # --------------------------------------------------------------------------- #
 # Pydantic schemas (API surface). Pydantic v2 style with v1 fallback.
 # --------------------------------------------------------------------------- #

@@ -1144,11 +1144,13 @@
                                 <span class="connector-last-sync">Never synced</span>
                             </div>
                             <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-outline btn-sm" style="flex:1;" onclick="openDrivePicker()">Select files</button>
                                 <button class="btn btn-outline btn-sm" style="flex:1;" onclick="syncConnector('google_drive')">Sync Now</button>
                                 <button class="btn btn-danger btn-sm" onclick="disconnectConnector('google_drive')">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                                 </button>
                             </div>
+                            <div id="gdrive-picker-status" style="margin-top:8px;"></div>
                         </div>
                     </div>
                 </div>
@@ -1688,7 +1690,8 @@
         <div class="modal" style="max-width:680px;">
             <div class="modal-header">
                 <h3 id="skill-modal-title" style="font-family:var(--font-mono);font-size:14px;">SKILL.md</h3>
-                <div style="display:flex;gap:8px;align-items:center;">
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-accent btn-sm" id="btn-download-skill">Download .docx</button>
                     <button class="btn btn-accent btn-sm" onclick="copySkillMd()">Copy</button>
                     <button class="modal-close" onclick="document.getElementById('skill-modal').classList.add('hidden')">&times;</button>
                 </div>
@@ -3077,7 +3080,7 @@ async function connectConnector(type) {
         if (res.ok) {
             const data = await res.json();
             if (data.url) {
-                window.open(data.url, '_blank', 'width=600,height=700');
+                window.location.href = data.url;
             } else {
                 alert('OAuth URL not available. Please configure the connector settings.');
             }
@@ -3806,13 +3809,33 @@ async function loadSkills(){
                 <div class="k-info"><div class="k-name" style="font-family:var(--font-mono);">${esc(s.name)}</div>
                     <div class="k-meta">${esc(s.description||'')}</div></div>
                 <span class="autonomy-badge ${cls(s.autonomy_level)}">${lbl(s.autonomy_level)}</span>
-                <button class="btn btn-outline btn-sm" onclick="viewSkill('${esc(s.name)}')">View</button>
+                <div class="row-actions" style="margin-top:12px;">
+                    <button class="btn btn-outline btn-sm" onclick="downloadSkill('${esc(s.name)}')">Download .docx</button>
+                    <button class="btn btn-outline btn-sm" onclick="viewSkill('${esc(s.name)}')">View</button>
+                </div>
             </div>`).join('');
     }catch(e){ list.innerHTML = '<div class="empty-state"><p>Failed to load skills.</p></div>'; }
 }
 
+async function downloadSkill(slug) {
+  const res = await fetch(`${API_URL}/brain/skills/${slug}/download`, {
+    headers: { Authorization: `Bearer ${authToken}` }
+  });
+  if (!res.ok) { alert("Download failed"); return; }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${slug}-SKILL.docx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 async function viewSkill(name){
     document.getElementById('skill-modal-title').textContent = name + ' / SKILL.md';
+    document.getElementById('btn-download-skill').onclick = () => downloadSkill(name);
     document.getElementById('skill-md').textContent = 'Loading…';
     document.getElementById('skill-modal').classList.remove('hidden');
     try{
@@ -3842,5 +3865,109 @@ function initAgentAccess(){
 function copyAgentKey(){ const k=document.getElementById('agent-apikey').textContent; if(k) navigator.clipboard.writeText(k); }
 function copyMcpConfig(){ const el=document.getElementById('mcp-config'); navigator.clipboard.writeText(el.value); }
 </script>
+
+<!--
+  KRAB — Google Drive Picker (frontend)
+-->
+<script>
+(function () {
+  let _gapiLoaded = false;
+  let _gisLoaded = false; 
+  let _pickerReady = false;
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) return resolve();
+      const s = document.createElement("script");
+      s.src = src; s.async = true; s.defer = true;
+      s.onload = resolve; s.onerror = () => reject(new Error("load failed: " + src));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function ensurePickerLoaded() {
+    if (_pickerReady) return;
+    await loadScript("https://apis.google.com/js/api.js");
+    await new Promise((resolve) => gapi.load("picker", { callback: resolve }));
+    _pickerReady = true;
+  }
+
+  window.openDrivePicker = async function () {
+    try {
+      const res = await fetch(`${API_URL}/connectors/google_drive/picker-config`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (res.status === 401) {
+        alert("Your Google session expired. Please reconnect Google Drive.");
+        return;
+      }
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        alert(e.detail || "Could not open the file picker.");
+        return;
+      }
+      const cfg = await res.json();
+
+      await ensurePickerLoaded();
+
+      const docsView = new google.picker.DocsView(google.picker.ViewId.DOCS)
+        .setIncludeFolders(true)
+        .setSelectFolderEnabled(false)   
+        .setOwnedByMe(true);
+      const sharedView = new google.picker.DocsView(google.picker.ViewId.DOCS)
+        .setIncludeFolders(true)
+        .setOwnedByMe(false);
+
+      const picker = new google.picker.PickerBuilder()
+        .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+        .setOAuthToken(cfg.oauth_token)
+        .setDeveloperKey(cfg.api_key)
+        .setAppId(cfg.app_id)
+        .addView(docsView)
+        .addView(sharedView)
+        .setTitle("Select files to import into KRAB")
+        .setCallback(pickerCallback)
+        .build();
+
+      picker.setVisible(true);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to open Google Picker: " + err.message);
+    }
+  };
+
+  async function pickerCallback(data) {
+    if (data.action !== google.picker.Action.PICKED) return;
+    const ids = (data.docs || []).map((d) => d.id);
+    if (!ids.length) return;
+
+    try {
+      const res = await fetch(`${API_URL}/connectors/google_drive/selection`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ file_ids: ids }),
+      });
+      const out = await res.json();
+      const statusEl = document.getElementById("gdrive-picker-status");
+      if (res.ok) {
+        if (statusEl) statusEl.innerHTML = mkAlert("success", `Importing ${out.count} file${out.count !== 1 ? "s" : ""} from Google Drive…`);
+        if (typeof loadConnectors === "function") setTimeout(loadConnectors, 1500);
+        if (typeof loadSyncLogs === "function") setTimeout(loadSyncLogs, 1500);
+        if (typeof loadKnowledge === "function") setTimeout(loadKnowledge, 2500);
+        if (typeof loadAnalytics === "function") setTimeout(loadAnalytics, 2500);
+      } else {
+        if (statusEl) statusEl.innerHTML = mkAlert("error", out.detail || "Failed to save selection.");
+      }
+    } catch (e) {
+      const statusEl = document.getElementById("gdrive-picker-status");
+      if (statusEl) statusEl.innerHTML = mkAlert("error", "Connection error while saving selection.");
+    }
+  }
+})();
+</script>
+
 </body>
-</html>
+</html>

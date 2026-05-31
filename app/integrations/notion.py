@@ -30,8 +30,8 @@ class NotionConnector(BaseConnector):
 
     def __init__(self, config=None, access_token=None, refresh_token=None, client_id=None, client_secret=None):
         super().__init__(config, access_token, refresh_token)
-        self.client_id = client_id or self.config.get("client_id", "")
-        self.client_secret = client_secret or self.config.get("client_secret", "")
+        self.client_id = client_id or ""
+        self.client_secret = client_secret or ""
 
     def _headers(self):
         return {
