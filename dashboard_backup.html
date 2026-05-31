@@ -1,0 +1,2109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KRAB — Knowledge Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #262624;
+            --bg-elevated: #2e2e2c;
+            --bg-card: #1e1e1c;
+            --bg-input: #1a1a18;
+            --border: #3a3a38;
+            --border-subtle: #333331;
+            --accent: #c6613f;
+            --accent-hover: #d4734f;
+            --accent-muted: rgba(198, 97, 63, 0.12);
+            --accent-glow: rgba(198, 97, 63, 0.25);
+            --text: #e8e6e1;
+            --text-secondary: #9a9890;
+            --text-muted: #6a6960;
+            --text-dim: #4a4940;
+            --success: #5cb85c;
+            --error: #d9534f;
+            --warning: #f0ad4e;
+            --radius: 10px;
+            --radius-lg: 14px;
+            --radius-sm: 6px;
+            --font: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ========== SCROLLBAR ========== */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ========== ANIMATIONS ========== */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        .loading-spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+
+        /* ========== LAYOUT ========== */
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+        /* ========== HEADER ========== */
+        .header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(38,38,36,0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0;
+        }
+        .header-inner {
+            display: flex; justify-content: space-between; align-items: center;
+            height: 56px;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; flex-shrink: 0; }
+        .logo img { height: 22px; }
+        .logo-text { font-size: 15px; font-weight: 600; color: var(--accent); letter-spacing: 2px; }
+
+        .nav { display: flex; align-items: center; gap: 6px; }
+        .nav-item {
+            padding: 7px 14px; border-radius: var(--radius-sm);
+            font-size: 13px; color: var(--text-secondary);
+            cursor: pointer; transition: all 0.2s; border: none; background: none;
+            font-family: var(--font); white-space: nowrap;
+        }
+        .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+        .nav-item.active { color: var(--accent); background: var(--accent-muted); }
+
+        .header-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+        .user-badge {
+            display: flex; align-items: center; gap: 8px;
+            padding: 5px 12px 5px 5px; border-radius: 20px;
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+        }
+        .user-avatar {
+            width: 26px; height: 26px; border-radius: 50%;
+            background: var(--accent); color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 600; flex-shrink: 0;
+        }
+        .user-email-text { font-size: 12px; color: var(--text-secondary); }
+        .btn-logout {
+            font-size: 12px; color: var(--text-muted); cursor: pointer;
+            background: none; border: none; font-family: var(--font);
+            transition: color 0.2s; white-space: nowrap;
+        }
+        .btn-logout:hover { color: var(--error); }
+
+        /* ========== MOBILE HAMBURGER ========== */
+        .mobile-menu-btn {
+            display: none;
+            background: none; border: none; cursor: pointer;
+            padding: 6px; color: var(--text-secondary);
+            border-radius: var(--radius-sm);
+            transition: background 0.2s, color 0.2s;
+        }
+        .mobile-menu-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+        .mobile-menu-btn svg { display: block; }
+
+        /* Mobile nav overlay */
+        .mobile-nav-overlay {
+            display: none;
+            position: fixed; inset: 0; z-index: 199;
+            background: rgba(0,0,0,0.5);
+            opacity: 0; transition: opacity 0.25s ease;
+        }
+        .mobile-nav-overlay.open { opacity: 1; }
+
+        .mobile-nav {
+            display: none;
+            position: fixed; top: 0; right: 0; bottom: 0; z-index: 200;
+            width: 280px; max-width: 80vw;
+            background: var(--bg-card);
+            border-left: 1px solid var(--border-subtle);
+            padding: 20px 0;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+        }
+        .mobile-nav.open { transform: translateX(0); }
+
+        .mobile-nav-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px 16px; border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 8px;
+        }
+        .mobile-nav-close {
+            background: none; border: none; cursor: pointer;
+            color: var(--text-muted); padding: 4px; border-radius: var(--radius-sm);
+        }
+        .mobile-nav-close:hover { color: var(--text); }
+
+        .mobile-nav-item {
+            display: flex; align-items: center; gap: 10px;
+            width: 100%; padding: 12px 20px;
+            font-size: 14px; color: var(--text-secondary);
+            background: none; border: none; cursor: pointer;
+            font-family: var(--font); text-align: left;
+            transition: background 0.15s, color 0.15s;
+        }
+        .mobile-nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+        .mobile-nav-item.active { color: var(--accent); background: var(--accent-muted); }
+        .mobile-nav-item svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.6; }
+
+        .mobile-nav-divider {
+            height: 1px; background: var(--border-subtle);
+            margin: 8px 20px;
+        }
+
+        .mobile-nav-user {
+            padding: 12px 20px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .mobile-nav-user-email { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; }
+
+        .mobile-nav-logout {
+            display: flex; align-items: center; gap: 10px;
+            width: 100%; padding: 12px 20px;
+            font-size: 14px; color: var(--error);
+            background: none; border: none; cursor: pointer;
+            font-family: var(--font); text-align: left;
+            transition: background 0.15s;
+            opacity: 0.8;
+        }
+        .mobile-nav-logout:hover { background: rgba(217,83,79,0.08); opacity: 1; }
+
+        /* ========== VIEWS ========== */
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* ========== HERO SEARCH ========== */
+        .hero {
+            padding: 52px 0 28px; text-align: center;
+        }
+        .hero h1 { font-size: 28px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+        .hero p { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
+
+        .search-box {
+            max-width: 620px; margin: 0 auto;
+            display: flex; align-items: center; gap: 10px;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 6px 6px 6px 18px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .search-box:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        .search-box svg { flex-shrink: 0; color: var(--text-muted); }
+        .search-input {
+            flex: 1; background: none; border: none; outline: none;
+            font-size: 15px; color: var(--text); font-family: var(--font);
+            padding: 10px 4px; min-width: 0;
+        }
+        .search-input::placeholder { color: var(--text-dim); }
+        .search-btn {
+            padding: 10px 22px; background: var(--accent); color: #fff;
+            border: none; border-radius: 9px; font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; font-family: var(--font);
+            white-space: nowrap; display: flex; align-items: center; gap: 6px;
+            flex-shrink: 0;
+        }
+        .search-btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        .search-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* ========== STATS ========== */
+        .stats-row {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 10px; max-width: 620px; margin: 0 auto 32px;
+        }
+        .stat-card {
+            background: var(--bg-card); border-radius: var(--radius);
+            padding: 14px 16px; border: 1px solid var(--border-subtle);
+        }
+        .stat-value { font-size: 22px; font-weight: 600; color: var(--accent); }
+        .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 3px; }
+
+        /* ========== ANSWER AREA ========== */
+        .answer-area {
+            max-width: 620px; margin: 0 auto 28px;
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg); overflow: hidden;
+        }
+        .answer-area.hidden { display: none; }
+        .answer-loading { display: flex; align-items: center; gap: 10px; padding: 20px; color: var(--text-secondary); font-size: 14px; }
+        .answer-content { padding: 20px; animation: fadeIn 0.3s ease; }
+        .answer-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+            color: var(--accent); background: var(--accent-muted);
+            padding: 4px 10px; border-radius: 5px; margin-bottom: 12px;
+        }
+        .answer-text { font-size: 14px; line-height: 1.8; color: var(--text); white-space: pre-wrap; margin-bottom: 14px; word-break: break-word; }
+        .answer-confidence { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); margin-bottom: 14px; flex-wrap: wrap; }
+        .conf-bar { width: 50px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+        .conf-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+        .conf-fill.high { background: var(--success); }
+        .conf-fill.medium { background: var(--warning); }
+        .conf-fill.low { background: var(--error); }
+
+        .sources-toggle {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 11px; color: var(--text-muted); background: none;
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 6px 10px; cursor: pointer; font-family: var(--font); transition: all 0.2s;
+        }
+        .sources-toggle:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+        .sources-toggle svg { width: 12px; height: 12px; transition: transform 0.2s; }
+        .sources-toggle.open svg { transform: rotate(180deg); }
+        .sources-list { margin-top: 10px; display: none; }
+        .sources-list.open { display: block; }
+        .source-item {
+            background: var(--bg-input); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius); padding: 10px 12px; margin-bottom: 6px;
+            font-size: 12px; line-height: 1.6; color: var(--text-secondary);
+            word-break: break-word;
+        }
+        .source-meta { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 10px; font-weight: 500; }
+        .source-label { color: var(--accent); }
+        .source-conf { color: var(--text-dim); }
+        .no-answer { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
+        /* ========== TWO COLUMN ========== */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+
+        /* ========== CARD ========== */
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg); overflow: hidden;
+        }
+        .card-head {
+            padding: 16px 20px; border-bottom: 1px solid var(--border-subtle);
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 12px; flex-wrap: wrap;
+        }
+        .card-title { font-size: 14px; font-weight: 500; }
+        .card-body { padding: 20px; }
+
+        /* ========== TABS ========== */
+        .tabs {
+            display: inline-flex; gap: 3px; background: var(--bg); padding: 3px; border-radius: var(--radius-sm);
+        }
+        .tab-btn {
+            padding: 5px 14px; border-radius: 4px; border: none; background: none;
+            font-size: 11px; font-weight: 500; color: var(--text-muted);
+            cursor: pointer; font-family: var(--font); transition: all 0.2s;
+        }
+        .tab-btn.active { background: var(--accent); color: #fff; }
+        .tab-btn:hover:not(.active) { color: var(--text-secondary); }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        /* ========== FORMS ========== */
+        label.field-label {
+            display: block; font-size: 11px; font-weight: 500;
+            color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        input[type="text"], input[type="email"], input[type="password"], textarea, select {
+            width: 100%; padding: 10px 14px;
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: var(--radius); color: var(--text); font-size: 13px;
+            font-family: var(--font); transition: border-color 0.2s;
+            outline: none;
+        }
+        input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+        textarea { min-height: 100px; resize: vertical; }
+        select { -webkit-appearance: none; appearance: none; cursor: pointer; }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group:last-child { margin-bottom: 0; }
+
+        /* ========== BUTTONS ========== */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 10px 18px; border: none; border-radius: var(--radius);
+            font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+            font-family: var(--font);
+        }
+        .btn-accent { background: var(--accent); color: #fff; }
+        .btn-accent:hover { background: var(--accent-hover); }
+        .btn-accent:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-full { width: 100%; }
+        .btn-outline { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+        .btn-outline:hover { border-color: var(--text-muted); color: var(--text); }
+        .btn-sm { padding: 6px 12px; font-size: 11px; }
+        .btn-danger { background: var(--error); color: #fff; }
+
+        /* ========== FILE UPLOAD ========== */
+        .drop-zone {
+            border: 1.5px dashed var(--border); border-radius: var(--radius);
+            padding: 32px 20px; text-align: center; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: var(--accent-muted); }
+        .drop-icon {
+            width: 36px; height: 36px; margin: 0 auto 12px;
+            background: var(--bg); border-radius: var(--radius);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .drop-text { color: var(--text-secondary); font-size: 13px; margin-bottom: 4px; }
+        .drop-hint { color: var(--text-dim); font-size: 11px; }
+        .file-input { display: none; }
+        .file-name-display {
+            margin-top: 10px; padding: 8px 12px; background: var(--bg);
+            border-radius: var(--radius-sm); font-size: 12px; color: var(--accent); display: none;
+            word-break: break-all;
+        }
+        .file-name-display.show { display: block; }
+
+        /* ========== KNOWLEDGE LIST ========== */
+        .knowledge-list { max-height: 420px; overflow-y: auto; }
+        .k-item {
+            padding: 12px 20px; border-bottom: 1px solid var(--border-subtle);
+            display: flex; align-items: center; gap: 12px; transition: background 0.15s;
+        }
+        .k-item:last-child { border-bottom: none; }
+        .k-item:hover { background: rgba(255,255,255,0.02); }
+        .k-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            background: var(--accent-muted); display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .k-icon svg { width: 14px; height: 14px; color: var(--accent); }
+        .k-info { flex: 1; min-width: 0; }
+        .k-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .k-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .k-conf { font-size: 11px; color: var(--text-dim); flex-shrink: 0; }
+
+        /* ========== RAW SEARCH ========== */
+        .raw-search-box {
+            display: flex; align-items: center; gap: 8px;
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 6px 10px;
+            transition: border-color 0.2s;
+        }
+        .raw-search-box:focus-within { border-color: var(--accent); }
+        .raw-search-input {
+            flex: 1; background: none; border: none; outline: none;
+            font-size: 12px; color: var(--text); font-family: var(--font);
+            padding: 2px 0; min-width: 0;
+        }
+        .raw-search-input::placeholder { color: var(--text-dim); }
+        .raw-search-btn {
+            padding: 4px 10px; background: var(--accent); color: #fff;
+            border: none; border-radius: var(--radius-sm); font-size: 11px;
+            font-weight: 500; cursor: pointer; font-family: var(--font);
+            transition: background 0.2s; white-space: nowrap; flex-shrink: 0;
+        }
+        .raw-search-btn:hover { background: var(--accent-hover); }
+        .raw-clear-btn {
+            background: none; border: none; color: var(--text-muted);
+            cursor: pointer; font-size: 12px; padding: 2px 4px; flex-shrink: 0;
+            transition: color 0.2s;
+        }
+        .raw-clear-btn:hover { color: var(--error); }
+
+        /* ========== EXPANDED K-ITEM with delete ========== */
+        .k-item { position: relative; }
+        .k-item:hover .k-delete { opacity: 1; }
+        .k-delete {
+            opacity: 0; flex-shrink: 0;
+            background: none; border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 4px 8px;
+            font-size: 10px; color: var(--text-muted); cursor: pointer;
+            font-family: var(--font); transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .k-delete:hover { background: rgba(217,83,79,0.1); border-color: var(--error); color: var(--error); }
+        .k-text-preview {
+            font-size: 11px; color: var(--text-muted); line-height: 1.5;
+            margin-top: 4px; display: none; word-break: break-word;
+        }
+        .k-item.expanded .k-text-preview { display: block; }
+        .k-expand-btn {
+            background: none; border: none; color: var(--text-dim);
+            cursor: pointer; font-size: 10px; padding: 0;
+            font-family: var(--font); transition: color 0.2s; flex-shrink: 0;
+        }
+        .k-expand-btn:hover { color: var(--text-secondary); }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-dim); }
+        .empty-state svg { width: 36px; height: 36px; margin-bottom: 10px; opacity: 0.3; }
+        .empty-state p { font-size: 13px; }
+
+        /* ========== TICKET SECTION ========== */
+        .ticket-section { margin-bottom: 24px; }
+        .tone-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+        .tone-pill {
+            padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border);
+            background: none; color: var(--text-muted); font-size: 11px; font-weight: 500;
+            cursor: pointer; font-family: var(--font); transition: all 0.2s;
+        }
+        .tone-pill:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+        .tone-pill.active { border-color: var(--accent); color: var(--accent); background: var(--accent-muted); }
+
+        .similar-tickets { margin-top: 12px; }
+        .similar-ticket-item {
+            padding: 10px 12px; background: var(--bg-input); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm); margin-bottom: 6px; font-size: 12px;
+            line-height: 1.5; color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+        }
+        .similar-ticket-item:hover { border-color: var(--accent); background: var(--accent-muted); }
+        .similar-ticket-meta { font-size: 10px; color: var(--text-dim); margin-top: 3px; display: flex; gap: 8px; }
+        .similar-ticket-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        .ticket-response-box {
+            background: var(--bg); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius); padding: 16px; margin-top: 8px;
+        }
+        .ticket-response-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+        .ticket-feedback-btn {
+            background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 5px 10px; cursor: pointer; font-family: var(--font); font-size: 11px;
+            color: var(--text-muted); transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px;
+        }
+        .ticket-feedback-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+        .ticket-feedback-btn.voted { border-color: var(--accent); color: var(--accent); background: var(--accent-muted); pointer-events: none; }
+        .ticket-feedback-btn svg { width: 13px; height: 13px; }
+
+        .ticket-history { margin-top: 20px; }
+        .ticket-history-item {
+            padding: 12px 14px; border-bottom: 1px solid var(--border-subtle);
+            cursor: pointer; transition: background 0.15s;
+        }
+        .ticket-history-item:last-child { border-bottom: none; }
+        .ticket-history-item:hover { background: rgba(255,255,255,0.02); }
+        .ticket-history-subject { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+        .ticket-history-preview { font-size: 11px; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+        .ticket-history-meta { font-size: 10px; color: var(--text-dim); margin-top: 4px; display: flex; gap: 10px; align-items: center; }
+        .ticket-history-feedback { display: inline-flex; align-items: center; gap: 3px; }
+        .ticket-history-feedback svg { width: 11px; height: 11px; }
+
+        /* ========== INTEGRATIONS ========== */
+        .integration-row {
+            display: flex; align-items: center; gap: 14px; padding: 16px 0;
+        }
+        .integration-icon {
+            width: 40px; height: 40px; border-radius: var(--radius);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .integration-info { flex: 1; min-width: 0; }
+        .integration-name { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+        .integration-desc { font-size: 12px; color: var(--text-muted); }
+
+        /* ========== AUTH ========== */
+        .auth-screen {
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: var(--bg); padding: 20px;
+        }
+        .auth-card {
+            width: 100%; max-width: 380px;
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg); padding: 36px 28px;
+        }
+        .auth-header { text-align: center; margin-bottom: 28px; }
+        .auth-logo { margin-bottom: 16px; }
+        .auth-logo img { height: 22px; }
+        .auth-title { font-size: 18px; font-weight: 500; margin-bottom: 6px; }
+        .auth-subtitle { font-size: 13px; color: var(--text-muted); }
+        .auth-toggle { text-align: center; margin-top: 16px; font-size: 12px; color: var(--text-muted); }
+        .auth-toggle a { color: var(--accent); cursor: pointer; text-decoration: none; }
+
+        /* ========== ALERTS ========== */
+        .alert {
+            padding: 10px 14px; border-radius: var(--radius); margin-bottom: 14px;
+            font-size: 13px; display: flex; align-items: center; gap: 8px;
+        }
+        .alert svg { width: 16px; height: 16px; flex-shrink: 0; }
+        .alert-success { background: rgba(92,184,92,0.1); border: 1px solid rgba(92,184,92,0.2); color: var(--success); }
+        .alert-error { background: rgba(217,83,79,0.1); border: 1px solid rgba(217,83,79,0.2); color: var(--error); }
+        .alert-warning { background: rgba(240,173,78,0.1); border: 1px solid rgba(240,173,78,0.2); color: var(--warning); }
+
+        .hidden { display: none !important; }
+
+        /* ========== ZENDESK MODAL ========== */
+        .z-modal { background: var(--bg); border-radius: var(--radius); padding: 16px; margin-top: 12px; }
+        .z-connected { background: var(--bg); border-radius: var(--radius); padding: 16px; margin-top: 12px; }
+        .z-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--success); margin-bottom: 4px; }
+        .z-dot { width: 7px; height: 7px; background: var(--success); border-radius: 50%; }
+
+        /* ==========================================================================
+           RESPONSIVE — TABLET (max-width: 768px)
+           ========================================================================== */
+        @media (max-width: 768px) {
+            .container { padding: 0 16px; }
+
+            /* Header: hide desktop nav, show hamburger */
+            .nav { display: none; }
+            .mobile-menu-btn { display: block; }
+            .mobile-nav { display: block; }
+            .mobile-nav-overlay { display: block; pointer-events: none; }
+            .mobile-nav-overlay.open { pointer-events: auto; }
+
+            .header-inner { height: 52px; }
+
+            /* User badge — show avatar only */
+            .user-email-text { display: none; }
+            .user-badge { padding: 3px; border: none; background: none; }
+            .btn-logout { display: none; }
+
+            /* Hero */
+            .hero { padding: 36px 0 20px; }
+            .hero h1 { font-size: 22px; }
+            .hero p { font-size: 13px; margin-bottom: 24px; }
+
+            /* Stats: 2x2 grid */
+            .stats-row {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px; margin-bottom: 24px;
+            }
+            .stat-card { padding: 12px 14px; }
+            .stat-value { font-size: 20px; }
+
+            /* Grid: stack columns */
+            .grid-2 { grid-template-columns: 1fr; }
+
+            /* Cards */
+            .card-head { padding: 14px 16px; }
+            .card-body { padding: 16px; }
+
+            /* Integration row */
+            .integration-row { flex-wrap: wrap; gap: 10px; }
+            .integration-info { flex-basis: calc(100% - 54px); }
+
+            /* Zendesk connected */
+            .z-connected > div:first-child {
+                flex-direction: column; align-items: flex-start; gap: 10px;
+            }
+
+            /* Settings */
+            #settings-view .container { max-width: 100%; }
+
+            /* Danger zone row */
+            #settings-view .card:last-child .card-body > div {
+                flex-direction: column; align-items: flex-start; gap: 12px;
+            }
+
+            /* Tickets: stack columns */
+            #tickets-view div[style*="grid-template-columns: 1fr 1fr"] {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ==========================================================================
+           RESPONSIVE — SMALL MOBILE (max-width: 480px)
+           ========================================================================== */
+        @media (max-width: 480px) {
+            .container { padding: 0 12px; }
+
+            /* Auth card */
+            .auth-card { padding: 28px 20px; }
+            .auth-title { font-size: 16px; }
+
+            /* Hero */
+            .hero { padding: 28px 0 16px; }
+            .hero h1 { font-size: 20px; line-height: 1.3; }
+            .hero p { margin-bottom: 20px; }
+
+            /* Search box */
+            .search-box { padding: 4px 4px 4px 12px; gap: 6px; border-radius: 10px; }
+            .search-input { font-size: 14px; padding: 8px 2px; }
+            .search-btn { padding: 9px 16px; font-size: 12px; }
+
+            /* Stats: still 2x2 but tighter */
+            .stats-row { gap: 6px; }
+            .stat-card { padding: 10px 12px; }
+            .stat-value { font-size: 18px; }
+            .stat-label { font-size: 9px; letter-spacing: 0.5px; }
+
+            /* Answer area */
+            .answer-content { padding: 16px; }
+            .answer-text { font-size: 13px; line-height: 1.7; }
+
+            /* Cards */
+            .card-head { padding: 12px 14px; }
+            .card-body { padding: 14px; }
+
+            /* Knowledge items */
+            .k-item { padding: 10px 14px; gap: 10px; }
+
+            /* Drop zone */
+            .drop-zone { padding: 24px 16px; }
+
+            /* Tickets card full width */
+            #tickets-view .card { max-width: 100%; }
+
+            /* Settings: account usage 1 col on very small screens */
+            #settings-view .card-body div[style*="grid-template-columns: 1fr 1fr"] {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            /* Integration buttons stack */
+            #zendesk-actions .btn { font-size: 10px; padding: 5px 10px; }
+        }
+
+        /* Fix: iOS input zoom prevention */
+        @media (max-width: 768px) {
+            input[type="text"], input[type="email"], input[type="password"],
+            textarea, select {
+                font-size: 16px;
+            }
+            .search-input { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ==================== AUTH SCREEN ==================== -->
+<div id="auth-screen" class="auth-screen">
+    <div class="auth-card fade-in">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <span style="font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: 3px;">KRAB</span>
+            </div>
+            <h2 class="auth-title" id="auth-form-title">Welcome back</h2>
+            <p class="auth-subtitle" id="auth-form-subtitle">Sign in to your account</p>
+        </div>
+        <div id="auth-alert"></div>
+        <form id="login-form">
+            <div class="form-group" id="register-company-field" style="display:none;">
+                <label class="field-label">Company ID</label>
+                <input type="text" id="auth-company" placeholder="your-company">
+            </div>
+            <div class="form-group">
+                <label class="field-label">Email</label>
+                <input type="email" id="auth-email" placeholder="enter email" required>
+            </div>
+            <div class="form-group">
+                <label class="field-label">Password</label>
+                <input type="password" id="auth-password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-accent btn-full" id="auth-btn" style="margin-top:4px;">Sign in</button>
+        </form>
+        <div class="auth-toggle">
+            <span>Don't have an account?</span>
+            <a href="/">Join the waitlist</a>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== DASHBOARD ==================== -->
+<div id="dashboard" class="hidden">
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="container">
+            <div class="header-inner">
+                <a class="logo" href="#">
+                    <span class="logo-text">KRAB</span>
+                </a>
+                <div class="nav">
+                    <button class="nav-item active" onclick="showView('dashboard-view', this)">Dashboard</button>
+                    <button class="nav-item" onclick="showView('knowledge-view', this)">Knowledge</button>
+                    <button class="nav-item" onclick="showView('tickets-view', this)">Tickets</button>
+                    <button class="nav-item" onclick="showView('integrations-view', this)">Integrations</button>
+                </div>
+                <div class="header-right">
+                    <div class="user-badge" onclick="showView('settings-view', null); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); closeMobileNav();" style="cursor:pointer;" title="Settings">
+                        <div class="user-avatar" id="user-avatar">DS</div>
+                        <span class="user-email-text" id="user-email"></span>
+                    </div>
+                    <button class="btn-logout" onclick="logout()">Sign out</button>
+                    <button class="mobile-menu-btn" onclick="openMobileNav()" aria-label="Open menu">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MOBILE NAV DRAWER -->
+    <div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="closeMobileNav()"></div>
+    <nav class="mobile-nav" id="mobile-nav">
+        <div class="mobile-nav-header">
+            <span style="font-size: 14px; font-weight: 600; color: var(--accent); letter-spacing: 2px;">KRAB</span>
+            <button class="mobile-nav-close" onclick="closeMobileNav()" aria-label="Close menu">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <button class="mobile-nav-item active" data-view="dashboard-view" onclick="mobileShowView('dashboard-view', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Dashboard
+        </button>
+        <button class="mobile-nav-item" data-view="knowledge-view" onclick="mobileShowView('knowledge-view', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            Knowledge
+        </button>
+        <button class="mobile-nav-item" data-view="tickets-view" onclick="mobileShowView('tickets-view', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+            Tickets
+        </button>
+        <button class="mobile-nav-item" data-view="integrations-view" onclick="mobileShowView('integrations-view', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Integrations
+        </button>
+        <div class="mobile-nav-divider"></div>
+        <button class="mobile-nav-item" data-view="settings-view" onclick="mobileShowView('settings-view', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Settings
+        </button>
+        <div class="mobile-nav-divider"></div>
+        <div class="mobile-nav-user">
+            <div class="user-avatar" style="width:24px;height:24px;font-size:10px;" id="mobile-user-avatar">DS</div>
+            <span class="mobile-nav-user-email" id="mobile-user-email"></span>
+        </div>
+        <button class="mobile-nav-logout" onclick="logout(); closeMobileNav();">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sign out
+        </button>
+    </nav>
+
+    <!-- ====== DASHBOARD VIEW ====== -->
+    <div id="dashboard-view" class="view active">
+        <div class="container">
+            <div class="hero">
+                <h1>What do you want to know?</h1>
+                <p>Search across your entire knowledge base</p>
+                <div class="search-box">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" class="search-input" id="ask-input" placeholder="Ask anything about your documents..." onkeydown="if(event.key==='Enter')askQuestion()">
+                    <button class="search-btn" id="ask-btn" onclick="askQuestion()">Ask AI</button>
+                </div>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-card"><div class="stat-value" id="stat-chunks">-</div><div class="stat-label">Chunks</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-searches">-</div><div class="stat-label">Searches</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-sources">-</div><div class="stat-label">Sources</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-usage">-</div><div class="stat-label">Usage</div></div>
+            </div>
+
+            <div class="answer-area hidden" id="ask-answer-area"></div>
+        </div>
+    </div>
+
+    <!-- ====== KNOWLEDGE VIEW ====== -->
+    <div id="knowledge-view" class="view">
+        <div class="container" style="padding-top: 28px; padding-bottom: 40px;">
+            <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Knowledge base</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">Upload and manage your company documents</p>
+
+            <div class="grid-2">
+                <!-- UPLOAD -->
+                <div class="card">
+                    <div class="card-head">
+                        <span class="card-title">Upload knowledge</span>
+                        <div class="tabs">
+                            <button class="tab-btn active" onclick="switchUploadTab('file', this)">File</button>
+                            <button class="tab-btn" onclick="switchUploadTab('text', this)">Text</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="upload-alert"></div>
+
+                        <!-- FILE TAB -->
+                        <div id="upload-tab-file" class="tab-pane active">
+                            <div class="form-group">
+                                <label class="field-label">Source type</label>
+                                <select id="file-source-type">
+                                    <option value="document">Document</option>
+                                    <option value="wiki">Wiki</option>
+                                    <option value="faq">FAQ</option>
+                                    <option value="policy">Policy</option>
+                                    <option value="guide">Guide</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <div class="drop-zone" id="file-drop-zone" onclick="document.getElementById('file-input').click()">
+                                    <div class="drop-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    </div>
+                                    <p class="drop-text">Drop files here or click to browse</p>
+                                    <p class="drop-hint">PDF, DOCX, TXT, CSV, MD — up to 20MB</p>
+                                </div>
+                                <input type="file" id="file-input" class="file-input" accept=".pdf,.docx,.txt,.md,.csv,.json" onchange="handleFileSelect(this)">
+                                <div class="file-name-display" id="file-name"></div>
+                            </div>
+                            <button class="btn btn-accent btn-full" onclick="uploadFile()" id="upload-file-btn" disabled>Upload file</button>
+                        </div>
+
+                        <!-- TEXT TAB -->
+                        <div id="upload-tab-text" class="tab-pane">
+                            <div class="form-group">
+                                <label class="field-label">Source type</label>
+                                <select id="source-type">
+                                    <option value="document">Document</option>
+                                    <option value="wiki">Wiki</option>
+                                    <option value="faq">FAQ</option>
+                                    <option value="policy">Policy</option>
+                                    <option value="guide">Guide</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="field-label">Content</label>
+                                <textarea id="content" placeholder="Paste your knowledge content here..." style="min-height: 160px;"></textarea>
+                            </div>
+                            <button class="btn btn-accent btn-full" onclick="uploadText()" id="upload-text-btn">Upload knowledge</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ALL KNOWLEDGE + RAW SEARCH -->
+                <div class="card">
+                    <div class="card-head">
+                        <span class="card-title">All documents</span>
+                        <button class="btn btn-outline btn-sm" onclick="loadKnowledge()">Refresh</button>
+                    </div>
+                    <!-- RAW SEARCH BAR -->
+                    <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-subtle);">
+                        <div class="raw-search-box" id="raw-search-box">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="text" class="raw-search-input" id="raw-search-input" placeholder="Search raw knowledge..." onkeydown="if(event.key==='Enter')rawSearch()" oninput="if(!this.value.trim())clearRawSearch()">
+                            <button class="raw-search-btn" id="raw-search-btn" onclick="rawSearch()">Search</button>
+                            <button class="raw-clear-btn hidden" id="raw-clear-btn" onclick="clearRawSearch()" title="Clear">&#x2715;</button>
+                        </div>
+                        <div id="raw-search-status" style="font-size:11px;color:var(--text-muted);margin-top:6px;min-height:16px;"></div>
+                    </div>
+                    <div class="knowledge-list" id="knowledge-list">
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <p>No knowledge uploaded yet</p>
+                        </div>
+                    </div>
+                    <!-- PAGINATION -->
+                    <div id="k-pagination" class="hidden" style="padding:12px 20px;border-top:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                        <span id="k-page-info" style="font-size:11px;color:var(--text-muted);"></span>
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn btn-outline btn-sm" id="k-prev-btn" onclick="kChangePage(-1)">&#8592; Prev</button>
+                            <button class="btn btn-outline btn-sm" id="k-next-btn" onclick="kChangePage(1)">Next &#8594;</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== TICKETS VIEW ====== -->
+    <div id="tickets-view" class="view">
+        <div class="container" style="padding-top: 28px; padding-bottom: 40px;">
+            <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Ticket resolution</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">AI-powered support response generation</p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 900px;">
+                <!-- LEFT: Input + Generate -->
+                <div class="card">
+                    <div class="card-head"><span class="card-title">New ticket</span></div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="field-label">Ticket subject</label>
+                            <input type="text" id="ticket-subject" placeholder="e.g. API keeps timing out">
+                        </div>
+                        <div class="form-group">
+                            <label class="field-label">Customer message</label>
+                            <textarea id="ticket-body" placeholder="Paste the customer's message here..." style="min-height:120px;"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="field-label">Response tone</label>
+                            <div class="tone-pills" id="tone-pills">
+                                <button class="tone-pill active" data-tone="professional">Professional</button>
+                                <button class="tone-pill" data-tone="friendly">Friendly</button>
+                                <button class="tone-pill" data-tone="concise">Concise</button>
+                                <button class="tone-pill" data-tone="empathetic">Empathetic</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="field-label">Email signature (optional)</label>
+                            <input type="text" id="ticket-signature" placeholder="e.g. Best regards, Support Team">
+                        </div>
+                        <button class="btn btn-accent btn-full" id="ticket-btn" onclick="resolveTicket()">Generate response</button>
+                        <div id="ticket-result" style="margin-top: 14px;"></div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: Similar tickets + History -->
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <!-- Similar tickets (populated after search) -->
+                    <div class="card" id="similar-tickets-card" style="display:none;">
+                        <div class="card-head"><span class="card-title">Similar past tickets</span></div>
+                        <div class="card-body" style="padding:0;">
+                            <div id="similar-tickets-list" style="max-height:240px;overflow-y:auto;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Ticket history -->
+                    <div class="card">
+                        <div class="card-head">
+                            <span class="card-title">History</span>
+                            <span style="font-size:11px;color:var(--text-dim);" id="ticket-history-count"></span>
+                        </div>
+                        <div class="card-body" style="padding:0;">
+                            <div id="ticket-history-list" style="max-height:360px;overflow-y:auto;">
+                                <div class="empty-state" style="padding:30px 20px;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+                                    <p>No tickets resolved yet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== INTEGRATIONS VIEW ====== -->
+    <div id="integrations-view" class="view">
+        <div class="container" style="padding-top: 28px; padding-bottom: 40px;">
+            <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Integrations</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">Connect your tools</p>
+
+            <!-- SUPPORT WIDGET -->
+            <div class="card" style="max-width: 780px; margin-bottom: 16px;">
+                <div class="card-body">
+                    <div class="integration-row">
+                        <div class="integration-icon" style="background: rgba(198,97,63,0.15);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c6613f" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        </div>
+                        <div class="integration-info">
+                            <div class="integration-name">Support Widget</div>
+                            <p class="integration-desc">Embed an AI-powered support form on your website. Customers submit questions, KRAB resolves them using your knowledge base.</p>
+                        </div>
+                        <button class="btn btn-outline btn-sm" onclick="document.getElementById('widget-setup').classList.toggle('hidden')" id="widget-toggle-btn">Setup</button>
+                    </div>
+
+                    <div id="widget-setup" class="hidden" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
+                        <!-- Embed snippet -->
+                        <div class="form-group">
+                            <label class="field-label">Embed snippet</label>
+                            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Paste this into your website's HTML, just before the closing <code style="color:var(--accent);background:var(--accent-muted);padding:1px 5px;border-radius:3px;font-size:11px;">&lt;/body&gt;</code> tag.</p>
+                            <div style="position:relative;">
+                                <textarea id="widget-snippet" readonly style="font-family: var(--font-mono); font-size: 11px; min-height: 80px; background: var(--bg); line-height: 1.6; padding: 12px;"></textarea>
+                                <button class="btn btn-accent btn-sm" onclick="copyWidgetSnippet()" style="position:absolute;top:8px;right:8px;">Copy</button>
+                            </div>
+                        </div>
+
+                        <!-- Preview link -->
+                        <div class="form-group">
+                            <label class="field-label">Preview</label>
+                            <p style="font-size: 12px; color: var(--text-secondary);">
+                                <a id="widget-preview-link" href="#" target="_blank" style="color: var(--accent); text-decoration: none;">Open widget preview ↗</a>
+                            </p>
+                        </div>
+
+                        <!-- Auto-respond toggle -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; background: var(--bg); border-radius: var(--radius); margin-bottom: 12px;">
+                            <div>
+                                <div style="font-size: 13px; font-weight: 500;">Auto-respond to customers</div>
+                                <div style="font-size: 11px; color: var(--text-muted);">When enabled, KRAB sends AI responses directly. When off, tickets go to your inbox for review.</div>
+                            </div>
+                            <div class="tabs" style="margin:0;flex-shrink:0;">
+                                <button class="tab-btn" id="widget-auto-off" onclick="setWidgetAutoRespond(false)">Review first</button>
+                                <button class="tab-btn active" id="widget-auto-on" onclick="setWidgetAutoRespond(true)">Auto-respond</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WIDGET TICKET INBOX -->
+            <div class="card" style="max-width: 780px; margin-bottom: 16px;">
+                <div class="card-head">
+                    <span class="card-title">Widget inbox</span>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <span style="font-size:11px;color:var(--text-dim);" id="widget-inbox-count"></span>
+                        <button class="btn btn-outline btn-sm" onclick="loadWidgetTickets()">Refresh</button>
+                    </div>
+                </div>
+                <div style="max-height:400px;overflow-y:auto;" id="widget-inbox-list">
+                    <div class="empty-state" style="padding:30px 20px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:36px;height:36px;margin-bottom:10px;opacity:0.3;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        <p>No customer tickets yet. Embed the widget on your site to start receiving tickets.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ZENDESK -->
+            <div class="card" style="max-width: 780px;">
+                <div class="card-body">
+                    <div class="integration-row">
+                        <div class="integration-icon" style="background: #03363D;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#78A300"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        </div>
+                        <div class="integration-info">
+                            <div class="integration-name">Zendesk</div>
+                            <p class="integration-desc" id="zendesk-status-text">Import support tickets to train your knowledge base</p>
+                        </div>
+                        <div id="zendesk-actions">
+                            <button class="btn btn-accent btn-sm" onclick="showZendeskConnect()" id="zendesk-connect-btn">Connect</button>
+                        </div>
+                    </div>
+
+                    <div id="zendesk-modal" class="z-modal hidden">
+                        <div class="form-group">
+                            <label class="field-label">Zendesk subdomain</label>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="text" id="zendesk-subdomain" placeholder="yourcompany" style="flex:1;">
+                                <span style="color: var(--text-muted); font-size: 12px; white-space: nowrap;">.zendesk.com</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-accent btn-sm" onclick="connectZendesk()">Connect</button>
+                            <button class="btn btn-outline btn-sm" onclick="hideZendeskConnect()">Cancel</button>
+                        </div>
+                    </div>
+
+                    <div id="zendesk-connected" class="z-connected hidden">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <div class="z-status"><span class="z-dot"></span> Connected</div>
+                                <p style="color: var(--text-muted); font-size: 12px;" id="zendesk-info">-</p>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-accent btn-sm" onclick="syncZendesk()" id="zendesk-sync-btn">Sync</button>
+                                <button class="btn btn-danger btn-sm" onclick="disconnectZendesk()">Disconnect</button>
+                            </div>
+                        </div>
+                        <div id="zendesk-sync-status"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== SETTINGS VIEW ====== -->
+    <div id="settings-view" class="view">
+        <div class="container" style="padding-top: 28px; padding-bottom: 40px; max-width: 680px;">
+            <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Settings</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">Manage your account and preferences</p>
+
+            <div id="settings-alert"></div>
+
+            <!-- PROFILE -->
+            <div class="card" style="margin-bottom: 16px;">
+                <div class="card-head"><span class="card-title">Profile</span></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="field-label">Name</label>
+                        <input type="text" id="settings-name" placeholder="Your name">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Email</label>
+                        <input type="email" id="settings-email" placeholder="you@company.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">Company / Team</label>
+                        <input type="text" id="settings-company" placeholder="Company name">
+                    </div>
+                    <button class="btn btn-accent" id="save-profile-btn" onclick="saveProfile()">Save changes</button>
+                </div>
+            </div>
+
+            <!-- API KEY -->
+            <div class="card" style="margin-bottom: 16px;">
+                <div class="card-head"><span class="card-title">API key</span></div>
+                <div class="card-body">
+                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">Use this key to authenticate the browser extension.</p>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" id="settings-apikey" readonly style="font-family: var(--font-mono); font-size: 12px; flex: 1; min-width: 0;">
+                        <button class="btn btn-outline btn-sm" onclick="copyApiKey()" style="flex-shrink: 0;">Copy</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHANGE PASSWORD -->
+            <div class="card" style="margin-bottom: 16px;">
+                <div class="card-head"><span class="card-title">Change password</span></div>
+                <div class="card-body">
+                    <div id="password-alert"></div>
+                    <div class="form-group">
+                        <label class="field-label">Current password</label>
+                        <input type="password" id="settings-current-pw" placeholder="••••••••">
+                    </div>
+                    <div class="form-group">
+                        <label class="field-label">New password</label>
+                        <input type="password" id="settings-new-pw" placeholder="••••••••">
+                    </div>
+                    <button class="btn btn-accent" onclick="changePassword()">Update password</button>
+                </div>
+            </div>
+
+            <!-- APPEARANCE -->
+            <div class="card" style="margin-bottom: 16px;">
+                <div class="card-head"><span class="card-title">Appearance</span></div>
+                <div class="card-body">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                        <div style="min-width: 0;">
+                            <div style="font-size: 13px; font-weight: 500;">Theme</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">Switch between dark and light mode</div>
+                        </div>
+                        <div class="tabs" style="margin: 0; flex-shrink: 0;">
+                            <button class="tab-btn active" id="theme-dark-btn" onclick="setTheme('dark')">Dark</button>
+                            <button class="tab-btn" id="theme-light-btn" onclick="setTheme('light')">Light</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACCOUNT STATS -->
+            <div class="card" style="margin-bottom: 16px;">
+                <div class="card-head"><span class="card-title">Account usage</span></div>
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div><span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Documents</span><div style="font-size:18px;font-weight:500;color:var(--accent);margin-top:2px;" id="settings-docs">-</div></div>
+                        <div><span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Searches</span><div style="font-size:18px;font-weight:500;color:var(--accent);margin-top:2px;" id="settings-searches">-</div></div>
+                        <div><span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Helpful rate</span><div style="font-size:18px;font-weight:500;color:var(--accent);margin-top:2px;" id="settings-helpful">-</div></div>
+                        <div><span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Member since</span><div style="font-size:18px;font-weight:500;color:var(--accent);margin-top:2px;" id="settings-joined">-</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DANGER ZONE -->
+            <div class="card" style="border-color: rgba(217,83,79,0.3);">
+                <div class="card-head" style="border-color: rgba(217,83,79,0.2);">
+                    <span class="card-title" style="color: var(--error);">Danger zone</span>
+                </div>
+                <div class="card-body">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                        <div style="min-width: 0;">
+                            <div style="font-size: 13px; font-weight: 500;">Delete account</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">Permanently delete your account and all data. Cannot be undone.</div>
+                        </div>
+                        <button class="btn btn-danger btn-sm" onclick="deleteAccount()" style="flex-shrink: 0;">Delete account</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ==================== JAVASCRIPT ==================== -->
+<script>
+const API_URL = "";
+let authToken = null;
+let userEmail = null;
+let companyId = null;
+let selectedFile = null;
+let isRegisterMode = false;
+
+// ====== MOBILE NAV ======
+function openMobileNav() {
+    document.getElementById('mobile-nav').classList.add('open');
+    document.getElementById('mobile-nav-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+function closeMobileNav() {
+    document.getElementById('mobile-nav').classList.remove('open');
+    document.getElementById('mobile-nav-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+}
+function mobileShowView(viewId, btn) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.mobile-nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(viewId).classList.add('active');
+    if (btn) btn.classList.add('active');
+    // Also sync desktop nav if visible
+    document.querySelectorAll('.nav-item').forEach(n => {
+        const map = { 'Dashboard': 'dashboard-view', 'Knowledge': 'knowledge-view', 'Tickets': 'tickets-view', 'Integrations': 'integrations-view' };
+        if (map[n.textContent.trim()] === viewId) n.classList.add('active');
+    });
+    closeMobileNav();
+}
+
+// ====== INIT ======
+document.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('krab_auth');
+    if (saved) {
+        const d = JSON.parse(saved);
+        authToken = d.token; userEmail = d.email; companyId = d.company_id;
+        showDashboard();
+    }
+    setupDragDrop();
+});
+
+// ====== AUTH ======
+function toggleAuthMode() {
+    isRegisterMode = !isRegisterMode;
+    document.getElementById('auth-form-title').textContent = isRegisterMode ? 'Create account' : 'Welcome back';
+    document.getElementById('auth-form-subtitle').textContent = isRegisterMode ? 'Get started with KRAB' : 'Sign in to your account';
+    document.getElementById('auth-btn').textContent = isRegisterMode ? 'Create account' : 'Sign in';
+    document.getElementById('auth-toggle-text').textContent = isRegisterMode ? 'Already have an account?' : "Don't have an account?";
+    document.getElementById('auth-toggle-link').textContent = isRegisterMode ? 'Sign in' : 'Register';
+    document.getElementById('register-company-field').style.display = isRegisterMode ? 'block' : 'none';
+    document.getElementById('auth-alert').innerHTML = '';
+}
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    const btn = document.getElementById('auth-btn');
+    const alertEl = document.getElementById('auth-alert');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span>';
+    alertEl.innerHTML = '';
+
+    try {
+        if (isRegisterMode) {
+            const company = document.getElementById('auth-company').value || 'default';
+            const res = await fetch(`${API_URL}/register`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, company_id: company })
+            });
+            const data = await res.json();
+            if (data.error || data.detail) {
+                alertEl.innerHTML = mkAlert('error', data.error || data.detail);
+                return;
+            }
+            alertEl.innerHTML = mkAlert('success', 'Account created! Signing in...');
+            await new Promise(r => setTimeout(r, 800));
+        }
+
+        const res = await fetch(`${API_URL}/login`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.error || data.detail) {
+            alertEl.innerHTML = mkAlert('error', data.error || data.detail);
+            return;
+        }
+        authToken = data.access_token; userEmail = data.email; companyId = data.company_id;
+        localStorage.setItem('krab_auth', JSON.stringify({ token: authToken, email: userEmail, company_id: companyId }));
+        showDashboard();
+    } catch (err) {
+        alertEl.innerHTML = mkAlert('error', 'Connection error. Is the backend running?');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = isRegisterMode ? 'Create account' : 'Sign in';
+    }
+});
+
+function logout() {
+    authToken = null; userEmail = null; companyId = null;
+    localStorage.removeItem('krab_auth');
+    document.getElementById('ask-answer-area').innerHTML = '';
+    document.getElementById('ask-answer-area').classList.add('hidden');
+    document.getElementById('ask-input').value = '';
+    document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('dashboard').classList.add('hidden');
+    closeMobileNav();
+}
+
+function showDashboard() {
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    document.getElementById('ask-answer-area').innerHTML = '';
+    document.getElementById('ask-answer-area').classList.add('hidden');
+    document.getElementById('ask-input').value = '';
+    document.getElementById('user-email').textContent = userEmail;
+    const initials = userEmail ? userEmail.substring(0, 2).toUpperCase() : 'U';
+    document.getElementById('user-avatar').textContent = initials;
+    // Update mobile nav user info
+    const mobileAvatar = document.getElementById('mobile-user-avatar');
+    const mobileEmail = document.getElementById('mobile-user-email');
+    if (mobileAvatar) mobileAvatar.textContent = initials;
+    if (mobileEmail) mobileEmail.textContent = userEmail;
+    loadKnowledge();
+    loadAnalytics();
+    checkZendeskStatus();
+    loadProfile();
+}
+
+// ====== VIEWS ======
+function showView(viewId, btn) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.mobile-nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(viewId).classList.add('active');
+    if (btn) btn.classList.add('active');
+    // Sync mobile nav
+    document.querySelectorAll('.mobile-nav-item').forEach(n => {
+        if (n.dataset.view === viewId) n.classList.add('active');
+    });
+}
+
+// ====== ANALYTICS ======
+async function loadAnalytics() {
+    try {
+        const res = await fetch(`${API_URL}/analytics`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        if (res.status === 401) { logout(); return; }
+        const d = await res.json();
+        document.getElementById('stat-chunks').textContent = d.total_chunks || 0;
+        document.getElementById('stat-searches').textContent = d.total_searches || 0;
+        document.getElementById('stat-usage').textContent = d.usage_rate ? `${(d.usage_rate * 100).toFixed(0)}%` : '-';
+        // sources count: count unique source_types from documents
+        try {
+            const r2 = await fetch(`${API_URL}/knowledge/documents`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+            if (r2.ok) {
+                const d2 = await r2.json();
+                const docs = d2.documents || [];
+                const uniqueTypes = new Set(docs.map(doc => doc.source_type));
+                document.getElementById('stat-sources').textContent = uniqueTypes.size;
+            }
+        } catch(e2) {}
+    } catch (e) { console.error('Analytics error:', e); }
+}
+
+// ====== UPLOAD TABS ======
+function switchUploadTab(tab, btn) {
+    document.querySelectorAll('.card .tab-btn').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`upload-tab-${tab}`).classList.add('active');
+}
+
+// ====== DRAG & DROP ======
+function setupDragDrop() {
+    const dz = document.getElementById('file-drop-zone');
+    if (!dz) return;
+    ['dragenter','dragover','dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); }));
+    ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, () => dz.classList.add('dragover')));
+    ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, () => dz.classList.remove('dragover')));
+    dz.addEventListener('drop', e => { if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+}
+
+function handleFileSelect(input) { if (input.files[0]) handleFile(input.files[0]); }
+
+function handleFile(file) {
+    if (file.size > 20 * 1024 * 1024) { showAlert('upload-alert', 'error', 'File too large. Max 20MB.'); return; }
+    selectedFile = file;
+    const fn = document.getElementById('file-name');
+    fn.textContent = file.name; fn.classList.add('show');
+    document.getElementById('upload-file-btn').disabled = false;
+}
+
+// ====== UPLOAD TEXT ======
+async function uploadText() {
+    const content = document.getElementById('content').value.trim();
+    const sourceType = document.getElementById('source-type').value;
+    if (!content) { showAlert('upload-alert', 'error', 'Please enter some content.'); return; }
+    const btn = document.getElementById('upload-text-btn');
+    btn.disabled = true; btn.innerHTML = '<span class="loading-spinner"></span> Uploading...';
+    try {
+        const res = await fetch(`${API_URL}/knowledge/upload`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ content, source_type: sourceType })
+        });
+        if (res.status === 401) { logout(); return; }
+        const data = await res.json();
+        if (data.error) { showAlert('upload-alert', 'error', data.error); }
+        else { showAlert('upload-alert', 'success', `Uploaded ${data.chunks || ''} chunks!`); document.getElementById('content').value = ''; loadKnowledge(); loadAnalytics(); }
+    } catch (e) { showAlert('upload-alert', 'error', 'Upload failed.'); }
+    finally { btn.disabled = false; btn.textContent = 'Upload knowledge'; }
+}
+
+// ====== UPLOAD FILE ======
+async function uploadFile() {
+    if (!selectedFile) return;
+    const btn = document.getElementById('upload-file-btn');
+    btn.disabled = true; btn.innerHTML = '<span class="loading-spinner"></span> Uploading...';
+    try {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('source_type', document.getElementById('file-source-type').value);
+        const res = await fetch(`${API_URL}/knowledge/upload-file`, {
+            method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: formData
+        });
+        if (res.status === 401) { logout(); return; }
+        const data = await res.json();
+        if (data.error || data.detail) { showAlert('upload-alert', 'error', data.error || data.detail); }
+        else {
+            showAlert('upload-alert', 'success', `Uploaded ${data.chunks_created || data.chunks || ''} chunks from ${data.filename || 'file'}!`);
+            selectedFile = null; document.getElementById('file-input').value = '';
+            document.getElementById('file-name').classList.remove('show');
+            loadKnowledge(); loadAnalytics();
+        }
+    } catch (e) { showAlert('upload-alert', 'error', 'Upload failed.'); }
+    finally { btn.disabled = false; btn.textContent = 'Upload file'; }
+}
+
+// ====== LOAD KNOWLEDGE ======
+let kAllSources = [];       // all source groups from /knowledge/documents
+let kCurrentPage = 0;
+const K_PAGE_SIZE = 8;
+let kRawMode = false;       // true when showing raw search results
+
+async function loadKnowledge() {
+    kRawMode = false;
+    const list = document.getElementById('knowledge-list');
+    list.innerHTML = '<div class="empty-state" style="padding:24px 20px;"><span class="loading-spinner"></span></div>';
+    try {
+        const res = await fetch(`${API_URL}/knowledge/documents`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.status === 401) { logout(); return; }
+        const data = await res.json();
+        kAllSources = data.documents || [];
+        kCurrentPage = 0;
+        renderKnowledgePage();
+        // update sources stat (count of unique source types)
+        const srcEl = document.getElementById('stat-sources');
+        if (srcEl) {
+            const uniqueTypes = new Set(kAllSources.map(d => d.source_type));
+            srcEl.textContent = uniqueTypes.size;
+        }
+    } catch (e) {
+        list.innerHTML = '<div class="empty-state"><p>Failed to load knowledge.</p></div>';
+        console.error('Load knowledge error:', e);
+    }
+}
+
+function renderKnowledgePage() {
+    const list = document.getElementById('knowledge-list');
+    const pag  = document.getElementById('k-pagination');
+    const info = document.getElementById('k-page-info');
+    const prev = document.getElementById('k-prev-btn');
+    const next = document.getElementById('k-next-btn');
+
+    if (!kAllSources.length) {
+        list.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>No knowledge uploaded yet</p></div>';
+        pag.classList.add('hidden');
+        return;
+    }
+
+    const total = kAllSources.length;
+    const start = kCurrentPage * K_PAGE_SIZE;
+    const end   = Math.min(start + K_PAGE_SIZE, total);
+    const page  = kAllSources.slice(start, end);
+
+    list.innerHTML = page.map(item => {
+        const srcType = item.source_type || 'document';
+        const chunkId = item.id;
+        const textPreview = (item.text || '').substring(0, 150);
+        const wordCount = item.text ? item.text.split(' ').length : 0;
+        const uploaded = item.created_at ? new Date(item.created_at).toLocaleDateString() : '';
+        return `<div class="k-item" id="ki-${chunkId}">
+            <div class="k-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+            <div class="k-info" style="cursor:pointer;" onclick="this.closest('.k-item').classList.toggle('expanded')">
+                <div class="k-name">${esc(srcType)}</div>
+                <div class="k-meta">${wordCount} words · ${uploaded}</div>
+                <div class="k-text-preview">${esc(textPreview)}${(item.text||'').length > 150 ? '…' : ''}</div>
+            </div>
+            <button class="k-delete" onclick="deleteKnowledgeChunk(${chunkId})" title="Delete this chunk">Delete</button>
+        </div>`;
+    }).join('');
+
+    // pagination
+    if (total > K_PAGE_SIZE) {
+        pag.style.display = 'flex';
+        pag.classList.remove('hidden');
+        info.textContent = `${start + 1}–${end} of ${total}`;
+        prev.disabled = kCurrentPage === 0;
+        next.disabled = end >= total;
+    } else {
+        pag.classList.add('hidden');
+    }
+}
+
+function kChangePage(dir) {
+    kCurrentPage += dir;
+    renderKnowledgePage();
+}
+
+// ====== DELETE KNOWLEDGE CHUNK ======
+async function deleteKnowledgeChunk(chunkId) {
+    if (!confirm(`Delete this knowledge chunk? This cannot be undone.`)) return;
+    try {
+        const res = await fetch(`${API_URL}/knowledge/chunk/${chunkId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.status === 401) { logout(); return; }
+        if (res.ok) {
+            kAllSources = kAllSources.filter(s => s.id !== chunkId);
+            if (kCurrentPage > 0 && kCurrentPage * K_PAGE_SIZE >= kAllSources.length) kCurrentPage--;
+            renderKnowledgePage();
+            loadAnalytics();
+        } else {
+            const d = await res.json();
+            alert(d.detail || 'Failed to delete.');
+        }
+    } catch (e) { alert('Connection error while deleting.'); }
+}
+
+// ====== RAW SEARCH ======
+async function rawSearch() {
+    const q = document.getElementById('raw-search-input').value.trim();
+    if (!q) return;
+    kRawMode = true;
+    const list   = document.getElementById('knowledge-list');
+    const status = document.getElementById('raw-search-status');
+    const btn    = document.getElementById('raw-search-btn');
+    const clearB = document.getElementById('raw-clear-btn');
+    btn.textContent = '…';
+    btn.disabled = true;
+    list.innerHTML = '<div class="empty-state" style="padding:20px;"><span class="loading-spinner"></span></div>';
+    clearB.classList.remove('hidden');
+    document.getElementById('k-pagination').classList.add('hidden');
+    try {
+        const res = await fetch(`${API_URL}/raw-search`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ query: q })
+        });
+        const data = await res.json();
+        const results = data.results || [];
+        status.textContent = results.length ? `${results.length} result${results.length!==1?'s':''} for "${q}"` : `No results for "${q}"`;
+        if (!results.length) {
+            list.innerHTML = '<div class="empty-state"><p>No matching knowledge found.</p></div>';
+            return;
+        }
+        list.innerHTML = results.map((item, idx) => `
+            <div class="k-item">
+                <div class="k-icon" style="background:rgba(198,97,63,0.08);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
+                <div class="k-info" style="cursor:pointer;" onclick="this.closest('.k-item').classList.toggle('expanded')">
+                    <div class="k-name">${esc(item.source_type || 'Document')}</div>
+                    <div class="k-meta">${item.text ? item.text.split(' ').length + ' words' : ''} · click to preview</div>
+                    <div class="k-text-preview">${esc((item.text||'').substring(0, 300))}${(item.text||'').length > 300 ? '…' : ''}</div>
+                </div>
+                <button class="k-delete" onclick="deleteKnowledgeChunk(${item.id})" title="Delete this chunk">Delete</button>
+            </div>
+        `).join('');
+    } catch (e) {
+        status.textContent = 'Search failed.';
+        list.innerHTML = '<div class="empty-state"><p>Error running search.</p></div>';
+    } finally {
+        btn.textContent = 'Search';
+        btn.disabled = false;
+    }
+}
+
+function clearRawSearch() {
+    kRawMode = false;
+    document.getElementById('raw-search-input').value = '';
+    document.getElementById('raw-search-status').textContent = '';
+    document.getElementById('raw-clear-btn').classList.add('hidden');
+    renderKnowledgePage();
+}
+
+// ====== ASK AI ======
+async function askQuestion() {
+    const input = document.getElementById('ask-input');
+    const btn = document.getElementById('ask-btn');
+    const area = document.getElementById('ask-answer-area');
+    const q = input.value.trim();
+    if (!q) return;
+    btn.disabled = true; btn.innerHTML = '<span class="loading-spinner"></span>';
+    area.classList.remove('hidden');
+    area.innerHTML = '<div class="answer-loading"><span class="loading-spinner"></span> Searching knowledge...</div>';
+    try {
+        const res = await fetch(`${API_URL}/ask`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ query: q })
+        });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Failed'); }
+        const data = await res.json();
+        if (!data.has_answer || !data.answer) { area.innerHTML = '<div class="no-answer">No relevant information found. Try rephrasing or upload more content.</div>'; return; }
+        const cp = Math.round((data.confidence || 0) * 100);
+        const cl = cp >= 70 ? 'high' : cp >= 40 ? 'medium' : 'low';
+        const sources = data.sources || [];
+        let sh = ''; sources.forEach((s, i) => {
+            const sc = Math.round((s.confidence || s.similarity || 0) * 100);
+            sh += `<div class="source-item"><div class="source-meta"><span class="source-label">[${i+1}] ${s.source_type || 'Doc'} #${s.source_id || ''}</span><span class="source-conf">${sc}%</span></div>${esc(s.text || '').substring(0, 250)}${(s.text||'').length > 250 ? '...' : ''}</div>`;
+        });
+        area.innerHTML = `<div class="answer-content">
+            <div class="answer-badge">AI Answer</div>
+            <div class="answer-text">${esc(data.answer)}</div>
+            <div class="answer-confidence"><span>Confidence:</span><div class="conf-bar"><div class="conf-fill ${cl}" style="width:${cp}%"></div></div><span>${cp}%</span><span style="margin-left:6px;">· ${data.chunks_used || 0} sources</span></div>
+            ${sources.length ? `<button class="sources-toggle" onclick="toggleSources(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>${sources.length} source${sources.length!==1?'s':''}</button><div class="sources-list" id="ask-sources">${sh}</div>` : ''}
+        </div>`;
+    } catch (e) { area.innerHTML = `<div class="no-answer" style="color:var(--error);">Error: ${esc(e.message)}</div>`; }
+    finally { btn.disabled = false; btn.textContent = 'Ask AI'; }
+}
+
+function toggleSources(btn) { btn.classList.toggle('open'); document.getElementById('ask-sources').classList.toggle('open'); }
+
+// ====== TICKET RESOLUTION ======
+let ticketHistory = JSON.parse(localStorage.getItem('krab_ticket_history') || '[]');
+let selectedTone = 'professional';
+
+// Tone pill selection
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('tone-pills')?.addEventListener('click', (e) => {
+        const pill = e.target.closest('.tone-pill');
+        if (!pill) return;
+        document.querySelectorAll('.tone-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        selectedTone = pill.dataset.tone;
+    });
+    renderTicketHistory();
+});
+
+async function resolveTicket() {
+    const subject = document.getElementById('ticket-subject').value.trim();
+    const body = document.getElementById('ticket-body').value.trim();
+    const signature = document.getElementById('ticket-signature').value.trim();
+    const btn = document.getElementById('ticket-btn');
+    const result = document.getElementById('ticket-result');
+    if (!subject && !body) { result.innerHTML = mkAlert('error', 'Provide a subject or message'); return; }
+    btn.disabled = true; btn.innerHTML = '<span class="loading-spinner"></span> Generating...';
+    result.innerHTML = '';
+    document.getElementById('similar-tickets-card').style.display = 'none';
+    try {
+        const res = await fetch(`${API_URL}/tickets/match`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ subject, body, tone: selectedTone })
+        });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Failed'); }
+        const data = await res.json();
+
+        // Show similar tickets in the right panel
+        const similarTickets = data.similar_tickets || [];
+        if (similarTickets.length > 0) {
+            document.getElementById('similar-tickets-card').style.display = '';
+            document.getElementById('similar-tickets-list').innerHTML = similarTickets.map((t, i) => `
+                <div class="similar-ticket-item" onclick="this.querySelector('.similar-ticket-text').style.webkitLineClamp = this.querySelector('.similar-ticket-text').style.webkitLineClamp === 'unset' ? '2' : 'unset'">
+                    <div class="similar-ticket-text">${esc((t.text || '').substring(0, 300))}</div>
+                    <div class="similar-ticket-meta">
+                        <span>${t.source_type || 'doc'}</span>
+                        <span>${Math.round((t.confidence || t.similarity || 0) * 100)}% match</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        if (!data.has_answer) { result.innerHTML = mkAlert('warning', 'No similar past tickets found.'); return; }
+
+        const cp = Math.round((data.confidence || 0) * 100);
+        const responseText = data.suggested_response || '';
+
+        // Build email-ready version
+        const greeting = 'Hi there,';
+        const sig = signature || 'Best regards,\nSupport Team';
+        const emailReady = `${greeting}\n\n${responseText}\n\n${sig}`;
+
+        window._lastTicketResponse = responseText;
+        window._lastTicketEmail = emailReady;
+
+        const historyId = Date.now();
+
+        result.innerHTML = `<div class="ticket-response-box">
+            <div style="display:flex;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+                <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--success);background:rgba(92,184,92,0.1);padding:3px 8px;border-radius:4px;">Suggested response</span>
+                <span style="font-size:11px;color:var(--text-dim);">${cp}% · ${esc(selectedTone)}</span>
+            </div>
+            <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;padding:14px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border-subtle);margin-bottom:12px;word-break:break-word;">${esc(emailReady)}</div>
+            <div class="ticket-response-actions">
+                <button class="btn btn-accent btn-sm" onclick="copyTicketEmail()">Copy as Email</button>
+                <button class="btn btn-outline btn-sm" onclick="copyTicketRaw()">Copy Raw</button>
+                <div style="margin-left:auto;display:flex;gap:6px;" id="ticket-feedback-${historyId}">
+                    <button class="ticket-feedback-btn" onclick="ticketFeedback(${historyId},'helpful',this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                    </button>
+                    <button class="ticket-feedback-btn" onclick="ticketFeedback(${historyId},'not_helpful',this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>`;
+
+        // Save to history
+        ticketHistory.unshift({
+            id: historyId,
+            subject: subject || '(no subject)',
+            body: body.substring(0, 100),
+            response: responseText,
+            emailResponse: emailReady,
+            tone: selectedTone,
+            confidence: cp,
+            feedback: null,
+            timestamp: new Date().toISOString()
+        });
+        if (ticketHistory.length > 50) ticketHistory = ticketHistory.slice(0, 50);
+        localStorage.setItem('krab_ticket_history', JSON.stringify(ticketHistory));
+        renderTicketHistory();
+
+    } catch (e) { result.innerHTML = mkAlert('error', e.message); }
+    finally { btn.disabled = false; btn.textContent = 'Generate response'; }
+}
+
+function copyTicketEmail() {
+    if (window._lastTicketEmail) {
+        navigator.clipboard.writeText(window._lastTicketEmail);
+        event.target.textContent = 'Copied!';
+        setTimeout(() => { event.target.textContent = 'Copy as Email'; }, 2000);
+    }
+}
+
+function copyTicketRaw() {
+    if (window._lastTicketResponse) {
+        navigator.clipboard.writeText(window._lastTicketResponse);
+        event.target.textContent = 'Copied!';
+        setTimeout(() => { event.target.textContent = 'Copy Raw'; }, 2000);
+    }
+}
+
+function ticketFeedback(historyId, type, btn) {
+    const container = document.getElementById(`ticket-feedback-${historyId}`);
+    if (!container) return;
+    container.querySelectorAll('.ticket-feedback-btn').forEach(b => b.classList.remove('voted'));
+    btn.classList.add('voted');
+    // Update history
+    const item = ticketHistory.find(t => t.id === historyId);
+    if (item) {
+        item.feedback = type;
+        localStorage.setItem('krab_ticket_history', JSON.stringify(ticketHistory));
+        renderTicketHistory();
+    }
+}
+
+function renderTicketHistory() {
+    const list = document.getElementById('ticket-history-list');
+    const count = document.getElementById('ticket-history-count');
+    if (!list) return;
+    if (!ticketHistory.length) {
+        list.innerHTML = '<div class="empty-state" style="padding:30px 20px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><p>No tickets resolved yet</p></div>';
+        if (count) count.textContent = '';
+        return;
+    }
+    if (count) count.textContent = `${ticketHistory.length} resolved`;
+    list.innerHTML = ticketHistory.map(t => {
+        const date = new Date(t.timestamp).toLocaleDateString();
+        const fbIcon = t.feedback === 'helpful'
+            ? '<span class="ticket-history-feedback" style="color:var(--success);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></span>'
+            : t.feedback === 'not_helpful'
+            ? '<span class="ticket-history-feedback" style="color:var(--error);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></span>'
+            : '';
+        return `<div class="ticket-history-item" onclick="loadTicketFromHistory(${t.id})">
+            <div class="ticket-history-subject">${esc(t.subject)}</div>
+            <div class="ticket-history-preview">${esc(t.response.substring(0, 80))}</div>
+            <div class="ticket-history-meta">
+                <span>${date}</span>
+                <span>${t.tone}</span>
+                <span>${t.confidence}%</span>
+                ${fbIcon}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function loadTicketFromHistory(id) {
+    const item = ticketHistory.find(t => t.id === id);
+    if (!item) return;
+    const result = document.getElementById('ticket-result');
+    const sig = document.getElementById('ticket-signature').value.trim() || 'Best regards,\nSupport Team';
+    const emailReady = `Hi there,\n\n${item.response}\n\n${sig}`;
+    window._lastTicketResponse = item.response;
+    window._lastTicketEmail = emailReady;
+    result.innerHTML = `<div class="ticket-response-box">
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+            <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--accent);background:var(--accent-muted);padding:3px 8px;border-radius:4px;">From history</span>
+            <span style="font-size:11px;color:var(--text-dim);">${item.confidence}% · ${esc(item.tone)}</span>
+        </div>
+        <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;padding:14px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border-subtle);margin-bottom:12px;word-break:break-word;">${esc(emailReady)}</div>
+        <div class="ticket-response-actions">
+            <button class="btn btn-accent btn-sm" onclick="copyTicketEmail()">Copy as Email</button>
+            <button class="btn btn-outline btn-sm" onclick="copyTicketRaw()">Copy Raw</button>
+        </div>
+    </div>`;
+}
+
+// ====== ZENDESK ======
+function showZendeskConnect() { document.getElementById('zendesk-modal').classList.remove('hidden'); }
+function hideZendeskConnect() { document.getElementById('zendesk-modal').classList.add('hidden'); }
+
+async function checkZendeskStatus() {
+    try {
+        const res = await fetch(`${API_URL}/integrations/zendesk/status`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        const data = await res.json();
+        if (data.connected) {
+            document.getElementById('zendesk-connect-btn').classList.add('hidden');
+            document.getElementById('zendesk-connected').classList.remove('hidden');
+            document.getElementById('zendesk-modal').classList.add('hidden');
+            document.getElementById('zendesk-status-text').textContent = 'Connected to Zendesk';
+            document.getElementById('zendesk-info').textContent = `${data.subdomain}.zendesk.com · ${data.tickets_imported || 0} tickets`;
+        } else {
+            document.getElementById('zendesk-connect-btn').classList.remove('hidden');
+            document.getElementById('zendesk-connected').classList.add('hidden');
+        }
+    } catch (e) { console.error('Zendesk status error:', e); }
+}
+
+async function connectZendesk() {
+    const sub = document.getElementById('zendesk-subdomain').value.trim();
+    if (!sub) return;
+    try {
+        const res = await fetch(`${API_URL}/integrations/zendesk/connect`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ subdomain: sub })
+        });
+        const data = await res.json();
+        if (data.oauth_url) window.location.href = data.oauth_url;
+    } catch (e) { console.error('Zendesk connect error:', e); }
+}
+
+async function syncZendesk() {
+    const btn = document.getElementById('zendesk-sync-btn');
+    const st = document.getElementById('zendesk-sync-status');
+    btn.disabled = true; btn.innerHTML = '<span class="loading-spinner"></span>';
+    st.innerHTML = '<p style="color:var(--text-muted);font-size:12px;">Importing tickets...</p>';
+    try {
+        const res = await fetch(`${API_URL}/integrations/zendesk/sync`, { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` } });
+        const data = await res.json();
+        st.innerHTML = data.success ? mkAlert('success', data.message) : mkAlert('error', data.message);
+        if (data.success) { checkZendeskStatus(); loadKnowledge(); loadAnalytics(); }
+    } catch (e) { st.innerHTML = mkAlert('error', 'Connection error'); }
+    finally { btn.disabled = false; btn.textContent = 'Sync'; }
+}
+
+async function disconnectZendesk() {
+    if (!confirm('Disconnect Zendesk?')) return;
+    try { await fetch(`${API_URL}/integrations/zendesk/disconnect`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}` } }); checkZendeskStatus(); }
+    catch (e) { console.error(e); }
+}
+
+// ====== SUPPORT WIDGET ======
+let widgetAutoRespond = true;
+
+function initWidgetSetup() {
+    // Get API key from settings and build embed snippet
+    const apiKeyEl = document.getElementById('settings-apikey');
+    const apiKey = apiKeyEl ? apiKeyEl.value : '';
+    const baseUrl = API_URL || window.location.origin;
+
+    const snippet = `<!-- KRAB Support Widget -->\n<script>\n(function(){\n  var d=document,s=d.createElement('iframe');\n  s.src="${baseUrl}/widget?key=${apiKey}";\n  s.style.cssText="position:fixed;bottom:0;right:0;width:440px;height:640px;border:none;z-index:99999;background:transparent;pointer-events:none;";\n  s.setAttribute('allow','clipboard-write');\n  s.id='krab-widget-frame';\n  d.body.appendChild(s);\n  window.addEventListener('message',function(e){\n    if(e.data==='krab-resize')s.style.pointerEvents='auto';\n    if(e.data==='krab-minimize')s.style.pointerEvents='none';\n  });\n})();\n<\/script>`;
+
+    const snippetEl = document.getElementById('widget-snippet');
+    if (snippetEl) snippetEl.value = snippet;
+
+    const previewLink = document.getElementById('widget-preview-link');
+    if (previewLink) previewLink.href = `${baseUrl}/widget?key=${apiKey}`;
+
+    loadWidgetTickets();
+}
+
+function copyWidgetSnippet() {
+    const el = document.getElementById('widget-snippet');
+    if (el) {
+        navigator.clipboard.writeText(el.value);
+        event.target.textContent = 'Copied!';
+        setTimeout(() => { event.target.textContent = 'Copy'; }, 2000);
+    }
+}
+
+function setWidgetAutoRespond(on) {
+    widgetAutoRespond = on;
+    document.getElementById('widget-auto-on').classList.toggle('active', on);
+    document.getElementById('widget-auto-off').classList.toggle('active', !on);
+    localStorage.setItem('krab_widget_auto', on ? '1' : '0');
+}
+
+async function loadWidgetTickets() {
+    const list = document.getElementById('widget-inbox-list');
+    const countEl = document.getElementById('widget-inbox-count');
+    if (!list) return;
+
+    const apiKeyEl = document.getElementById('settings-apikey');
+    const apiKey = apiKeyEl ? apiKeyEl.value : '';
+    if (!apiKey) {
+        list.innerHTML = '<div class="empty-state" style="padding:24px 20px;"><p>Load your profile first (go to Settings, then come back).</p></div>';
+        return;
+    }
+
+    list.innerHTML = '<div class="empty-state" style="padding:20px;"><span class="loading-spinner"></span></div>';
+
+    try {
+        const res = await fetch(`${API_URL}/widget/tickets?api_key=${encodeURIComponent(apiKey)}`);
+        if (!res.ok) { list.innerHTML = '<div class="empty-state" style="padding:20px;"><p>Failed to load tickets.</p></div>'; return; }
+        const data = await res.json();
+        const tickets = data.tickets || [];
+        if (countEl) countEl.textContent = tickets.length ? `${tickets.length} ticket${tickets.length !== 1 ? 's' : ''}` : '';
+
+        if (!tickets.length) {
+            list.innerHTML = '<div class="empty-state" style="padding:30px 20px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:36px;height:36px;margin-bottom:10px;opacity:0.3;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><p>No customer tickets yet.</p></div>';
+            return;
+        }
+
+        list.innerHTML = tickets.map(t => {
+            const date = t.created_at ? new Date(t.created_at).toLocaleString() : '';
+            const statusColor = t.status === 'auto_responded' ? 'var(--success)' : t.status === 'pending' ? 'var(--warning)' : 'var(--text-dim)';
+            const statusLabel = t.status === 'auto_responded' ? 'Auto-responded' : t.status === 'pending' ? 'Pending review' : t.status;
+            return `<div style="padding:14px 20px;border-bottom:1px solid var(--border-subtle);">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">
+                    <div style="font-size:13px;font-weight:500;color:var(--text);">${esc(t.subject || '(no subject)')}</div>
+                    <span style="font-size:10px;color:${statusColor};background:rgba(255,255,255,0.05);padding:2px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0;">${statusLabel}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${esc(t.message || '')}</div>
+                <div style="display:flex;gap:10px;font-size:10px;color:var(--text-dim);align-items:center;">
+                    ${t.customer_name ? '<span>' + esc(t.customer_name) + '</span>' : ''}
+                    ${t.customer_email ? '<span>' + esc(t.customer_email) + '</span>' : ''}
+                    <span>${date}</span>
+                    ${t.confidence ? '<span>' + Math.round(t.confidence * 100) + '% conf</span>' : ''}
+                </div>
+                ${t.ai_response ? '<details style="margin-top:8px;"><summary style="font-size:11px;color:var(--accent);cursor:pointer;">View AI response</summary><div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-top:6px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);white-space:pre-wrap;">' + esc(t.ai_response) + '</div></details>' : ''}
+            </div>`;
+        }).join('');
+    } catch (e) {
+        console.error('Widget tickets error:', e);
+        list.innerHTML = '<div class="empty-state" style="padding:20px;"><p>Error loading tickets.</p></div>';
+    }
+}
+
+// ====== HELPERS ======
+function esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+function mkAlert(type, msg) {
+    const icons = {
+        success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+        error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+        warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+    };
+    return `<div class="alert alert-${type}">${icons[type]}${msg}</div>`;
+}
+
+function showAlert(id, type, msg) {
+    document.getElementById(id).innerHTML = mkAlert(type, msg);
+    if (type === 'success') setTimeout(() => { document.getElementById(id).innerHTML = ''; }, 3000);
+}
+
+// OAuth callback check
+const params = new URLSearchParams(window.location.search);
+if (params.get('zendesk') === 'connected') window.history.replaceState({}, document.title, window.location.pathname);
+
+// ====== SETTINGS / PROFILE ======
+async function loadProfile() {
+    try {
+        const res = await fetch(`${API_URL}/me`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        if (!res.ok) return;
+        const d = await res.json();
+        document.getElementById('settings-name').value = d.name || '';
+        document.getElementById('settings-email').value = d.email || '';
+        document.getElementById('settings-company').value = d.company_id || '';
+        document.getElementById('settings-apikey').value = d.api_key || '';
+        if (d.created_at) {
+            const yr = new Date(d.created_at).getFullYear();
+            document.getElementById('settings-joined').textContent = isNaN(yr) ? '-' : yr;
+        }
+    } catch (e) { console.error('Load profile error:', e); }
+    try {
+        const res2 = await fetch(`${API_URL}/analytics`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        if (res2.ok) {
+            const d2 = await res2.json();
+            document.getElementById('settings-docs').textContent = d2.total_chunks || 0;
+            document.getElementById('settings-searches').textContent = d2.total_searches || 0;
+            document.getElementById('settings-helpful').textContent = d2.helpful_rate ? `${(d2.helpful_rate * 100).toFixed(0)}%` : '-';
+        }
+    } catch (e) {}
+    // Init widget setup after API key is loaded
+    initWidgetSetup();
+}
+
+async function saveProfile() {
+    const btn = document.getElementById('save-profile-btn');
+    btn.disabled = true; btn.innerHTML = '<span class="loading-spinner"></span>';
+    try {
+        const res = await fetch(`${API_URL}/profile`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({
+                name: document.getElementById('settings-name').value.trim() || null,
+                email: document.getElementById('settings-email').value.trim() || null,
+                company_id: document.getElementById('settings-company').value.trim() || null,
+            })
+        });
+        const d = await res.json();
+        if (!res.ok) { showAlert('settings-alert', 'error', d.detail || 'Failed to save'); return; }
+        const newEmail = document.getElementById('settings-email').value.trim();
+        if (newEmail && newEmail !== userEmail) {
+            userEmail = newEmail;
+            document.getElementById('user-email').textContent = userEmail;
+            const saved = JSON.parse(localStorage.getItem('krab_auth') || '{}');
+            saved.email = userEmail;
+            localStorage.setItem('krab_auth', JSON.stringify(saved));
+        }
+        showAlert('settings-alert', 'success', 'Profile saved');
+    } catch (e) { showAlert('settings-alert', 'error', 'Connection error'); }
+    finally { btn.disabled = false; btn.textContent = 'Save changes'; }
+}
+
+async function changePassword() {
+    const cur = document.getElementById('settings-current-pw').value;
+    const nw = document.getElementById('settings-new-pw').value;
+    if (!cur || !nw) { showAlert('password-alert', 'error', 'Fill in both fields'); return; }
+    if (nw.length < 6) { showAlert('password-alert', 'error', 'New password must be at least 6 characters'); return; }
+    try {
+        const res = await fetch(`${API_URL}/change-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ current_password: cur, new_password: nw })
+        });
+        const d = await res.json();
+        if (!res.ok) { showAlert('password-alert', 'error', d.detail || 'Failed'); return; }
+        showAlert('password-alert', 'success', 'Password updated');
+        document.getElementById('settings-current-pw').value = '';
+        document.getElementById('settings-new-pw').value = '';
+    } catch (e) { showAlert('password-alert', 'error', 'Connection error'); }
+}
+
+function copyApiKey() {
+    const val = document.getElementById('settings-apikey').value;
+    if (!val) return;
+    navigator.clipboard.writeText(val);
+    showAlert('settings-alert', 'success', 'API key copied to clipboard');
+}
+
+function setTheme(theme) {
+    document.getElementById('theme-dark-btn').classList.toggle('active', theme === 'dark');
+    document.getElementById('theme-light-btn').classList.toggle('active', theme === 'light');
+    localStorage.setItem('krab_theme', theme);
+    if (theme === 'light') {
+        document.documentElement.style.setProperty('--bg', '#f5f4f0');
+        document.documentElement.style.setProperty('--bg-card', '#ffffff');
+        document.documentElement.style.setProperty('--bg-input', '#f0eeea');
+        document.documentElement.style.setProperty('--border', '#dddbd6');
+        document.documentElement.style.setProperty('--border-subtle', '#e5e3de');
+        document.documentElement.style.setProperty('--text', '#1a1a18');
+        document.documentElement.style.setProperty('--text-secondary', '#5a5850');
+        document.documentElement.style.setProperty('--text-muted', '#9a9890');
+        document.documentElement.style.setProperty('--text-dim', '#c0beb8');
+    } else {
+        document.documentElement.style.setProperty('--bg', '#262624');
+        document.documentElement.style.setProperty('--bg-card', '#1e1e1c');
+        document.documentElement.style.setProperty('--bg-input', '#1a1a18');
+        document.documentElement.style.setProperty('--border', '#3a3a38');
+        document.documentElement.style.setProperty('--border-subtle', '#333331');
+        document.documentElement.style.setProperty('--text', '#e8e6e1');
+        document.documentElement.style.setProperty('--text-secondary', '#9a9890');
+        document.documentElement.style.setProperty('--text-muted', '#6a6960');
+        document.documentElement.style.setProperty('--text-dim', '#4a4940');
+    }
+}
+
+// Apply saved theme on load
+document.addEventListener('DOMContentLoaded', () => {
+    const t = localStorage.getItem('krab_theme');
+    if (t) setTheme(t);
+});
+
+async function deleteAccount() {
+    if (!confirm('Delete your account? This will permanently remove all your data.')) return;
+    if (!confirm('Are you absolutely sure? This cannot be undone.')) return;
+    try {
+        const res = await fetch(`${API_URL}/account`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) { logout(); }
+        else { const d = await res.json(); showAlert('settings-alert', 'error', d.detail || 'Failed to delete'); }
+    } catch (e) { showAlert('settings-alert', 'error', 'Connection error'); }
+}
+</script>
+</body>
+</html>

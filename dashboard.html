@@ -664,6 +664,189 @@
             }
             .search-input { font-size: 16px; }
         }
+
+        /* ========== MODAL OVERLAY ========== */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 1000;
+            background: rgba(0,0,0,0.6);
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+            animation: fadeIn 0.2s ease;
+        }
+        .modal-overlay.hidden { display: none; }
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            animation: slideUp 0.3s ease;
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .modal-header h3 { margin: 0; font-size: 16px; font-weight: 500; }
+        .modal-close {
+            width: 32px; height: 32px;
+            background: none; border: none;
+            color: var(--text-muted);
+            font-size: 24px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: var(--radius-sm);
+        }
+        .modal-close:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+        .modal-body { padding: 20px; overflow-y: auto; }
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-subtle);
+            display: flex; justify-content: flex-end; gap: 10px;
+        }
+
+        /* ========== TICKET STATUS BADGES ========== */
+        .ticket-status-badge {
+            display: inline-block;
+        }
+        .ticket-status-badge.new { background: var(--accent-muted); color: var(--accent); }
+        .ticket-status-badge.open { background: rgba(76,175,80,0.15); color: #4caf50; }
+        .ticket-status-badge.pending { background: rgba(255,193,7,0.15); color: #ffc107; }
+        .ticket-status-badge.solved { background: rgba(92,184,92,0.15); color: var(--success); }
+        .ticket-status-badge.closed { background: rgba(106,105,96,0.15); color: var(--text-muted); }
+
+        /* ========== PRIORITY BADGES ========== */
+        .priority-badge {
+            display: inline-block;
+            font-weight: 500;
+        }
+        .priority-badge.priority-low { background: rgba(106,105,96,0.15); color: var(--text-muted); }
+        .priority-badge.priority-normal { background: rgba(76,175,80,0.15); color: #4caf50; }
+        .priority-badge.priority-high { background: rgba(255,152,0,0.15); color: #ff9800; }
+        .priority-badge.priority-urgent { background: rgba(244,67,54,0.2); color: #f44336; }
+
+        /* ========== CONNECTOR CARDS ========== */
+        .connector-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .connector-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        /* ========== COMPANY BRAIN ========== */
+        .brain-stats-row {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 10px; margin-bottom: 24px;
+        }
+
+        /* Status badges */
+        .proc-status-badge, .autonomy-badge {
+            display: inline-flex; align-items: center;
+            font-size: 10px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.5px; padding: 3px 8px; border-radius: 5px;
+        }
+        .proc-status-draft      { background: rgba(106,105,96,0.15); color: var(--text-muted); }
+        .proc-status-needs_review { background: rgba(240,173,78,0.15); color: var(--warning); }
+        .proc-status-verified   { background: rgba(92,184,92,0.15); color: var(--success); }
+        .proc-status-stale      { background: rgba(217,83,79,0.1); color: var(--error); }
+        .proc-status-archived   { background: rgba(106,105,96,0.1); color: var(--text-dim); }
+
+        .autonomy-human  { background: rgba(217,83,79,0.12); color: var(--error); }
+        .autonomy-suggest { background: rgba(240,173,78,0.12); color: var(--warning); }
+        .autonomy-auto   { background: rgba(92,184,92,0.12); color: var(--success); }
+
+        /* Procedure card */
+        .proc-card {
+            padding: 14px 16px; border-bottom: 1px solid var(--border-subtle);
+            transition: background 0.15s;
+        }
+        .proc-card:last-child { border-bottom: none; }
+        .proc-card:hover { background: rgba(255,255,255,0.02); }
+        .proc-card-top {
+            display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px;
+        }
+        .proc-card-meta { flex: 1; min-width: 0; }
+        .proc-title {
+            font-size: 13px; font-weight: 500; color: var(--text);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+        .proc-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+        .proc-conf-row {
+            display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted);
+        }
+        .proc-conf-bar {
+            flex: 1; max-width: 80px; height: 3px; background: var(--border);
+            border-radius: 2px; overflow: hidden;
+        }
+        .proc-conf-fill { height: 100%; border-radius: 2px; }
+        .proc-conf-fill.high   { background: var(--success); }
+        .proc-conf-fill.medium { background: var(--warning); }
+        .proc-conf-fill.low    { background: var(--error); }
+        .proc-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+        /* Conflict item */
+        .conflict-item {
+            padding: 14px 16px; border-bottom: 1px solid var(--border-subtle);
+            transition: background 0.15s;
+        }
+        .conflict-item:last-child { border-bottom: none; }
+        .conflict-item:hover { background: rgba(255,255,255,0.02); }
+        .conflict-top {
+            display: flex; align-items: flex-start; justify-content: space-between;
+            gap: 10px; margin-bottom: 6px;
+        }
+        .conflict-desc { font-size: 13px; color: var(--text); flex: 1; min-width: 0; }
+        .conflict-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 11px; color: var(--text-muted); }
+        .conflict-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+        /* Synthesis run log */
+        .brain-run-log {
+            background: var(--bg); border-radius: var(--radius);
+            padding: 14px 16px; font-size: 12px; color: var(--text-secondary);
+            line-height: 1.7;
+        }
+        .brain-run-stat { display: inline-flex; align-items: center; gap: 4px; margin-right: 14px; }
+        .brain-run-stat strong { color: var(--accent); }
+
+        /* Brain filter tabs */
+        .brain-filter-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+        .brain-filter-tab {
+            padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);
+            background: none; color: var(--text-muted); font-size: 11px; font-weight: 500;
+            cursor: pointer; font-family: var(--font); transition: all 0.2s;
+        }
+        .brain-filter-tab:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+        .brain-filter-tab.active { border-color: var(--accent); color: var(--accent); background: var(--accent-muted); }
+
+        /* Procedure detail modal steps */
+        .proc-step {
+            display: flex; gap: 10px; padding: 10px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .proc-step:last-child { border-bottom: none; }
+        .proc-step-num {
+            width: 22px; height: 22px; border-radius: 50%;
+            background: var(--accent-muted); color: var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+        }
+        .proc-step-text { font-size: 13px; line-height: 1.6; color: var(--text); }
+        .proc-rule-item {
+            padding: 8px 12px; background: var(--bg); border-radius: var(--radius-sm);
+            font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;
+            border-left: 3px solid var(--border);
+            line-height: 1.5;
+        }
+        .proc-rule-item.decision  { border-color: var(--accent); }
+        .proc-rule-item.guardrail { border-color: var(--error); }
+        .proc-rule-item.required_input { border-color: var(--warning); }
+
+        @media (max-width: 768px) {
+            .brain-stats-row { grid-template-columns: 1fr 1fr; }
+            .proc-card-top { flex-wrap: wrap; }
+            .proc-actions { width: 100%; justify-content: flex-end; }
+        }
     </style>
 </head>
 <body>
@@ -714,8 +897,9 @@
                 <div class="nav">
                     <button class="nav-item active" onclick="showView('dashboard-view', this)">Dashboard</button>
                     <button class="nav-item" onclick="showView('knowledge-view', this)">Knowledge</button>
-                    <button class="nav-item" onclick="showView('tickets-view', this)">Tickets</button>
-                    <button class="nav-item" onclick="showView('integrations-view', this)">Integrations</button>
+                    <button class="nav-item" onclick="showView('brain-view', this)">Brain</button>
+                    <button class="nav-item" onclick="showView('connectors-view', this)">Connectors</button>
+                    <button class="nav-item" onclick="showView('help-center-view', this)">Help Center</button>
                 </div>
                 <div class="header-right">
                     <div class="user-badge" onclick="showView('settings-view', null); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); closeMobileNav();" style="cursor:pointer;" title="Settings">
@@ -748,13 +932,17 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
             Knowledge
         </button>
-        <button class="mobile-nav-item" data-view="tickets-view" onclick="mobileShowView('tickets-view', this)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
-            Tickets
+        <button class="mobile-nav-item" data-view="brain-view" onclick="mobileShowView('brain-view', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v11m0 0H5m4 0h10m-10 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m-6 0V9m6 5v-5m0 0a2 2 0 0 1 2-2h2"/></svg>
+            Brain
         </button>
-        <button class="mobile-nav-item" data-view="integrations-view" onclick="mobileShowView('integrations-view', this)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            Integrations
+        <button class="mobile-nav-item" data-view="connectors-view" onclick="mobileShowView('connectors-view', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            Connectors
+        </button>
+        <button class="mobile-nav-item" data-view="help-center-view" onclick="mobileShowView('help-center-view', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Help Center
         </button>
         <div class="mobile-nav-divider"></div>
         <button class="mobile-nav-item" data-view="settings-view" onclick="mobileShowView('settings-view', this)">
@@ -789,6 +977,7 @@
                 <div class="stat-card"><div class="stat-value" id="stat-chunks">-</div><div class="stat-label">Chunks</div></div>
                 <div class="stat-card"><div class="stat-value" id="stat-searches">-</div><div class="stat-label">Searches</div></div>
                 <div class="stat-card"><div class="stat-value" id="stat-sources">-</div><div class="stat-label">Sources</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-usage">-</div><div class="stat-label">Usage</div></div>
             </div>
 
             <div class="answer-area hidden" id="ask-answer-area"></div>
@@ -896,78 +1085,354 @@
         </div>
     </div>
 
-    <!-- ====== TICKETS VIEW ====== -->
-    <div id="tickets-view" class="view">
-        <div class="container" style="padding-top: 28px; padding-bottom: 40px;">
-            <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Ticket resolution</h2>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">AI-powered support response generation</p>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 900px;">
-                <!-- LEFT: Input + Generate -->
-                <div class="card">
-                    <div class="card-head"><span class="card-title">New ticket</span></div>
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label class="field-label">Ticket subject</label>
-                            <input type="text" id="ticket-subject" placeholder="e.g. API keeps timing out">
-                        </div>
-                        <div class="form-group">
-                            <label class="field-label">Customer message</label>
-                            <textarea id="ticket-body" placeholder="Paste the customer's message here..." style="min-height:120px;"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label class="field-label">Response tone</label>
-                            <div class="tone-pills" id="tone-pills">
-                                <button class="tone-pill active" data-tone="professional">Professional</button>
-                                <button class="tone-pill" data-tone="friendly">Friendly</button>
-                                <button class="tone-pill" data-tone="concise">Concise</button>
-                                <button class="tone-pill" data-tone="empathetic">Empathetic</button>
+    <!-- ====== CONNECTORS VIEW ====== -->
+    <div id="connectors-view" class="view">
+        <div class="container" style="padding-top: 28px; padding-bottom: 40px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <div>
+                    <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Connectors</h2>
+                    <p style="font-size: 13px; color: var(--text-muted);">Connect your apps to sync knowledge automatically</p>
+                </div>
+            </div>
+
+            <!-- Connector Status Overview -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px;">
+                <div class="card" style="padding: 16px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: 600; color: var(--success);" id="connectors-active-count">0</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Connected</div>
+                </div>
+                <div class="card" style="padding: 16px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: 600; color: var(--text);" id="connectors-docs-count">0</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Documents Synced</div>
+                </div>
+                <div class="card" style="padding: 16px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: 600; color: var(--warning);" id="connectors-syncing-count">0</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Syncing</div>
+                </div>
+            </div>
+
+            <!-- Connectors Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;" id="connectors-grid">
+                
+                <!-- Google Drive -->
+                <div class="card connector-card" data-connector="google_drive">
+                    <div class="card-body" style="padding: 20px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                            <div style="width: 40px; height: 40px; background: #fff; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                <svg width="24" height="24" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M6.6 66.85l4.35 7.55c.85 1.45 2.05 2.6 3.5 3.5l14.6-25.3H0c0 1.7.45 3.4 1.35 4.95l5.25 9.3z" fill="#0066da"/>
+                                    <path d="M43.65 25l-14.6-25.3c-1.45.9-2.65 2.05-3.5 3.5L.85 43.3C.3 44.3 0 45.4 0 46.6h29.05L43.65 25z" fill="#00ac47"/>
+                                    <path d="M58.3 78l14.6-25.3H29.05l14.6 25.3c1.45-.9 2.65-2.05 3.5-3.5l11.15-19.3z" fill="#ea4335"/>
+                                    <path d="M43.65 25l14.6-25.3c-1.7 0-3.4.45-4.95 1.35l-26.2 45.3 14.6 25.3c.85-1.45 2.05-2.6 3.5-3.5l14.45-25.05L43.65 25z" fill="#00832d"/>
+                                    <path d="M72.9 52.7L58.3 78c1.7 0 3.4-.45 4.95-1.35L86.4 43.3c.55-1 .9-2.1.9-3.3h-29l14.6 12.7z" fill="#2684fc"/>
+                                    <path d="M86.4 43.3l-23.15-40.1c-.9-1.45-2.05-2.65-3.5-3.5l-14.6 25.3 28.75 49.7c1.45-.9 2.65-2.05 3.5-3.5l9.15-15.85c1.1-1.85 1.15-4.15.85-6.25l-1-5.8z" fill="#ffba00"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div style="font-weight: 600;">Google Drive</div>
+                                <div style="font-size: 12px; color: var(--text-muted);" class="connector-status">Not connected</div>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label class="field-label">Email signature (optional)</label>
-                            <input type="text" id="ticket-signature" placeholder="e.g. Best regards, Support Team">
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Sync documents, spreadsheets, and presentations from your Google Drive.</p>
+                        <div class="connector-actions">
+                            <button class="btn btn-accent btn-sm btn-full connector-connect-btn" onclick="connectConnector('google_drive')">Connect</button>
                         </div>
-                        <button class="btn btn-accent btn-full" id="ticket-btn" onclick="resolveTicket()">Generate response</button>
-                        <div id="ticket-result" style="margin-top: 14px;"></div>
+                        <div class="connector-connected hidden" style="margin-top: 12px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                                <span class="connector-doc-count">0 documents</span>
+                                <span class="connector-last-sync">Never synced</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-outline btn-sm" style="flex:1;" onclick="openDrivePicker()">Select files</button>
+                                <button class="btn btn-outline btn-sm" style="flex:1;" onclick="syncConnector('google_drive')">Sync Now</button>
+                                <button class="btn btn-danger btn-sm" onclick="disconnectConnector('google_drive')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                            <div id="gdrive-picker-status" style="margin-top:8px;"></div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- RIGHT: Similar tickets + History -->
-                <div style="display: flex; flex-direction: column; gap: 16px;">
-                    <!-- Similar tickets (populated after search) -->
-                    <div class="card" id="similar-tickets-card" style="display:none;">
-                        <div class="card-head"><span class="card-title">Similar past tickets</span></div>
-                        <div class="card-body" style="padding:0;">
-                            <div id="similar-tickets-list" style="max-height:240px;overflow-y:auto;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Ticket history -->
-                    <div class="card">
-                        <div class="card-head">
-                            <span class="card-title">History</span>
-                            <span style="font-size:11px;color:var(--text-dim);" id="ticket-history-count"></span>
-                        </div>
-                        <div class="card-body" style="padding:0;">
-                            <div id="ticket-history-list" style="max-height:360px;overflow-y:auto;">
-                                <div class="empty-state" style="padding:30px 20px;">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
-                                    <p>No tickets resolved yet</p>
-                                </div>
+                <!-- Notion -->
+                <div class="card connector-card" data-connector="notion">
+                    <div class="card-body" style="padding: 20px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                            <div style="width: 40px; height: 40px; background: #fff; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M6.017 4.313l55.333-4.087c6.797-.583 8.543-.19 12.817 2.917l17.663 12.443c2.913 2.14 3.883 2.723 3.883 5.053v68.243c0 4.277-1.553 6.807-6.99 7.193L24.467 99.967c-4.08.193-6.023-.39-8.16-3.113L3.3 79.94c-2.333-3.113-3.3-5.443-3.3-8.167V11.113c0-3.497 1.553-6.413 6.017-6.8z" fill="#fff"/>
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M61.35.227l-55.333 4.087C1.553 4.7 0 7.617 0 11.113v60.66c0 2.723.967 5.053 3.3 8.167l13.007 16.913c2.137 2.723 4.08 3.307 8.16 3.113l64.257-3.89c5.433-.387 6.99-2.917 6.99-7.193V20.64c0-2.21-.873-2.847-3.443-4.733L74.167 3.143c-4.273-3.107-6.02-3.5-12.817-2.917zM25.92 19.523c-5.247.353-6.437.433-9.417-1.99L8.927 11.507c-.77-.78-.383-1.753 1.557-1.947l53.193-3.887c4.467-.39 6.793 1.167 8.54 2.527l9.123 6.61c.39.197 1.36 1.36.193 1.36l-54.933 3.307-.68.047zM19.803 88.3V30.367c0-2.53.78-3.697 3.1-3.893L81.69 22.78c2.14-.193 3.107 1.167 3.107 3.693v57.547c0 2.53-.39 4.67-3.883 4.863l-56.1 3.313c-3.497.193-5.013-1.167-5.013-3.893zm55.723-54.5c.387 1.75 0 3.5-1.75 3.7l-2.917.577v42.773c-2.527 1.36-4.853 2.137-6.797 2.137-3.11 0-3.883-.973-6.21-3.887l-19.03-29.94v28.967l6.02 1.363s0 3.5-4.857 3.5l-13.39.78c-.39-.78 0-2.723 1.357-3.11l3.497-.973V34.053l-4.857-.39c-.39-1.75.58-4.277 3.3-4.473l14.367-.967 19.8 30.327V32.3l-5.053-.58c-.39-2.143 1.163-3.7 3.103-3.89l13.42-.78z" fill="#000"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div style="font-weight: 600;">Notion</div>
+                                <div style="font-size: 12px; color: var(--text-muted);" class="connector-status">Not connected</div>
                             </div>
                         </div>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Sync pages, databases, and wikis from your Notion workspace.</p>
+                        <div class="connector-actions">
+                            <button class="btn btn-accent btn-sm btn-full connector-connect-btn" onclick="connectConnector('notion')">Connect</button>
+                        </div>
+                        <div class="connector-connected hidden" style="margin-top: 12px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                                <span class="connector-doc-count">0 documents</span>
+                                <span class="connector-last-sync">Never synced</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-outline btn-sm" style="flex:1;" onclick="syncConnector('notion')">Sync Now</button>
+                                <button class="btn btn-danger btn-sm" onclick="disconnectConnector('notion')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slack -->
+                <div class="card connector-card" data-connector="slack">
+                    <div class="card-body" style="padding: 20px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                            <div style="width: 40px; height: 40px; background: #fff; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z" fill="#e01e5a"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div style="font-weight: 600;">Slack</div>
+                                <div style="font-size: 12px; color: var(--text-muted);" class="connector-status">Not connected</div>
+                            </div>
+                        </div>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Index conversations and shared knowledge from Slack channels.</p>
+                        <div class="connector-actions">
+                            <button class="btn btn-accent btn-sm btn-full connector-connect-btn" onclick="connectConnector('slack')">Connect</button>
+                        </div>
+                        <div class="connector-connected hidden" style="margin-top: 12px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                                <span class="connector-doc-count">0 messages</span>
+                                <span class="connector-last-sync">Never synced</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-outline btn-sm" style="flex:1;" onclick="syncConnector('slack')">Sync Now</button>
+                                <button class="btn btn-danger btn-sm" onclick="disconnectConnector('slack')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GitHub -->
+                <div class="card connector-card" data-connector="github">
+                    <div class="card-body" style="padding: 20px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                            <div style="width: 40px; height: 40px; background: #24292e; border-radius: var(--radius); display: flex; align-items: center; justify-content: center;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div style="font-weight: 600;">GitHub</div>
+                                <div style="font-size: 12px; color: var(--text-muted);" class="connector-status">Not connected</div>
+                            </div>
+                        </div>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Sync README files, documentation, issues, and discussions.</p>
+                        <div class="connector-actions">
+                            <button class="btn btn-accent btn-sm btn-full connector-connect-btn" onclick="connectConnector('github')">Connect</button>
+                        </div>
+                        <div class="connector-connected hidden" style="margin-top: 12px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                                <span class="connector-doc-count">0 documents</span>
+                                <span class="connector-last-sync">Never synced</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-outline btn-sm" style="flex:1;" onclick="syncConnector('github')">Sync Now</button>
+                                <button class="btn btn-danger btn-sm" onclick="disconnectConnector('github')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Confluence -->
+                <div class="card connector-card" data-connector="confluence">
+                    <div class="card-body" style="padding: 20px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                            <div style="width: 40px; height: 40px; background: #0052CC; border-radius: var(--radius); display: flex; align-items: center; justify-content: center;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M.87 18.257c-.248.382-.53.875-.763 1.245a.764.764 0 00.255 1.04l4.965 3.054a.764.764 0 001.058-.26c.199-.332.454-.763.733-1.221 1.967-3.247 3.945-2.853 7.508-1.146l4.957 2.377a.764.764 0 001.028-.382l2.245-5.072a.764.764 0 00-.349-1.003c-1.939-.928-5.716-2.742-9.032-4.32-6.036-2.875-10.9-.65-12.605 5.688z"/>
+                                    <path d="M23.131 5.743c.248-.382.53-.875.763-1.245a.764.764 0 00-.255-1.04L18.674.404a.764.764 0 00-1.058.26c-.199.332-.454.763-.733 1.221-1.967 3.247-3.945 2.853-7.508 1.146L4.418.654a.764.764 0 00-1.028.382L1.145 6.108a.764.764 0 00.349 1.003c1.939.928 5.716 2.742 9.032 4.32 6.036 2.875 10.9.65 12.605-5.688z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div style="font-weight: 600;">Confluence</div>
+                                <div style="font-size: 12px; color: var(--text-muted);" class="connector-status">Not connected</div>
+                            </div>
+                        </div>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Sync wiki pages, spaces, and documentation from Confluence.</p>
+                        <div class="connector-actions">
+                            <button class="btn btn-accent btn-sm btn-full connector-connect-btn" onclick="connectConnector('confluence')">Connect</button>
+                        </div>
+                        <div class="connector-connected hidden" style="margin-top: 12px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                                <span class="connector-doc-count">0 pages</span>
+                                <span class="connector-last-sync">Never synced</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-outline btn-sm" style="flex:1;" onclick="syncConnector('confluence')">Sync Now</button>
+                                <button class="btn btn-danger btn-sm" onclick="disconnectConnector('confluence')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Sync Logs -->
+            <div class="card" style="margin-top: 24px;">
+                <div class="card-head">
+                    <span class="card-title">Recent Sync Activity</span>
+                    <button class="btn btn-outline btn-sm" onclick="loadSyncLogs()">Refresh</button>
+                </div>
+                <div style="max-height: 300px; overflow-y: auto;" id="sync-logs-list">
+                    <div class="empty-state" style="padding: 30px 20px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 36px; height: 36px; margin-bottom: 10px; opacity: 0.3;"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                        <p>No sync activity yet. Connect an app to get started.</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ====== INTEGRATIONS VIEW ====== -->
+    <!-- ====== HELP CENTER VIEW ====== -->
+    <div id="help-center-view" class="view">
+        <div class="container" style="padding-top: 28px; padding-bottom: 40px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Help Center</h2>
+                    <p style="font-size: 13px; color: var(--text-muted);">Create and manage help articles for your customers</p>
+                </div>
+                <button class="btn btn-accent" onclick="showCreateArticleModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;"><path d="M12 5v14M5 12h14"/></svg>
+                    New Article
+                </button>
+            </div>
+
+            <!-- Stats -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px;">
+                <div class="card" style="padding: 16px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: 600; color: var(--text);" id="articles-total-count">0</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Published</div>
+                </div>
+                <div class="card" style="padding: 16px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: 600; color: var(--warning);" id="articles-draft-count">0</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Drafts</div>
+                </div>
+                <div class="card" style="padding: 16px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: 600; color: var(--success);" id="articles-views-count">0</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Total Views</div>
+                </div>
+            </div>
+
+            <!-- Knowledge Health Score -->
+            <div class="card" style="margin-bottom: 16px;">
+                <div class="card-head">
+                    <span class="card-title">Knowledge Health Score</span>
+                    <button class="btn btn-outline btn-sm" onclick="runHealthCheck()">Run Check</button>
+                </div>
+                <div class="card-body">
+                    <div style="display: flex; align-items: center; gap: 20px;">
+                        <div style="width: 80px; height: 80px; border-radius: 50%; border: 6px solid var(--success); display: flex; align-items: center; justify-content: center;">
+                            <span style="font-size: 24px; font-weight: 600;" id="health-score">--</span>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div>
+                                    <div style="font-size: 12px; color: var(--text-muted);">Fresh Content</div>
+                                    <div style="font-size: 16px; font-weight: 500;" id="health-fresh">--</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 12px; color: var(--text-muted);">Stale Documents</div>
+                                    <div style="font-size: 16px; font-weight: 500; color: var(--warning);" id="health-stale">--</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 12px; color: var(--text-muted);">Coverage Gaps</div>
+                                    <div style="font-size: 16px; font-weight: 500; color: var(--error);" id="health-gaps">--</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 12px; color: var(--text-muted);">Last Check</div>
+                                    <div style="font-size: 16px; font-weight: 500;" id="health-last-check">Never</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Articles List -->
+            <div class="card">
+                <div class="card-head">
+                    <span class="card-title">All Articles</span>
+                    <input type="text" id="article-search" placeholder="Search articles..." style="width: 200px; padding: 6px 10px; font-size: 12px;" onkeyup="searchArticles()">
+                </div>
+                <div style="max-height: 500px; overflow-y: auto;" id="articles-list">
+                    <div class="empty-state" style="padding: 40px 20px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 36px; height: 36px; margin-bottom: 10px; opacity: 0.3;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <p>No articles yet. Create your first help article.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Article Modal -->
+    <div id="create-article-modal" class="modal-overlay hidden">
+        <div class="modal" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3 id="article-modal-title">Create New Article</h3>
+                <button class="modal-close" onclick="hideCreateArticleModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="field-label">Title *</label>
+                    <input type="text" id="article-title" placeholder="Article title">
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Category</label>
+                    <select id="article-category" style="width: 100%;">
+                        <option value="general">General</option>
+                        <option value="getting-started">Getting Started</option>
+                        <option value="troubleshooting">Troubleshooting</option>
+                        <option value="billing">Billing</option>
+                        <option value="api">API & Integrations</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="field-label">Content *</label>
+                    <textarea id="article-content" placeholder="Write your article content..." style="min-height: 200px;"></textarea>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 12px;">
+                        <input type="checkbox" id="article-published" checked>
+                        Publish immediately
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="hideCreateArticleModal()">Cancel</button>
+                <button class="btn btn-accent" onclick="saveArticle()">Save Article</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== INTEGRATIONS VIEW (Widget + Zendesk Import) ====== -->
     <div id="integrations-view" class="view">
         <div class="container" style="padding-top: 28px; padding-bottom: 40px;">
-            <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Integrations</h2>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">Connect your tools</p>
+            <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 4px;">Widget & Imports</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">Support widget and ticket imports</p>
 
             <!-- SUPPORT WIDGET -->
             <div class="card" style="max-width: 780px; margin-bottom: 16px;">
@@ -1078,6 +1543,227 @@
                         <div id="zendesk-sync-status"></div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== BRAIN VIEW ====== -->
+    <div id="brain-view" class="view">
+        <div class="container" style="padding-top: 28px; padding-bottom: 40px;">
+
+            <!-- Header -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+                <div>
+                    <h2 style="font-size:20px; font-weight:500; margin-bottom:4px;">Company Brain</h2>
+                    <p style="font-size:13px; color:var(--text-muted);">Synthesized procedures extracted from your knowledge base</p>
+                </div>
+                <button class="btn btn-accent" onclick="showSynthesizePanel()" id="brain-synthesize-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    Run Synthesis
+                </button>
+            </div>
+
+            <!-- Stats -->
+            <div class="brain-stats-row">
+                <div class="stat-card"><div class="stat-value" id="brain-stat-total">-</div><div class="stat-label">Procedures</div></div>
+                <div class="stat-card"><div class="stat-value" style="color:var(--success);" id="brain-stat-verified">-</div><div class="stat-label">Verified</div></div>
+                <div class="stat-card"><div class="stat-value" style="color:var(--warning);" id="brain-stat-review">-</div><div class="stat-label">Need Review</div></div>
+                <div class="stat-card"><div class="stat-value" style="color:var(--error);" id="brain-stat-conflicts">-</div><div class="stat-label">Conflicts</div></div>
+            </div>
+
+            <!-- Synthesis panel (hidden by default) -->
+            <div id="brain-synthesize-panel" class="card hidden" style="margin-bottom:24px;">
+                <div class="card-head">
+                    <span class="card-title">Synthesis Settings</span>
+                    <button class="btn btn-outline btn-sm" onclick="hideSynthesizePanel()">Cancel</button>
+                </div>
+                <div class="card-body">
+                    <div id="brain-run-alert"></div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="field-label">Domain filter (optional)</label>
+                            <input type="text" id="brain-domain-input" placeholder="e.g. support, billing, hr">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="field-label">Min cluster size</label>
+                            <input type="number" id="brain-cluster-size" value="3" min="2" max="50">
+                        </div>
+                    </div>
+                    <label style="display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:16px; cursor:pointer;">
+                        <input type="checkbox" id="brain-force-resynth">
+                        Force re-synthesize unchanged procedures
+                    </label>
+                    <button class="btn btn-accent" onclick="runSynthesis()" id="brain-run-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        Start Synthesis
+                    </button>
+                </div>
+                <!-- Run log -->
+                <div id="brain-run-log" class="hidden" style="padding:0 20px 16px;">
+                    <div class="brain-run-log" id="brain-run-log-inner">Starting synthesis...</div>
+                </div>
+            </div>
+
+            <!-- Procedures section -->
+            <div class="card" style="margin-bottom:16px;">
+                <div class="card-head" style="flex-wrap:wrap; gap:12px;">
+                    <span class="card-title">Procedures</span>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <div class="brain-filter-tabs" id="proc-filter-tabs">
+                            <button class="brain-filter-tab active" onclick="filterProcedures(null, this)">All</button>
+                            <button class="brain-filter-tab" onclick="filterProcedures('draft', this)">Draft</button>
+                            <button class="brain-filter-tab" onclick="filterProcedures('needs_review', this)">Needs Review</button>
+                            <button class="brain-filter-tab" onclick="filterProcedures('verified', this)">Verified</button>
+                        </div>
+                        <button class="btn btn-outline btn-sm" onclick="loadProcedures()">Refresh</button>
+                    </div>
+                </div>
+                <div style="max-height:520px; overflow-y:auto;" id="procedures-list">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v11m0 0H5m4 0h10m-10 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m-6 0V9m6 5v-5m0 0a2 2 0 0 1 2-2h2"/></svg>
+                        <p>No procedures yet. Run a synthesis to extract company knowledge.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conflicts section -->
+            <div class="card">
+                <div class="card-head">
+                    <span class="card-title">Knowledge Conflicts <span id="conflict-count-badge" style="font-size:11px;color:var(--warning);margin-left:6px;"></span></span>
+                    <button class="btn btn-outline btn-sm" onclick="loadConflicts()">Refresh</button>
+                </div>
+                <div style="max-height:340px; overflow-y:auto;" id="conflicts-list">
+                    <div class="empty-state" style="padding:30px 20px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <p>No open conflicts — great knowledge consistency!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== SKILLS & AGENTS ====== -->
+            <div class="card" style="margin-top:16px;">
+                <div class="card-head" style="flex-wrap:wrap;gap:12px;">
+                    <span class="card-title">Skills &amp; Agents</span>
+                    <div class="brain-filter-tabs">
+                        <button class="brain-filter-tab active" id="seg-skills" onclick="brainSeg('skills')">Skills</button>
+                        <button class="brain-filter-tab" id="seg-agents" onclick="brainSeg('agents')">Agent Access</button>
+                    </div>
+                </div>
+
+                <!-- Skills pane -->
+                <div id="brain-pane-skills">
+                    <div style="padding:10px 20px;border-bottom:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:11px;color:var(--text-muted);">Verified, conflict-free procedures compiled to executable SKILL.md</span>
+                        <button class="btn btn-outline btn-sm" onclick="loadSkills()">Refresh</button>
+                    </div>
+                    <div style="max-height:360px;overflow-y:auto;" id="skills-list">
+                        <div class="empty-state" style="padding:24px;"><span class="loading-spinner"></span></div>
+                    </div>
+                </div>
+
+                <!-- Agent access pane -->
+                <div id="brain-pane-agents" style="display:none;" class="card-body">
+                    <div class="proc-rule-item" style="border-color:var(--accent);margin-bottom:14px;">
+                        Point any agent at your company brain. It can <b>list_skills</b>, <b>search_skills</b>,
+                        <b>get_skill</b>, and <b>report_execution</b> — and must honour each skill's autonomy level.
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-subtle);">
+                        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;width:110px;">API key</span>
+                        <span style="font:12px var(--font-mono);color:var(--text);flex:1;word-break:break-all;" id="agent-apikey">—</span>
+                        <button class="btn btn-outline btn-sm" onclick="copyAgentKey()">Copy</button>
+                    </div>
+                    <div style="margin-top:14px;">
+                        <label class="field-label">Claude Code config</label>
+                        <div style="position:relative;">
+                            <textarea id="mcp-config" readonly style="font-family:var(--font-mono);font-size:11px;min-height:150px;background:var(--bg);line-height:1.6;padding:12px;"></textarea>
+                            <button class="btn btn-accent btn-sm" style="position:absolute;top:8px;right:8px;" onclick="copyMcpConfig()">Copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Skill detail modal -->
+    <div id="skill-modal" class="modal-overlay hidden">
+        <div class="modal" style="max-width:680px;">
+            <div class="modal-header">
+                <h3 id="skill-modal-title" style="font-family:var(--font-mono);font-size:14px;">SKILL.md</h3>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-accent btn-sm" id="btn-download-skill">Download .docx</button>
+                    <button class="btn btn-accent btn-sm" onclick="copySkillMd()">Copy</button>
+                    <button class="modal-close" onclick="document.getElementById('skill-modal').classList.add('hidden')">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
+                <pre id="skill-md" style="background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:16px;font:400 12px/1.7 var(--font-mono);color:var(--text-secondary);white-space:pre-wrap;word-break:break-word;"></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== PROCEDURE DETAIL MODAL ====== -->
+    <div id="procedure-modal" class="modal-overlay hidden">
+        <div class="modal" style="max-width:720px;">
+            <div class="modal-header">
+                <h3 id="proc-modal-title">Procedure</h3>
+                <button class="modal-close" onclick="hideProcedureModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height:70vh; overflow-y:auto;">
+                <div id="proc-modal-alert"></div>
+
+                <!-- Meta row -->
+                <div id="proc-modal-tags" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;"></div>
+
+                <!-- Description -->
+                <p id="proc-modal-desc" style="font-size:13px; color:var(--text-secondary); line-height:1.7; margin-bottom:16px;"></p>
+
+                <!-- Trigger -->
+                <div id="proc-modal-trigger-wrap" class="hidden" style="margin-bottom:14px;">
+                    <label class="field-label">Trigger Condition</label>
+                    <div id="proc-modal-trigger" style="font-size:13px; color:var(--text-secondary); padding:8px 12px; background:var(--bg); border-radius:var(--radius-sm); line-height:1.5;"></div>
+                </div>
+
+                <!-- Confidence -->
+                <div style="margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+                    <div class="proc-conf-bar" style="max-width:160px; height:5px;">
+                        <div class="proc-conf-fill" id="proc-modal-conf-fill" style="width:0%;"></div>
+                    </div>
+                    <span id="proc-modal-conf-text" style="font-size:12px; color:var(--text-muted);"></span>
+                    <span id="proc-modal-exec-text" style="font-size:12px; color:var(--text-muted); margin-left:auto;"></span>
+                </div>
+
+                <!-- Steps -->
+                <div style="margin-bottom:20px;">
+                    <label class="field-label">Steps</label>
+                    <div id="proc-modal-steps"></div>
+                </div>
+
+                <!-- Rules -->
+                <div id="proc-modal-rules-wrap" class="hidden" style="margin-bottom:20px;">
+                    <label class="field-label">Decision Rules &amp; Guardrails</label>
+                    <div id="proc-modal-rules"></div>
+                </div>
+
+                <!-- Execution feedback -->
+                <div style="padding:14px; background:var(--bg); border-radius:var(--radius); margin-bottom:16px;">
+                    <div style="font-size:12px; font-weight:500; margin-bottom:10px; color:var(--text-secondary);">Record Execution Outcome</div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-outline btn-sm" style="color:var(--success); border-color:var(--success);" onclick="recordFeedback(true)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                            Success
+                        </button>
+                        <button class="btn btn-outline btn-sm" style="color:var(--error); border-color:var(--error);" onclick="recordFeedback(false)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            Failed
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="hideProcedureModal()">Close</button>
+                <button class="btn btn-outline btn-sm" id="proc-modal-reject-btn" style="color:var(--error);" onclick="verifyProcedure(false)">Reject</button>
+                <button class="btn btn-accent" id="proc-modal-approve-btn" onclick="verifyProcedure(true)">Approve</button>
             </div>
         </div>
     </div>
@@ -1344,6 +2030,7 @@ async function loadAnalytics() {
         const d = await res.json();
         document.getElementById('stat-chunks').textContent = d.total_chunks || 0;
         document.getElementById('stat-searches').textContent = d.total_searches || 0;
+        document.getElementById('stat-usage').textContent = d.usage_rate ? `${(d.usage_rate * 100).toFixed(0)}%` : '-';
         // sources count: count unique source_types from documents
         try {
             const r2 = await fetch(`${API_URL}/knowledge/documents`, { headers: { 'Authorization': `Bearer ${authToken}` } });
@@ -1606,19 +2293,17 @@ async function askQuestion() {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
             body: JSON.stringify({ query: q })
         });
-        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Failed'); }
+        if (!res.ok) { let msg='Failed'; try { const e=await res.json(); msg=e.detail||msg; } catch(_){} throw new Error(msg); }
         const data = await res.json();
         if (!data.has_answer || !data.answer) { area.innerHTML = '<div class="no-answer">No relevant information found. Try rephrasing or upload more content.</div>'; return; }
-        const cp = Math.round((data.confidence || 0) * 100);
-        const cl = cp >= 70 ? 'high' : cp >= 40 ? 'medium' : 'low';
         const sources = data.sources || [];
         let sh = ''; sources.forEach((s, i) => {
-            const sc = Math.round((s.confidence || s.similarity || 0) * 100);
-            sh += `<div class="source-item"><div class="source-meta"><span class="source-label">[${i+1}] ${s.source_type || 'Doc'} #${s.source_id || ''}</span><span class="source-conf">${sc}%</span></div>${esc(s.text || '').substring(0, 250)}${(s.text||'').length > 250 ? '...' : ''}</div>`;
+            sh += `<div class="source-item"><div class="source-meta"><span class="source-label">[${i+1}] ${s.source_type || 'Doc'} #${s.source_id || ''}</span></div>${esc(s.text || '').substring(0, 250)}${(s.text||'').length > 250 ? '...' : ''}</div>`;
         });
         area.innerHTML = `<div class="answer-content">
             <div class="answer-badge">AI Answer</div>
             <div class="answer-text">${esc(data.answer)}</div>
+            <div class="answer-confidence"><span>${data.chunks_used || 0} sources used</span></div>
             ${sources.length ? `<button class="sources-toggle" onclick="toggleSources(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>${sources.length} source${sources.length!==1?'s':''}</button><div class="sources-list" id="ask-sources">${sh}</div>` : ''}
         </div>`;
     } catch (e) { area.innerHTML = `<div class="no-answer" style="color:var(--error);">Error: ${esc(e.message)}</div>`; }
@@ -1658,7 +2343,7 @@ async function resolveTicket() {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
             body: JSON.stringify({ subject, body, tone: selectedTone })
         });
-        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Failed'); }
+        if (!res.ok) { let msg='Failed'; try { const e=await res.json(); msg=e.detail||msg; } catch(_){} throw new Error(msg); }
         const data = await res.json();
 
         // Show similar tickets in the right panel
@@ -1670,7 +2355,7 @@ async function resolveTicket() {
                     <div class="similar-ticket-text">${esc((t.text || '').substring(0, 300))}</div>
                     <div class="similar-ticket-meta">
                         <span>${t.source_type || 'doc'}</span>
-                        <span>${Math.round((t.confidence || t.similarity || 0) * 100)}% match</span>
+
                     </div>
                 </div>
             `).join('');
@@ -1678,7 +2363,6 @@ async function resolveTicket() {
 
         if (!data.has_answer) { result.innerHTML = mkAlert('warning', 'No similar past tickets found.'); return; }
 
-        const cp = Math.round((data.confidence || 0) * 100);
         const responseText = data.suggested_response || '';
 
         // Build email-ready version
@@ -1694,7 +2378,7 @@ async function resolveTicket() {
         result.innerHTML = `<div class="ticket-response-box">
             <div style="display:flex;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
                 <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--success);background:rgba(92,184,92,0.1);padding:3px 8px;border-radius:4px;">Suggested response</span>
-                <span style="font-size:11px;color:var(--text-dim);">${cp}% · ${esc(selectedTone)}</span>
+                <span style="font-size:11px;color:var(--text-dim);">${esc(selectedTone)}</span>
             </div>
             <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;padding:14px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border-subtle);margin-bottom:12px;word-break:break-word;">${esc(emailReady)}</div>
             <div class="ticket-response-actions">
@@ -1719,7 +2403,7 @@ async function resolveTicket() {
             response: responseText,
             emailResponse: emailReady,
             tone: selectedTone,
-            confidence: cp,
+
             feedback: null,
             timestamp: new Date().toISOString()
         });
@@ -1784,7 +2468,7 @@ function renderTicketHistory() {
             <div class="ticket-history-meta">
                 <span>${date}</span>
                 <span>${t.tone}</span>
-                <span>${t.confidence}%</span>
+
                 ${fbIcon}
             </div>
         </div>`;
@@ -1802,7 +2486,7 @@ function loadTicketFromHistory(id) {
     result.innerHTML = `<div class="ticket-response-box">
         <div style="display:flex;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
             <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--accent);background:var(--accent-muted);padding:3px 8px;border-radius:4px;">From history</span>
-            <span style="font-size:11px;color:var(--text-dim);">${item.confidence}% · ${esc(item.tone)}</span>
+            <span style="font-size:11px;color:var(--text-dim);">${esc(item.tone)}</span>
         </div>
         <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;padding:14px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border-subtle);margin-bottom:12px;word-break:break-word;">${esc(emailReady)}</div>
         <div class="ticket-response-actions">
@@ -1942,7 +2626,7 @@ async function loadWidgetTickets() {
                     ${t.customer_name ? '<span>' + esc(t.customer_name) + '</span>' : ''}
                     ${t.customer_email ? '<span>' + esc(t.customer_email) + '</span>' : ''}
                     <span>${date}</span>
-                    ${t.confidence ? '<span>' + Math.round(t.confidence * 100) + '% conf</span>' : ''}
+
                 </div>
                 ${t.ai_response ? '<details style="margin-top:8px;"><summary style="font-size:11px;color:var(--accent);cursor:pointer;">View AI response</summary><div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-top:6px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);white-space:pre-wrap;">' + esc(t.ai_response) + '</div></details>' : ''}
             </div>`;
@@ -1973,6 +2657,12 @@ function showAlert(id, type, msg) {
 // OAuth callback check
 const params = new URLSearchParams(window.location.search);
 if (params.get('zendesk') === 'connected') window.history.replaceState({}, document.title, window.location.pathname);
+
+if (params.get('connector') && params.get('status')) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+    // jump to connectors and refresh once the dashboard is up
+    setTimeout(() => { if (typeof loadConnectors === 'function') loadConnectors(); }, 400);
+}
 
 // ====== SETTINGS / PROFILE ======
 async function loadProfile() {
@@ -2101,6 +2791,1183 @@ async function deleteAccount() {
         else { const d = await res.json(); showAlert('settings-alert', 'error', d.detail || 'Failed to delete'); }
     } catch (e) { showAlert('settings-alert', 'error', 'Connection error'); }
 }
+
+// ====== TICKETS SYSTEM ======
+let currentTickets = [];
+let currentTicketId = null;
+let ticketSearchTimer = null;
+
+function debounceTicketSearch() {
+    clearTimeout(ticketSearchTimer);
+    ticketSearchTimer = setTimeout(loadTickets, 300);
+}
+
+async function loadTickets() {
+    const status = document.getElementById('ticket-filter-status')?.value || '';
+    const priority = document.getElementById('ticket-filter-priority')?.value || '';
+    const search = document.getElementById('ticket-search')?.value || '';
+    
+    let url = `${API_URL}/tickets?`;
+    if (status) url += `status=${status}&`;
+    if (priority) url += `priority=${priority}&`;
+    if (search) url += `search=${encodeURIComponent(search)}&`;
+    
+    try {
+        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        if (res.status === 401) { logout(); return; }
+        const data = await res.json();
+        currentTickets = data.tickets || [];
+        renderTicketsList();
+        updateTicketStats();
+    } catch (e) { console.error('Error loading tickets:', e); }
+}
+
+function renderTicketsList() {
+    const container = document.getElementById('tickets-list');
+    if (!currentTickets.length) {
+        container.innerHTML = `<div class="empty-state" style="padding: 40px 20px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 36px; height: 36px; margin-bottom: 10px; opacity: 0.3;"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+            <p>No tickets found</p>
+        </div>`;
+        return;
+    }
+    
+    container.innerHTML = currentTickets.map(t => `
+        <div class="ticket-row" onclick="openTicketDetail(${t.id})" style="padding: 14px 16px; border-bottom: 1px solid var(--border-subtle); cursor: pointer; display: flex; align-items: center; gap: 12px;">
+            <span class="ticket-status-badge ${t.status}" style="padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; text-transform: uppercase;">${t.status}</span>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(t.subject)}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">${t.ticket_number} · ${t.requester_email || 'Unknown'}</div>
+            </div>
+            <span class="priority-badge priority-${t.priority}" style="padding: 2px 6px; border-radius: 4px; font-size: 10px; text-transform: uppercase;">${t.priority}</span>
+            <span style="font-size: 11px; color: var(--text-dim);">${formatTimeAgo(t.created_at)}</span>
+        </div>
+    `).join('');
+}
+
+function updateTicketStats() {
+    const open = currentTickets.filter(t => t.status === 'open' || t.status === 'new').length;
+    const pending = currentTickets.filter(t => t.status === 'pending').length;
+    const solved = currentTickets.filter(t => t.status === 'solved').length;
+    const urgent = currentTickets.filter(t => t.priority === 'urgent').length;
+    
+    document.getElementById('tickets-open-count').textContent = open;
+    document.getElementById('tickets-pending-count').textContent = pending;
+    document.getElementById('tickets-solved-count').textContent = solved;
+    document.getElementById('tickets-urgent-count').textContent = urgent;
+    document.getElementById('tickets-total-count').textContent = `${currentTickets.length} total`;
+}
+
+function showCreateTicketModal() {
+    document.getElementById('create-ticket-modal').classList.remove('hidden');
+    document.getElementById('new-ticket-subject').value = '';
+    document.getElementById('new-ticket-email').value = '';
+    document.getElementById('new-ticket-description').value = '';
+}
+
+function hideCreateTicketModal() {
+    document.getElementById('create-ticket-modal').classList.add('hidden');
+}
+
+async function createNewTicket() {
+    const subject = document.getElementById('new-ticket-subject').value.trim();
+    const email = document.getElementById('new-ticket-email').value.trim();
+    const description = document.getElementById('new-ticket-description').value.trim();
+    const priority = document.getElementById('new-ticket-priority').value;
+    const channel = document.getElementById('new-ticket-channel').value;
+    
+    if (!subject || !email) {
+        alert('Please fill in subject and requester email');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_URL}/tickets`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subject, requester_email: email, description, priority, channel })
+        });
+        if (res.ok) {
+            hideCreateTicketModal();
+            loadTickets();
+        } else {
+            const d = await res.json();
+            alert(d.detail || 'Failed to create ticket');
+        }
+    } catch (e) { alert('Connection error'); }
+}
+
+async function openTicketDetail(ticketId) {
+    currentTicketId = ticketId;
+    try {
+        const res = await fetch(`${API_URL}/tickets/${ticketId}`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        if (!res.ok) return;
+        const ticket = await res.json();
+        
+        document.getElementById('ticket-detail-number').textContent = ticket.ticket_number;
+        document.getElementById('ticket-detail-subject').textContent = ticket.subject;
+        document.getElementById('ticket-detail-status').value = ticket.status;
+        document.getElementById('ticket-detail-priority').value = ticket.priority;
+        document.getElementById('ticket-detail-requester').textContent = ticket.requester_email || 'Unknown';
+        document.getElementById('ticket-detail-created').textContent = formatDateTime(ticket.created_at);
+        document.getElementById('ticket-detail-description').textContent = ticket.description || 'No description';
+        
+        // Load comments
+        loadTicketComments(ticketId);
+        
+        // Get AI suggestion
+        getAISuggestion(ticketId);
+        
+        document.getElementById('ticket-detail-modal').classList.remove('hidden');
+    } catch (e) { console.error('Error loading ticket:', e); }
+}
+
+function hideTicketDetailModal() {
+    document.getElementById('ticket-detail-modal').classList.add('hidden');
+    currentTicketId = null;
+}
+
+async function loadTicketComments(ticketId) {
+    try {
+        const res = await fetch(`${API_URL}/tickets/${ticketId}/comments`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        if (!res.ok) return;
+        const data = await res.json();
+        const comments = data.comments || [];
+        
+        const container = document.getElementById('ticket-comments-list');
+        if (!comments.length) {
+            container.innerHTML = '<p style="font-size: 12px; color: var(--text-muted); padding: 12px;">No comments yet</p>';
+            return;
+        }
+        
+        container.innerHTML = comments.map(c => `
+            <div style="padding: 12px; background: ${c.is_internal ? 'rgba(255,193,7,0.1)' : 'var(--bg)'}; border-radius: var(--radius); margin-bottom: 8px; border-left: 3px solid ${c.is_internal ? 'var(--warning)' : 'var(--accent)'};">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                    <span style="font-size: 12px; font-weight: 500;">${escapeHtml(c.author_name || 'Agent')}</span>
+                    <span style="font-size: 11px; color: var(--text-muted);">${formatTimeAgo(c.created_at)}${c.is_internal ? ' · Internal' : ''}</span>
+                </div>
+                <div style="font-size: 13px; line-height: 1.5;">${escapeHtml(c.body)}</div>
+            </div>
+        `).join('');
+    } catch (e) { console.error('Error loading comments:', e); }
+}
+
+async function submitTicketReply() {
+    if (!currentTicketId) return;
+    const body = document.getElementById('ticket-reply-text').value.trim();
+    const isInternal = document.getElementById('ticket-reply-internal').checked;
+    
+    if (!body) { alert('Please enter a reply'); return; }
+    
+    try {
+        const res = await fetch(`${API_URL}/tickets/${currentTicketId}/comments`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ body, is_internal: isInternal })
+        });
+        if (res.ok) {
+            document.getElementById('ticket-reply-text').value = '';
+            document.getElementById('ticket-reply-internal').checked = false;
+            loadTicketComments(currentTicketId);
+        } else {
+            alert('Failed to add reply');
+        }
+    } catch (e) { alert('Connection error'); }
+}
+
+async function updateTicketField(field) {
+    if (!currentTicketId) return;
+    const value = document.getElementById(`ticket-detail-${field}`).value;
+    
+    try {
+        const res = await fetch(`${API_URL}/tickets/${currentTicketId}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ [field]: value })
+        });
+        if (res.ok) loadTickets();
+    } catch (e) { console.error('Error updating ticket:', e); }
+}
+
+async function getAISuggestion(ticketId) {
+    const suggestionDiv = document.getElementById('ticket-ai-suggestion');
+    suggestionDiv.classList.add('hidden');
+    
+    try {
+        const res = await fetch(`${API_URL}/tickets/${ticketId}/copilot`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.suggested_response) {
+                document.getElementById('ai-suggested-response').textContent = data.suggested_response;
+
+                suggestionDiv.classList.remove('hidden');
+            }
+        }
+    } catch (e) { console.error('AI suggestion error:', e); }
+}
+
+function useAISuggestion() {
+    const suggestion = document.getElementById('ai-suggested-response').textContent;
+    document.getElementById('ticket-reply-text').value = suggestion;
+}
+
+async function getNewSuggestion() {
+    if (currentTicketId) getAISuggestion(currentTicketId);
+}
+
+function showTriggersModal() { alert('Triggers management coming soon!'); }
+function showSLAModal() { alert('SLA policies management coming soon!'); }
+
+// ====== CONNECTORS ======
+let connectorConfigs = {};
+
+async function loadConnectors() {
+    try {
+        const res = await fetch(`${API_URL}/connectors`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        if (res.status === 401) { logout(); return; }
+        const data = await res.json();
+        connectorConfigs = {};
+        (data.connectors || []).forEach(c => connectorConfigs[c.connector_type] = c);
+        renderConnectors();
+        updateConnectorStats();
+    } catch (e) { console.error('Error loading connectors:', e); }
+}
+
+function renderConnectors() {
+    document.querySelectorAll('.connector-card').forEach(card => {
+        const type = card.dataset.connector;
+        const config = connectorConfigs[type];
+        const statusEl = card.querySelector('.connector-status');
+        const actionsEl = card.querySelector('.connector-actions');
+        const connectedEl = card.querySelector('.connector-connected');
+        
+        if (config && config.status === 'connected') {
+            statusEl.textContent = 'Connected';
+            statusEl.style.color = 'var(--success)';
+            actionsEl.classList.add('hidden');
+            connectedEl.classList.remove('hidden');
+            card.querySelector('.connector-doc-count').textContent = `${config.documents_indexed || 0} documents`;
+            card.querySelector('.connector-last-sync').textContent = config.last_sync_at ? formatTimeAgo(config.last_sync_at) : 'Never synced';
+        } else if (config && config.status === 'syncing') {
+            statusEl.textContent = 'Syncing...';
+            statusEl.style.color = 'var(--warning)';
+        } else {
+            statusEl.textContent = 'Not connected';
+            statusEl.style.color = 'var(--text-muted)';
+            actionsEl.classList.remove('hidden');
+            connectedEl.classList.add('hidden');
+        }
+    });
+}
+
+function updateConnectorStats() {
+    const configs = Object.values(connectorConfigs);
+    const active = configs.filter(c => c.status === 'connected').length;
+    const syncing = configs.filter(c => c.status === 'syncing').length;
+    const totalDocs = configs.reduce((sum, c) => sum + (c.documents_indexed || 0), 0);
+    
+    document.getElementById('connectors-active-count').textContent = active;
+    document.getElementById('connectors-syncing-count').textContent = syncing;
+    document.getElementById('connectors-docs-count').textContent = totalDocs;
+}
+
+async function connectConnector(type) {
+    try {
+        const res = await fetch(`${API_URL}/connectors/by-type/${type}/oauth-url`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                alert('OAuth URL not available. Please configure the connector settings.');
+            }
+        } else {
+            alert('Failed to get OAuth URL');
+        }
+    } catch (e) { alert('Connection error'); }
+}
+
+async function syncConnector(type) {
+    try {
+        const card = document.querySelector(`.connector-card[data-connector="${type}"]`);
+        card.querySelector('.connector-status').textContent = 'Syncing...';
+        card.querySelector('.connector-status').style.color = 'var(--warning)';
+        
+        const res = await fetch(`${API_URL}/connectors/by-type/${type}/sync`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+            setTimeout(loadConnectors, 2000);
+        } else {
+            alert('Failed to start sync');
+            loadConnectors();
+        }
+    } catch (e) { alert('Connection error'); }
+}
+
+async function disconnectConnector(type) {
+    if (!confirm(`Disconnect ${type}? This will remove all synced documents.`)) return;
+    try {
+        const res = await fetch(`${API_URL}/connectors/by-type/${type}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+            delete connectorConfigs[type];
+            loadConnectors();
+        } else {
+            alert('Failed to disconnect');
+        }
+    } catch (e) { alert('Connection error'); }
+}
+
+async function loadSyncLogs() {
+    try {
+        const res = await fetch(`${API_URL}/connectors/sync-logs`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        if (!res.ok) return;
+        const data = await res.json();
+        const logs = data.logs || [];
+        
+        const container = document.getElementById('sync-logs-list');
+        if (!logs.length) {
+            container.innerHTML = `<div class="empty-state" style="padding: 30px 20px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 36px; height: 36px; margin-bottom: 10px; opacity: 0.3;"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                <p>No sync activity yet</p>
+            </div>`;
+            return;
+        }
+        
+        container.innerHTML = logs.slice(0, 20).map(l => `
+            <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; gap: 12px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${l.status === 'completed' ? 'var(--success)' : l.status === 'failed' ? 'var(--error)' : 'var(--warning)'};"></span>
+                <div style="flex: 1;">
+                    <div style="font-size: 13px;">${l.connector_type || 'Unknown'}</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">
+                        ${l.status === 'completed' ? `+${l.documents_added || 0} added, ${l.documents_updated || 0} updated` : l.error_message || l.status}
+                    </div>
+                </div>
+                <span style="font-size: 11px; color: var(--text-dim);">${formatTimeAgo(l.started_at)}</span>
+            </div>
+        `).join('');
+    } catch (e) { console.error('Error loading sync logs:', e); }
+}
+
+// ====== HELP CENTER ======
+let currentArticles = [];
+let editingArticleId = null;
+
+async function loadArticles() {
+    try {
+        const res = await fetch(`${API_URL}/help-center/articles`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        if (res.status === 401) { logout(); return; }
+        const data = await res.json();
+        currentArticles = data.articles || [];
+        renderArticlesList();
+        updateArticleStats();
+    } catch (e) { console.error('Error loading articles:', e); }
+}
+
+function renderArticlesList() {
+    const container = document.getElementById('articles-list');
+    if (!currentArticles.length) {
+        container.innerHTML = `<div class="empty-state" style="padding: 40px 20px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 36px; height: 36px; margin-bottom: 10px; opacity: 0.3;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <p>No articles yet</p>
+        </div>`;
+        return;
+    }
+    
+    container.innerHTML = currentArticles.map(a => `
+        <div style="padding: 14px 16px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; gap: 12px;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: ${a.is_published ? 'var(--success)' : 'var(--warning)'};"></span>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 13px; font-weight: 500;">${escapeHtml(a.title)}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">${a.category || 'General'} · ${a.view_count || 0} views</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="editArticle(${a.id})">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteArticle(${a.id})">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+        </div>
+    `).join('');
+}
+
+function updateArticleStats() {
+    const published = currentArticles.filter(a => a.is_published).length;
+    const drafts = currentArticles.filter(a => !a.is_published).length;
+    const views = currentArticles.reduce((sum, a) => sum + (a.view_count || 0), 0);
+    
+    document.getElementById('articles-total-count').textContent = published;
+    document.getElementById('articles-draft-count').textContent = drafts;
+    document.getElementById('articles-views-count').textContent = views;
+}
+
+function showCreateArticleModal() {
+    editingArticleId = null;
+    document.getElementById('article-modal-title').textContent = 'Create New Article';
+    document.getElementById('article-title').value = '';
+    document.getElementById('article-category').value = 'general';
+    document.getElementById('article-content').value = '';
+    document.getElementById('article-published').checked = true;
+    document.getElementById('create-article-modal').classList.remove('hidden');
+}
+
+function hideCreateArticleModal() {
+    document.getElementById('create-article-modal').classList.add('hidden');
+    editingArticleId = null;
+}
+
+async function editArticle(articleId) {
+    const article = currentArticles.find(a => a.id === articleId);
+    if (!article) return;
+    
+    editingArticleId = articleId;
+    document.getElementById('article-modal-title').textContent = 'Edit Article';
+    document.getElementById('article-title').value = article.title;
+    document.getElementById('article-category').value = article.category || 'general';
+    document.getElementById('article-content').value = article.body || '';
+    document.getElementById('article-published').checked = article.is_published;
+    document.getElementById('create-article-modal').classList.remove('hidden');
+}
+
+async function saveArticle() {
+    const title = document.getElementById('article-title').value.trim();
+    const category = document.getElementById('article-category').value;
+    const body = document.getElementById('article-content').value.trim();
+    const isPublished = document.getElementById('article-published').checked;
+    
+    if (!title || !body) {
+        alert('Please fill in title and content');
+        return;
+    }
+    
+    const payload = { title, category, body, is_published: isPublished };
+    const method = editingArticleId ? 'PUT' : 'POST';
+    const url = editingArticleId ? `${API_URL}/help-center/articles/${editingArticleId}` : `${API_URL}/help-center/articles`;
+    
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            hideCreateArticleModal();
+            loadArticles();
+        } else {
+            const d = await res.json();
+            alert(d.detail || 'Failed to save article');
+        }
+    } catch (e) { alert('Connection error'); }
+}
+
+async function deleteArticle(articleId) {
+    if (!confirm('Delete this article?')) return;
+    try {
+        const res = await fetch(`${API_URL}/help-center/articles/${articleId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) loadArticles();
+        else alert('Failed to delete article');
+    } catch (e) { alert('Connection error'); }
+}
+
+function searchArticles() {
+    const query = document.getElementById('article-search').value.toLowerCase();
+    const filtered = currentArticles.filter(a => 
+        a.title.toLowerCase().includes(query) || (a.body || '').toLowerCase().includes(query)
+    );
+    // Re-render with filtered list
+    const container = document.getElementById('articles-list');
+    if (!filtered.length) {
+        container.innerHTML = '<p style="padding: 20px; text-align: center; color: var(--text-muted);">No articles match your search</p>';
+        return;
+    }
+    container.innerHTML = filtered.map(a => `
+        <div style="padding: 14px 16px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; gap: 12px;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: ${a.is_published ? 'var(--success)' : 'var(--warning)'};"></span>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 13px; font-weight: 500;">${escapeHtml(a.title)}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">${a.category || 'General'} · ${a.view_count || 0} views</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="editArticle(${a.id})">Edit</button>
+        </div>
+    `).join('');
+}
+
+async function runHealthCheck() {
+    document.getElementById('health-score').textContent = '...';
+    try {
+        const res = await fetch(`${API_URL}/knowledge-health/generate`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+            loadHealthScore();
+        } else {
+            alert('Failed to run health check');
+        }
+    } catch (e) { alert('Connection error'); }
+}
+
+async function loadHealthScore() {
+    try {
+        const res = await fetch(`${API_URL}/knowledge-health/`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        const score = data.overall_score || 0;
+        document.getElementById('health-score').textContent = Math.round(score);
+        
+        // Update score circle color
+        const circle = document.getElementById('health-score').parentElement;
+        if (score >= 80) circle.style.borderColor = 'var(--success)';
+        else if (score >= 50) circle.style.borderColor = 'var(--warning)';
+        else circle.style.borderColor = 'var(--error)';
+        
+        document.getElementById('health-fresh').textContent = `${data.fresh_count || 0}`;
+        document.getElementById('health-stale').textContent = `${data.stale_count || 0}`;
+        document.getElementById('health-gaps').textContent = `${data.gap_count || 0}`;
+        document.getElementById('health-last-check').textContent = data.last_check ? formatTimeAgo(data.last_check) : 'Never';
+    } catch (e) { console.error('Error loading health score:', e); }
+}
+
+// ====== HELPER FUNCTIONS ======
+function formatTimeAgo(dateStr) {
+    if (!dateStr) return 'Unknown';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000);
+    
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+    return date.toLocaleDateString();
+}
+
+function formatDateTime(dateStr) {
+    if (!dateStr) return 'Unknown';
+    return new Date(dateStr).toLocaleString();
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ====== INIT ON VIEW CHANGE ======
+const originalShowView = showView;
+showView = function(viewId, btn) {
+    originalShowView(viewId, btn);
+    if (viewId === 'tickets-view') loadTickets();
+    if (viewId === 'connectors-view') { loadConnectors(); loadSyncLogs(); }
+    if (viewId === 'help-center-view') { loadArticles(); loadHealthScore(); }
+    if (viewId === 'brain-view') loadBrainView();
+};
+
+const originalMobileShowView = mobileShowView;
+mobileShowView = function(viewId, btn) {
+    originalMobileShowView(viewId, btn);
+    if (viewId === 'tickets-view') loadTickets();
+    if (viewId === 'connectors-view') { loadConnectors(); loadSyncLogs(); }
+    if (viewId === 'help-center-view') { loadArticles(); loadHealthScore(); }
+    if (viewId === 'brain-view') loadBrainView();
+};
+
+// ====== COMPANY BRAIN ======
+let currentProcedureId = null;
+let currentProcedureStatus = null;
+let brainPollTimer = null;
+let brainProcFilter = null;  // null = all
+
+function loadBrainView() {
+    loadProcedures();
+    loadConflicts();
+    loadSkills();
+}
+
+// ---- Synthesis ----
+function showSynthesizePanel() {
+    document.getElementById('brain-synthesize-panel').classList.remove('hidden');
+    document.getElementById('brain-run-log').classList.add('hidden');
+    document.getElementById('brain-run-alert').innerHTML = '';
+}
+function hideSynthesizePanel() {
+    document.getElementById('brain-synthesize-panel').classList.add('hidden');
+}
+
+async function runSynthesis() {
+    const btn = document.getElementById('brain-run-btn');
+    const domain = document.getElementById('brain-domain-input').value.trim() || null;
+    const minCluster = parseInt(document.getElementById('brain-cluster-size').value) || 3;
+    const force = document.getElementById('brain-force-resynth').checked;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> Running...';
+    document.getElementById('brain-run-alert').innerHTML = '';
+    document.getElementById('brain-run-log').classList.remove('hidden');
+    document.getElementById('brain-run-log-inner').textContent = 'Starting synthesis…';
+
+    try {
+        const res = await fetch(`${API_URL}/brain/synthesize`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ domain, min_cluster_size: minCluster, force })
+        });
+        if (res.status === 401) { logout(); return; }
+        if (!res.ok) {
+            const e = await res.json();
+            document.getElementById('brain-run-alert').innerHTML = mkAlert('error', e.detail || 'Synthesis failed to start');
+            return;
+        }
+        const run = await res.json();
+        document.getElementById('brain-run-log-inner').textContent = `Run #${run.id} started — polling for completion…`;
+        pollRun(run.id);
+    } catch (e) {
+        document.getElementById('brain-run-alert').innerHTML = mkAlert('error', 'Connection error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Start Synthesis';
+    }
+}
+
+function pollRun(runId) {
+    if (brainPollTimer) clearInterval(brainPollTimer);
+    brainPollTimer = setInterval(async () => {
+        try {
+            const res = await fetch(`${API_URL}/brain/runs/${runId}`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            if (!res.ok) return;
+            const run = await res.json();
+            const logEl = document.getElementById('brain-run-log-inner');
+            logEl.innerHTML = `
+                <span class="brain-run-stat"><strong>${run.chunks_considered}</strong> chunks</span>
+                <span class="brain-run-stat"><strong>${run.clusters_found}</strong> clusters</span>
+                <span class="brain-run-stat"><strong>${run.procedures_created}</strong> created</span>
+                <span class="brain-run-stat"><strong>${run.procedures_updated}</strong> updated</span>
+                <span class="brain-run-stat"><strong>${run.procedures_unchanged || 0}</strong> unchanged</span>
+                <span class="brain-run-stat"><strong>${run.conflicts_found}</strong> conflicts</span>
+                <span class="brain-run-stat"><strong>${run.llm_calls}</strong> LLM calls</span>
+                <br>Status: <strong>${run.status}</strong>${run.error ? ` — <span style="color:var(--error);">${esc(run.error)}</span>` : ''}
+            `;
+            if (run.status === 'completed' || run.status === 'failed') {
+                clearInterval(brainPollTimer);
+                brainPollTimer = null;
+                
+                // Always reload in case of partial success
+                loadProcedures();
+                loadConflicts();
+                
+                if (run.status === 'completed') {
+                    document.getElementById('brain-run-alert').innerHTML = mkAlert('success', `Synthesis complete! ${run.procedures_created} new, ${run.procedures_updated} updated.`);
+                } else {
+                    document.getElementById('brain-run-alert').innerHTML = mkAlert('error', `Synthesis failed: ${run.error || 'unknown error'}`);
+                }
+            }
+        } catch (e) { /* keep polling */ }
+    }, 2500);
+}
+
+// ---- Procedures ----
+let allProcedures = [];
+
+function filterProcedures(status, tabEl) {
+    brainProcFilter = status;
+    document.querySelectorAll('.brain-filter-tab').forEach(t => t.classList.remove('active'));
+    if (tabEl) tabEl.classList.add('active');
+    renderProcedures();
+}
+
+async function loadProcedures() {
+    const list = document.getElementById('procedures-list');
+    list.innerHTML = '<div class="empty-state" style="padding:24px;"><span class="loading-spinner"></span></div>';
+    try {
+        const res = await fetch(`${API_URL}/brain/procedures`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.status === 401) { logout(); return; }
+        allProcedures = res.ok ? (await res.json()) : [];
+        // Update stat cards
+        document.getElementById('brain-stat-total').textContent = allProcedures.length;
+        document.getElementById('brain-stat-verified').textContent = allProcedures.filter(p => p.status === 'verified').length;
+        document.getElementById('brain-stat-review').textContent = allProcedures.filter(p => p.status === 'needs_review').length;
+        renderProcedures();
+    } catch (e) {
+        list.innerHTML = '<div class="empty-state"><p>Failed to load procedures.</p></div>';
+    }
+}
+
+function renderProcedures() {
+    const list = document.getElementById('procedures-list');
+    const filtered = brainProcFilter
+        ? allProcedures.filter(p => p.status === brainProcFilter)
+        : allProcedures;
+
+    if (!filtered.length) {
+        list.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v11m0 0H5m4 0h10m-10 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m-6 0V9m6 5v-5m0 0a2 2 0 0 1 2-2h2"/></svg><p>${brainProcFilter ? 'No procedures with this status.' : 'No procedures yet. Run a synthesis to extract company knowledge.'}</p></div>`;
+        return;
+    }
+
+    list.innerHTML = filtered.map(p => {
+        const conf = p.synthesis_confidence || 0;
+        const confPct = Math.round(conf * 100);
+        const confClass = conf >= 0.7 ? 'high' : conf >= 0.45 ? 'medium' : 'low';
+        const statusClass = `proc-status-${p.status}`;
+        const autonomyClass = p.autonomy_level === 'autonomous' ? 'autonomy-auto'
+            : p.autonomy_level === 'suggest_only' ? 'autonomy-suggest' : 'autonomy-human';
+        const autonomyLabel = p.autonomy_level === 'autonomous' ? 'Autonomous'
+            : p.autonomy_level === 'suggest_only' ? 'Suggest Only' : 'Human Required';
+        const successRate = p.success_rate !== null && p.success_rate !== undefined
+            ? `${Math.round(p.success_rate * 100)}% success (${p.execution_count} runs)` : '';
+        const domain = p.domain ? `<span style="font-size:10px;color:var(--accent);background:var(--accent-muted);padding:2px 7px;border-radius:4px;">${esc(p.domain)}</span>` : '';
+
+        return `<div class="proc-card">
+            <div class="proc-card-top">
+                <div class="proc-card-meta">
+                    <div class="proc-title">${esc(p.title)}</div>
+                    <div class="proc-tags">
+                        <span class="proc-status-badge ${statusClass}">${p.status.replace('_',' ')}</span>
+                        <span class="autonomy-badge ${autonomyClass}">${autonomyLabel}</span>
+                        ${domain}
+                    </div>
+                    <div class="proc-conf-row">
+                        <div class="proc-conf-bar"><div class="proc-conf-fill ${confClass}" style="width:${confPct}%;"></div></div>
+                        <span>${confPct}% confidence</span>
+                        ${successRate ? `<span style="margin-left:8px;">${successRate}</span>` : ''}
+                    </div>
+                </div>
+                <div class="proc-actions">
+                    ${p.status === 'needs_review' ? `<button class="btn btn-outline btn-sm" style="color:var(--success);" onclick="quickApprove(${p.id})">Approve</button>` : ''}
+                    <button class="btn btn-outline btn-sm" onclick="showProcedureModal(${p.id})">View</button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function quickApprove(procId) {
+    try {
+        const res = await fetch(`${API_URL}/brain/procedures/${procId}/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ approve: true })
+        });
+        if (res.ok) {
+            const updated = await res.json();
+            const idx = allProcedures.findIndex(p => p.id === procId);
+            if (idx !== -1) allProcedures[idx] = updated;
+            renderProcedures();
+            document.getElementById('brain-stat-verified').textContent = allProcedures.filter(p => p.status === 'verified').length;
+            document.getElementById('brain-stat-review').textContent = allProcedures.filter(p => p.status === 'needs_review').length;
+        } else {
+            const e = await res.json();
+            alert(e.detail || 'Could not approve');
+        }
+    } catch (e) { alert('Connection error'); }
+}
+
+async function showProcedureModal(procId) {
+    currentProcedureId = procId;
+    document.getElementById('proc-modal-alert').innerHTML = '';
+    document.getElementById('proc-modal-title').textContent = 'Loading…';
+    document.getElementById('procedure-modal').classList.remove('hidden');
+
+    try {
+        const res = await fetch(`${API_URL}/brain/procedures/${procId}`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (!res.ok) { alert('Failed to load procedure'); hideProcedureModal(); return; }
+        const p = await res.json();
+        currentProcedureStatus = p.status;
+
+        document.getElementById('proc-modal-title').textContent = p.title;
+        document.getElementById('proc-modal-desc').textContent = p.description || '';
+
+        // Tags
+        const statusClass = `proc-status-${p.status}`;
+        const autonomyClass = p.autonomy_level === 'autonomous' ? 'autonomy-auto'
+            : p.autonomy_level === 'suggest_only' ? 'autonomy-suggest' : 'autonomy-human';
+        const autonomyLabel = p.autonomy_level === 'autonomous' ? 'Autonomous'
+            : p.autonomy_level === 'suggest_only' ? 'Suggest Only' : 'Human Required';
+        const domainTag = p.domain ? `<span style="font-size:11px;color:var(--accent);background:var(--accent-muted);padding:3px 9px;border-radius:5px;">${esc(p.domain)}</span>` : '';
+        document.getElementById('proc-modal-tags').innerHTML = `
+            <span class="proc-status-badge ${statusClass}">${p.status.replace('_',' ')}</span>
+            <span class="autonomy-badge ${autonomyClass}">${autonomyLabel}</span>
+            ${domainTag}
+            ${p.version > 1 ? `<span style="font-size:10px;color:var(--text-dim);padding:3px 8px;">v${p.version}</span>` : ''}
+        `;
+
+        // Trigger
+        if (p.trigger_condition) {
+            document.getElementById('proc-modal-trigger-wrap').classList.remove('hidden');
+            document.getElementById('proc-modal-trigger').textContent = p.trigger_condition;
+        } else {
+            document.getElementById('proc-modal-trigger-wrap').classList.add('hidden');
+        }
+
+        // Confidence bar
+        const conf = p.synthesis_confidence || 0;
+        const confPct = Math.round(conf * 100);
+        const confClass = conf >= 0.7 ? 'high' : conf >= 0.45 ? 'medium' : 'low';
+        const fill = document.getElementById('proc-modal-conf-fill');
+        fill.style.width = `${confPct}%`;
+        fill.className = `proc-conf-fill ${confClass}`;
+        document.getElementById('proc-modal-conf-text').textContent = `${confPct}% confidence`;
+        document.getElementById('proc-modal-exec-text').textContent = p.execution_count
+            ? `${p.execution_count} executions · ${p.success_rate !== null ? Math.round(p.success_rate * 100) + '% success' : ''}` : '';
+
+        // Steps
+        const steps = p.steps || [];
+        document.getElementById('proc-modal-steps').innerHTML = steps.length
+            ? steps.map((s, i) => `<div class="proc-step"><div class="proc-step-num">${i + 1}</div><div class="proc-step-text">${esc(s.instruction)}</div></div>`).join('')
+            : '<p style="font-size:12px;color:var(--text-muted);">No steps defined.</p>';
+
+        // Rules
+        const rules = p.rules || [];
+        if (rules.length) {
+            document.getElementById('proc-modal-rules-wrap').classList.remove('hidden');
+            document.getElementById('proc-modal-rules').innerHTML = rules.map(r =>
+                `<div class="proc-rule-item ${r.rule_type}"><span style="font-size:10px;font-weight:600;text-transform:uppercase;opacity:0.6;">${r.rule_type.replace('_',' ')} · </span>${esc(r.content)}</div>`
+            ).join('');
+        } else {
+            document.getElementById('proc-modal-rules-wrap').classList.add('hidden');
+        }
+
+        // Approve/reject buttons
+        const approveBtn = document.getElementById('proc-modal-approve-btn');
+        const rejectBtn = document.getElementById('proc-modal-reject-btn');
+        if (p.status === 'verified') {
+            approveBtn.textContent = '✓ Verified';
+            approveBtn.disabled = true;
+        } else {
+            approveBtn.textContent = 'Approve';
+            approveBtn.disabled = false;
+        }
+        rejectBtn.style.display = p.status === 'needs_review' || p.status === 'draft' ? '' : 'none';
+
+    } catch (e) {
+        document.getElementById('proc-modal-alert').innerHTML = mkAlert('error', 'Failed to load procedure details');
+    }
+}
+
+function hideProcedureModal() {
+    document.getElementById('procedure-modal').classList.add('hidden');
+    currentProcedureId = null;
+}
+
+async function verifyProcedure(approve) {
+    if (!currentProcedureId) return;
+    try {
+        const res = await fetch(`${API_URL}/brain/procedures/${currentProcedureId}/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ approve })
+        });
+        if (!res.ok) {
+            const e = await res.json();
+            document.getElementById('proc-modal-alert').innerHTML = mkAlert('error', e.detail || 'Failed');
+            return;
+        }
+        const updated = await res.json();
+        // Refresh procedure in the list
+        const idx = allProcedures.findIndex(p => p.id === currentProcedureId);
+        if (idx !== -1) allProcedures[idx] = updated;
+        renderProcedures();
+        document.getElementById('brain-stat-verified').textContent = allProcedures.filter(p => p.status === 'verified').length;
+        document.getElementById('brain-stat-review').textContent = allProcedures.filter(p => p.status === 'needs_review').length;
+        document.getElementById('proc-modal-alert').innerHTML = mkAlert('success', approve ? 'Procedure approved!' : 'Marked for review');
+        // Update approve button
+        if (approve) {
+            document.getElementById('proc-modal-approve-btn').textContent = '✓ Verified';
+            document.getElementById('proc-modal-approve-btn').disabled = true;
+        }
+    } catch (e) {
+        document.getElementById('proc-modal-alert').innerHTML = mkAlert('error', 'Connection error');
+    }
+}
+
+async function recordFeedback(success) {
+    if (!currentProcedureId) return;
+    try {
+        const res = await fetch(`${API_URL}/brain/feedback/execution`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ procedure_id: currentProcedureId, success })
+        });
+        if (!res.ok) {
+            const e = await res.json();
+            document.getElementById('proc-modal-alert').innerHTML = mkAlert('error', e.detail || 'Failed');
+            return;
+        }
+        const updated = await res.json();
+        const idx = allProcedures.findIndex(p => p.id === currentProcedureId);
+        if (idx !== -1) allProcedures[idx] = updated;
+        document.getElementById('proc-modal-alert').innerHTML = mkAlert('success', `Recorded: ${success ? 'success ✓' : 'failed ✗'}. Autonomy updated.`);
+        document.getElementById('proc-modal-exec-text').textContent = updated.execution_count
+            ? `${updated.execution_count} executions · ${updated.success_rate !== null ? Math.round(updated.success_rate * 100) + '% success' : ''}` : '';
+    } catch (e) {
+        document.getElementById('proc-modal-alert').innerHTML = mkAlert('error', 'Connection error');
+    }
+}
+
+// ---- Conflicts ----
+async function loadConflicts() {
+    const list = document.getElementById('conflicts-list');
+    list.innerHTML = '<div class="empty-state" style="padding:20px;"><span class="loading-spinner"></span></div>';
+    try {
+        const res = await fetch(`${API_URL}/brain/conflicts?status=open`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.status === 401) { logout(); return; }
+        const conflicts = res.ok ? (await res.json()) : [];
+        // Update conflict count on stat card and badge
+        const badge = document.getElementById('conflict-count-badge');
+        const statEl = document.getElementById('brain-stat-conflicts');
+        if (statEl) statEl.textContent = conflicts.length;
+        if (badge) badge.textContent = conflicts.length ? `${conflicts.length} open` : '';
+
+        if (!conflicts.length) {
+            list.innerHTML = `<div class="empty-state" style="padding:30px 20px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><p>No open conflicts — great knowledge consistency!</p></div>`;
+            return;
+        }
+
+        list.innerHTML = conflicts.map(c => {
+            const typeLabel = c.conflict_type ? c.conflict_type.replace('_', ' ') : 'conflict';
+            const ago = c.detected_at ? formatTimeAgo(c.detected_at) : '';
+            return `<div class="conflict-item" id="conflict-${c.id}">
+                <div class="conflict-top">
+                    <div class="conflict-desc">${esc(c.description)}</div>
+                    <div class="conflict-actions">
+                        <button class="btn btn-outline btn-sm" style="color:var(--success);" onclick="resolveConflict(${c.id}, false)">Resolve</button>
+                        <button class="btn btn-outline btn-sm" style="color:var(--text-muted);" onclick="resolveConflict(${c.id}, true)">Dismiss</button>
+                    </div>
+                </div>
+                <div class="conflict-meta">
+                    <span style="background:rgba(240,173,78,0.12);color:var(--warning);padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase;">${typeLabel}</span>
+                    ${c.procedure_id ? `<span>Procedure #${c.procedure_id}</span>` : ''}
+                    ${ago ? `<span>${ago}</span>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        list.innerHTML = '<div class="empty-state"><p>Failed to load conflicts.</p></div>';
+    }
+}
+
+async function resolveConflict(conflictId, dismiss) {
+    try {
+        const res = await fetch(`${API_URL}/brain/conflicts/${conflictId}/resolve?dismiss=${dismiss}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+            const el = document.getElementById(`conflict-${conflictId}`);
+            if (el) el.remove();
+            // Recount remaining
+            const remaining = document.querySelectorAll('[id^="conflict-"]').length;
+            const badge = document.getElementById('conflict-count-badge');
+            const statEl = document.getElementById('brain-stat-conflicts');
+            if (badge) badge.textContent = remaining ? `${remaining} open` : '';
+            if (statEl) statEl.textContent = remaining;
+            if (!remaining) loadConflicts(); // show empty state
+        } else {
+            const e = await res.json();
+            alert(e.detail || 'Failed to resolve');
+        }
+    } catch (e) { alert('Connection error'); }
+}
+
+function brainSeg(which){
+    document.getElementById('brain-pane-skills').style.display = which==='skills'?'':'none';
+    document.getElementById('brain-pane-agents').style.display = which==='agents'?'':'none';
+    document.getElementById('seg-skills').classList.toggle('active', which==='skills');
+    document.getElementById('seg-agents').classList.toggle('active', which==='agents');
+    if (which==='agents') initAgentAccess();
+}
+
+async function loadSkills(){
+    const list = document.getElementById('skills-list');
+    list.innerHTML = '<div class="empty-state" style="padding:24px;"><span class="loading-spinner"></span></div>';
+    try{
+        const res = await fetch(`${API_URL}/brain/skills`, { headers:{ 'Authorization':`Bearer ${authToken}` }});
+        if (res.status===401){ logout(); return; }
+        const data = await res.json();
+        const skills = data.skills || [];
+        if (!skills.length){ list.innerHTML = '<div class="empty-state"><p>No skills yet. Verify a procedure to compile it into a skill.</p></div>'; return; }
+        const cls = a => a==='autonomous'?'autonomy-auto':a==='suggest_only'?'autonomy-suggest':'autonomy-human';
+        const lbl = a => a==='autonomous'?'Autonomous':a==='suggest_only'?'Suggest Only':'Human Required';
+        list.innerHTML = skills.map(s=>`
+            <div class="k-item">
+                <div class="k-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                <div class="k-info"><div class="k-name" style="font-family:var(--font-mono);">${esc(s.name)}</div>
+                    <div class="k-meta">${esc(s.description||'')}</div></div>
+                <span class="autonomy-badge ${cls(s.autonomy_level)}">${lbl(s.autonomy_level)}</span>
+                <div class="row-actions" style="margin-top:12px;">
+                    <button class="btn btn-outline btn-sm" onclick="downloadSkill('${esc(s.name)}')">Download .docx</button>
+                    <button class="btn btn-outline btn-sm" onclick="viewSkill('${esc(s.name)}')">View</button>
+                </div>
+            </div>`).join('');
+    }catch(e){ list.innerHTML = '<div class="empty-state"><p>Failed to load skills.</p></div>'; }
+}
+
+async function downloadSkill(slug) {
+  const res = await fetch(`${API_URL}/brain/skills/${slug}/download`, {
+    headers: { Authorization: `Bearer ${authToken}` }
+  });
+  if (!res.ok) { alert("Download failed"); return; }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${slug}-SKILL.docx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function viewSkill(name){
+    document.getElementById('skill-modal-title').textContent = name + ' / SKILL.md';
+    document.getElementById('btn-download-skill').onclick = () => downloadSkill(name);
+    document.getElementById('skill-md').textContent = 'Loading…';
+    document.getElementById('skill-modal').classList.remove('hidden');
+    try{
+        const res = await fetch(`${API_URL}/brain/skills/${encodeURIComponent(name)}`, { headers:{ 'Authorization':`Bearer ${authToken}` }});
+        const data = await res.json();
+        document.getElementById('skill-md').textContent = data.skill_md || '(empty)';
+    }catch(e){ document.getElementById('skill-md').textContent = 'Failed to load SKILL.md'; }
+}
+function copySkillMd(){ navigator.clipboard.writeText(document.getElementById('skill-md').textContent); }
+
+function initAgentAccess(){
+    const key = document.getElementById('settings-apikey')?.value || 'your_api_key';
+    document.getElementById('agent-apikey').textContent = key;
+    const base = API_URL || window.location.origin;
+    document.getElementById('mcp-config').value =
+`{
+  "mcpServers": {
+    "krab-brain": {
+      "command": "python",
+      "args": ["mcp_server.py"],
+      "env": { "KRAB_API_KEY": "${key}" }
+    }
+  }
+}
+// Remote agents: POST ${base}/mcp  with header  X-API-Key: ${key}`;
+}
+function copyAgentKey(){ const k=document.getElementById('agent-apikey').textContent; if(k) navigator.clipboard.writeText(k); }
+function copyMcpConfig(){ const el=document.getElementById('mcp-config'); navigator.clipboard.writeText(el.value); }
 </script>
+
+<!--
+  KRAB — Google Drive Picker (frontend)
+-->
+<script>
+(function () {
+  let _gapiLoaded = false;
+  let _gisLoaded = false; 
+  let _pickerReady = false;
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) return resolve();
+      const s = document.createElement("script");
+      s.src = src; s.async = true; s.defer = true;
+      s.onload = resolve; s.onerror = () => reject(new Error("load failed: " + src));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function ensurePickerLoaded() {
+    if (_pickerReady) return;
+    await loadScript("https://apis.google.com/js/api.js");
+    await new Promise((resolve) => gapi.load("picker", { callback: resolve }));
+    _pickerReady = true;
+  }
+
+  window.openDrivePicker = async function () {
+    try {
+      const res = await fetch(`${API_URL}/connectors/google_drive/picker-config`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (res.status === 401) {
+        alert("Your Google session expired. Please reconnect Google Drive.");
+        return;
+      }
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        alert(e.detail || "Could not open the file picker.");
+        return;
+      }
+      const cfg = await res.json();
+
+      await ensurePickerLoaded();
+
+      const docsView = new google.picker.DocsView(google.picker.ViewId.DOCS)
+        .setIncludeFolders(true)
+        .setSelectFolderEnabled(false)   
+        .setOwnedByMe(true);
+      const sharedView = new google.picker.DocsView(google.picker.ViewId.DOCS)
+        .setIncludeFolders(true)
+        .setOwnedByMe(false);
+
+      const picker = new google.picker.PickerBuilder()
+        .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+        .setOAuthToken(cfg.oauth_token)
+        .setDeveloperKey(cfg.api_key)
+        .setAppId(cfg.app_id)
+        .addView(docsView)
+        .addView(sharedView)
+        .setTitle("Select files to import into KRAB")
+        .setCallback(pickerCallback)
+        .build();
+
+      picker.setVisible(true);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to open Google Picker: " + err.message);
+    }
+  };
+
+  async function pickerCallback(data) {
+    if (data.action !== google.picker.Action.PICKED) return;
+    const ids = (data.docs || []).map((d) => d.id);
+    if (!ids.length) return;
+
+    try {
+      const res = await fetch(`${API_URL}/connectors/google_drive/selection`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ file_ids: ids }),
+      });
+      const out = await res.json();
+      const statusEl = document.getElementById("gdrive-picker-status");
+      if (res.ok) {
+        if (statusEl) statusEl.innerHTML = mkAlert("success", `Importing ${out.count} file${out.count !== 1 ? "s" : ""} from Google Drive…`);
+        if (typeof loadConnectors === "function") setTimeout(loadConnectors, 1500);
+        if (typeof loadSyncLogs === "function") setTimeout(loadSyncLogs, 1500);
+        if (typeof loadKnowledge === "function") setTimeout(loadKnowledge, 2500);
+        if (typeof loadAnalytics === "function") setTimeout(loadAnalytics, 2500);
+      } else {
+        if (statusEl) statusEl.innerHTML = mkAlert("error", out.detail || "Failed to save selection.");
+      }
+    } catch (e) {
+      const statusEl = document.getElementById("gdrive-picker-status");
+      if (statusEl) statusEl.innerHTML = mkAlert("error", "Connection error while saving selection.");
+    }
+  }
+})();
+</script>
+
 </body>
 </html>

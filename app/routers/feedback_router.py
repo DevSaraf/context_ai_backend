@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from app.database import get_db
 from app import models, schemas
 from app.dependencies import get_current_user
-from app.models import KnowledgeChunk, SearchLog, Feedback
+from app.models import KnowledgeChunk, SearchLog, Feedback, User
 
 router = APIRouter(tags=["feedback & analytics"])
 
@@ -19,23 +19,19 @@ router = APIRouter(tags=["feedback & analytics"])
 def submit_feedback(
     feedback: schemas.FeedbackCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user)
+    user: User = Depends(get_current_user)
 ):
     """Submit feedback for a knowledge chunk."""
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     chunk_exists = db.execute(
         text("SELECT id FROM knowledge_chunks WHERE id = :chunk_id AND user_id = :user_id"),
-        {"chunk_id": feedback.chunk_id, "user_id": user_id}
+        {"chunk_id": feedback.chunk_id, "user_id": user.id}
     ).fetchone()
 
     if not chunk_exists:
         raise HTTPException(status_code=404, detail="Knowledge chunk not found")
 
     fb = Feedback(
-        user_id=user_id,
+        user_id=user.id,
         company_id=user.company_id,
         chunk_id=feedback.chunk_id,
         feedback_type=feedback.feedback_type,
@@ -52,7 +48,7 @@ def submit_feedback(
 def get_chunk_feedback(
     chunk_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user)
+    user: User = Depends(get_current_user)
 ):
     """Get feedback stats for a specific chunk."""
     helpful = db.query(Feedback).filter(
@@ -81,37 +77,33 @@ def get_chunk_feedback(
 @router.get("/analytics")
 def get_analytics(
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user)
+    user: User = Depends(get_current_user)
 ):
     """Get analytics for this user."""
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     week_ago = datetime.utcnow() - timedelta(days=7)
 
-    total_searches = db.query(SearchLog).filter(SearchLog.user_id == user_id).count()
+    total_searches = db.query(SearchLog).filter(SearchLog.user_id == user.id).count()
 
     recent_searches = db.query(SearchLog).filter(
-        SearchLog.user_id == user_id,
+        SearchLog.user_id == user.id,
         SearchLog.created_at >= week_ago
     ).count()
 
-    total_feedback = db.query(Feedback).filter(Feedback.user_id == user_id).count()
+    total_feedback = db.query(Feedback).filter(Feedback.user_id == user.id).count()
 
     helpful_count = db.query(Feedback).filter(
-        Feedback.user_id == user_id, Feedback.feedback_type == "helpful"
+        Feedback.user_id == user.id, Feedback.feedback_type == "helpful"
     ).count()
 
     not_helpful_count = db.query(Feedback).filter(
-        Feedback.user_id == user_id, Feedback.feedback_type == "not_helpful"
+        Feedback.user_id == user.id, Feedback.feedback_type == "not_helpful"
     ).count()
 
     total_ratings = helpful_count + not_helpful_count
     helpful_rate = helpful_count / max(1, total_ratings)
 
     used_count = db.query(Feedback).filter(
-        Feedback.user_id == user_id, Feedback.feedback_type == "used"
+        Feedback.user_id == user.id, Feedback.feedback_type == "used"
     ).count()
     usage_rate = used_count / max(1, total_searches)
 
@@ -121,7 +113,7 @@ def get_analytics(
             FROM knowledge_chunks WHERE user_id = :user_id
             GROUP BY source_type ORDER BY count DESC LIMIT 5
         """),
-        {"user_id": user_id}
+        {"user_id": user.id}
     ).mappings().all()
 
     searches_by_day = db.execute(
@@ -130,10 +122,10 @@ def get_analytics(
             FROM search_logs WHERE user_id = :user_id AND created_at >= :week_ago
             GROUP BY DATE(created_at) ORDER BY date
         """),
-        {"user_id": user_id, "week_ago": week_ago}
+        {"user_id": user.id, "week_ago": week_ago}
     ).mappings().all()
 
-    total_chunks = db.query(KnowledgeChunk).filter(KnowledgeChunk.user_id == user_id).count()
+    total_chunks = db.query(KnowledgeChunk).filter(KnowledgeChunk.user_id == user.id).count()
 
     return {
         "total_searches": total_searches,

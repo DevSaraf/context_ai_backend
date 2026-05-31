@@ -63,11 +63,12 @@ class GeminiProvider(LLMProvider):
     async def generate(self, system_prompt: str, user_prompt: str, max_tokens: int = 1024) -> str:
         """Call Gemini API using REST (no SDK dependency issues)."""
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(
                     f"{self.api_url}?key={self.api_key}",
                     json={
-                        "system_instruction": {
+                        # "system_instruction": {
+                        "systemInstruction": {
                             "parts": [{"text": system_prompt}]
                         },
                         "contents": [
@@ -85,6 +86,8 @@ class GeminiProvider(LLMProvider):
                 if response.status_code != 200:
                     error_detail = response.text[:200]
                     print(f"Gemini API error {response.status_code}: {error_detail}")
+                    if response.status_code in (429, 503):
+                        raise Exception(f"Gemini API error {response.status_code}: {error_detail}")
                     return f"Error generating answer (Gemini {response.status_code}). Please try again."
 
                 data = response.json()
@@ -98,12 +101,48 @@ class GeminiProvider(LLMProvider):
                 if not parts:
                     return "Empty response from AI. Please try rephrasing your question."
 
-                return parts[0].get("text", "").strip()
+                # Skip thinking parts (gemini-2.5+ models) — return last text part
+                text_parts = [p.get("text", "") for p in parts if not p.get("thought")]
+                return (text_parts[-1] if text_parts else "").strip()
 
         except httpx.TimeoutException:
             return "AI response timed out. Please try again with a shorter query."
         except Exception as e:
+            if "Gemini API error 429" in str(e) or "Gemini API error 503" in str(e):
+                raise
             print(f"Gemini generation error: {e}")
+            return f"Error generating answer: {str(e)}"
+
+
+class GroqProvider(LLMProvider):
+    """Groq API for fallback."""
+
+    def __init__(self):
+        self.api_key = os.getenv("GROQ_API_KEY", "")
+        self.model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+
+    def is_available(self) -> bool:
+        return bool(self.api_key)
+
+    async def generate(self, system_prompt: str, user_prompt: str, max_tokens: int = 1024) -> str:
+        try:
+            from groq import AsyncGroq
+            client = AsyncGroq(api_key=self.api_key)
+            
+            chat_completion = await client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                model=self.model,
+                max_tokens=max_tokens,
+            )
+            return chat_completion.choices[0].message.content.strip()
+
+        except Exception as e:
+            if "429" in str(e) or "503" in str(e):
+                raise Exception(f"Groq API error {e}")
+            print(f"Groq generation error: {e}")
             return f"Error generating answer: {str(e)}"
 
 
